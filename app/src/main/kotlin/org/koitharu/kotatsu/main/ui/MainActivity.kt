@@ -135,6 +135,12 @@ class MainActivity : BaseActivity<ActivityMainBinding>(), AppBarOwner, BottomNav
 	override val bottomNav: SlidingBottomNavigationView?
 		get() = viewBinding.bottomNav
 
+	// activity_main.xml's root is a DrawerLayout only in the phone (default) configuration;
+	// in the w840dp/w600dp-land (tablet/navRail) configurations the root is a plain LinearLayout.
+	// Data Binding can't unify these types, so it exposes drawerLayout as a plain View — cast here.
+	private val drawerLayout: androidx.drawerlayout.widget.DrawerLayout?
+		get() = viewBinding.drawerLayout as? androidx.drawerlayout.widget.DrawerLayout
+
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 		setContentView(ActivityMainBinding.inflate(layoutInflater))
@@ -152,7 +158,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(), AppBarOwner, BottomNav
 		viewBinding.bottomNav?.setOnContinueClickListener { viewModel.openLastReader() }
 		viewBinding.buttonOverflow.setOnClickListener(this::showMainOverflowMenu)
 		viewBinding.buttonSettings.setOnClickListener {
-			viewBinding.drawerLayout.openDrawer(GravityCompat.START)
+			drawerLayout?.openDrawer(GravityCompat.START)
 		}
 		setupMainDrawer()
 		viewBinding.statusBarScrim.blurTarget = viewBinding.container
@@ -181,10 +187,10 @@ class MainActivity : BaseActivity<ActivityMainBinding>(), AppBarOwner, BottomNav
 
 		val drawerBackCallback = object : androidx.activity.OnBackPressedCallback(false) {
 			override fun handleOnBackPressed() {
-				viewBinding.drawerLayout.closeDrawer(GravityCompat.START)
+				drawerLayout?.closeDrawer(GravityCompat.START)
 			}
 		}
-		viewBinding.drawerLayout.addDrawerListener(object : androidx.drawerlayout.widget.DrawerLayout.DrawerListener {
+		drawerLayout?.addDrawerListener(object : androidx.drawerlayout.widget.DrawerLayout.DrawerListener {
 			override fun onDrawerSlide(drawerView: View, slideOffset: Float) = Unit
 			override fun onDrawerOpened(drawerView: View) {
 				drawerBackCallback.isEnabled = true
@@ -272,16 +278,16 @@ class MainActivity : BaseActivity<ActivityMainBinding>(), AppBarOwner, BottomNav
 	}
 
 	private fun setupMainDrawer() {
-		viewBinding.drawerCompose.apply {
+		viewBinding.drawerCompose?.apply {
 			setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
 			setContent {
 				MainDrawerContent(
 					onNavItemClick = { navItem ->
-						viewBinding.drawerLayout.closeDrawer(GravityCompat.START)
+						drawerLayout?.closeDrawer(GravityCompat.START)
 						bottomNav?.selectedItemId = navItem.id
 					},
 					onSectionClick = { section: SettingsSection ->
-						viewBinding.drawerLayout.closeDrawer(GravityCompat.START)
+						drawerLayout?.closeDrawer(GravityCompat.START)
 						startActivity(AppRouter.settingsSectionIntent(this@MainActivity, section.fragmentClass.name))
 					},
 				)
