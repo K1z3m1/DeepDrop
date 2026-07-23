@@ -1,0 +1,156 @@
+package org.koitharu.kotatsu.list.ui.config
+
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.view.animation.AccelerateDecelerateInterpolator
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.CompoundButton
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.isVisible
+import androidx.core.view.updatePadding
+import androidx.fragment.app.viewModels
+import androidx.transition.AutoTransition
+import androidx.transition.TransitionManager
+import com.google.android.material.button.MaterialButtonToggleGroup
+import com.google.android.material.slider.Slider
+import dagger.hilt.android.AndroidEntryPoint
+import org.koitharu.kotatsu.R
+import org.koitharu.kotatsu.core.prefs.ListMode
+import org.koitharu.kotatsu.core.ui.sheet.BaseAdaptiveSheet
+import org.koitharu.kotatsu.core.util.ext.consume
+import org.koitharu.kotatsu.core.util.ext.setValueRounded
+import org.koitharu.kotatsu.core.util.progress.IntPercentLabelFormatter
+import org.koitharu.kotatsu.databinding.SheetListModeBinding
+import com.google.android.material.R as materialR
+
+@AndroidEntryPoint
+class ListConfigBottomSheet :
+	BaseAdaptiveSheet<SheetListModeBinding>(),
+	Slider.OnChangeListener,
+	MaterialButtonToggleGroup.OnButtonCheckedListener, CompoundButton.OnCheckedChangeListener,
+	AdapterView.OnItemSelectedListener {
+
+	private val viewModel by viewModels<ListConfigViewModel>()
+
+	override fun onCreateViewBinding(
+		inflater: LayoutInflater,
+		container: ViewGroup?,
+	) = SheetListModeBinding.inflate(inflater, container, false)
+
+	override fun onViewBindingCreated(binding: SheetListModeBinding, savedInstanceState: Bundle?) {
+		super.onViewBindingCreated(binding, savedInstanceState)
+		val mode = viewModel.listMode
+		binding.buttonList.isChecked = mode == ListMode.LIST
+		binding.buttonListDetailed.isChecked = mode == ListMode.DETAILED_LIST
+		binding.buttonGrid.isChecked = mode == ListMode.GRID
+		binding.buttonCoverOnly.isChecked = mode == ListMode.COVER_ONLY
+		binding.adjustGridOptions(mode, withAnimation = false)
+		binding.switchTitleOverCover.isChecked = viewModel.isTitleOverCover
+		binding.switchTitleOverCover.setOnCheckedChangeListener(this)
+		binding.switchGridSpacing.isChecked = viewModel.isGridSpacingIncreased
+		binding.switchGridSpacing.setOnCheckedChangeListener(this)
+
+		binding.sliderGrid.setLabelFormatter(IntPercentLabelFormatter(binding.root.context))
+		binding.sliderGrid.setValueRounded(viewModel.gridSize.toFloat())
+		binding.sliderGrid.addOnChangeListener(this)
+
+		binding.checkableGroup.addOnButtonCheckedListener(this)
+
+		binding.switchGrouping.isVisible = viewModel.isGroupingSupported
+		if (viewModel.isGroupingSupported) {
+			binding.switchGrouping.isEnabled = viewModel.isGroupingAvailable
+		}
+		binding.switchGrouping.isChecked = viewModel.isGroupingEnabled
+		binding.switchGrouping.setOnCheckedChangeListener(this)
+
+		val sortOrders = viewModel.getSortOrders()
+		if (sortOrders != null) {
+			binding.textViewOrderTitle.isVisible = true
+			binding.spinnerOrder.adapter = ArrayAdapter(
+				binding.spinnerOrder.context,
+				android.R.layout.simple_spinner_dropdown_item,
+				android.R.id.text1,
+				sortOrders.map { binding.spinnerOrder.context.getString(it.titleResId) },
+			)
+			val selected = sortOrders.indexOf(viewModel.getSelectedSortOrder())
+			if (selected >= 0) {
+				binding.spinnerOrder.setSelection(selected, false)
+			}
+			binding.spinnerOrder.onItemSelectedListener = this
+			binding.cardOrder.isVisible = true
+		}
+	}
+
+	override fun onApplyWindowInsets(v: View, insets: WindowInsetsCompat): WindowInsetsCompat {
+		val typeMask = WindowInsetsCompat.Type.systemBars()
+		viewBinding?.scrollView?.updatePadding(
+			bottom = insets.getInsets(typeMask).bottom,
+		)
+		return insets.consume(v, typeMask, bottom = true)
+	}
+
+	override fun onButtonChecked(group: MaterialButtonToggleGroup?, checkedId: Int, isChecked: Boolean) {
+		if (!isChecked) {
+			return
+		}
+		val mode = when (checkedId) {
+			R.id.button_list -> ListMode.LIST
+			R.id.button_list_detailed -> ListMode.DETAILED_LIST
+			R.id.button_grid -> ListMode.GRID
+			R.id.button_cover_only -> ListMode.COVER_ONLY
+			else -> return
+		}
+		requireViewBinding().adjustGridOptions(mode, withAnimation = true)
+		viewModel.listMode = mode
+	}
+
+	private fun SheetListModeBinding.adjustGridOptions(mode: ListMode, withAnimation: Boolean) {
+		val isGridMode = mode == ListMode.GRID || mode == ListMode.COVER_ONLY
+		val needTransition = withAnimation && (
+			isGridMode != textViewGridTitle.isVisible ||
+				isGridMode != sliderGrid.isVisible
+			)
+		if (needTransition) {
+			val transition = AutoTransition().apply {
+				duration = 250L
+				interpolator = AccelerateDecelerateInterpolator()
+			}
+			val sceneRoot = dialog?.findViewById<ViewGroup>(materialR.id.coordinator)
+				?: dialog?.findViewById<ViewGroup>(materialR.id.design_bottom_sheet)
+				?: root
+			TransitionManager.beginDelayedTransition(sceneRoot, transition)
+		}
+		textViewGridTitle.isVisible = isGridMode
+		sliderGrid.isVisible = isGridMode
+		switchTitleOverCover.isEnabled = isGridMode
+		switchGridSpacing.isEnabled = isGridMode
+	}
+
+	override fun onCheckedChanged(buttonView: CompoundButton, isChecked: Boolean) {
+		when (buttonView.id) {
+			R.id.switch_grouping -> viewModel.isGroupingEnabled = isChecked
+			R.id.switch_title_over_cover -> viewModel.isTitleOverCover = isChecked
+			R.id.switch_grid_spacing -> viewModel.isGridSpacingIncreased = isChecked
+		}
+	}
+
+	override fun onValueChange(slider: Slider, value: Float, fromUser: Boolean) {
+		if (fromUser) {
+			viewModel.gridSize = value.toInt()
+		}
+	}
+
+	override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+		when (parent.id) {
+			R.id.spinner_order -> {
+				viewModel.setSortOrder(position)
+				viewBinding?.switchGrouping?.isEnabled = viewModel.isGroupingAvailable
+			}
+		}
+	}
+
+	override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+}
