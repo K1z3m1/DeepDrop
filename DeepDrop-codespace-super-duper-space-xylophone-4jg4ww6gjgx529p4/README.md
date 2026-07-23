@@ -1,2 +1,0 @@
-# DeepDrop
-Manga
