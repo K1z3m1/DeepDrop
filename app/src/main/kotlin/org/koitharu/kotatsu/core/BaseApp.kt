@@ -1,0 +1,152 @@
+package org.koitharu.kotatsu.core
+
+import android.app.Application
+import android.app.DownloadManager
+import android.content.Context
+import android.os.Environment
+import androidx.annotation.WorkerThread
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.hilt.work.HiltWorkerFactory
+import androidx.room.InvalidationTracker
+import androidx.work.Configuration
+import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.launch
+import okhttp3.internal.platform.PlatformRegistry
+import org.acra.ACRA
+import org.acra.config.dialog
+import org.acra.data.StringFormat
+import org.acra.ktx.initAcra
+import org.koitharu.kotatsu.BuildConfig
+import org.koitharu.kotatsu.R
+import org.koitharu.kotatsu.core.db.MangaDatabase
+import org.koitharu.kotatsu.core.logs.AppLogger
+import org.koitharu.kotatsu.core.os.AppValidator
+import org.koitharu.kotatsu.core.os.RomCompat
+import org.koitharu.kotatsu.core.prefs.AppSettings
+import org.koitharu.kotatsu.core.util.ext.processLifecycleScope
+import org.koitharu.kotatsu.local.data.LocalStorageChanges
+import org.koitharu.kotatsu.local.data.index.LocalMangaIndex
+import org.koitharu.kotatsu.local.domain.model.LocalManga
+import org.koitharu.kotatsu.parsers.util.suspendlazy.getOrNull
+import org.koitharu.kotatsu.settings.work.WorkScheduleManager
+import javax.inject.Inject
+import javax.inject.Provider
+
+@HiltAndroidApp
+open class BaseApp : Application(), Configuration.Provider {
+
+	@Inject
+	lateinit var databaseObserversProvider: Provider<Set<@JvmSuppressWildcards InvalidationTracker.Observer>>
+
+	@Inject
+	lateinit var activityLifecycleCallbacks: Set<@JvmSuppressWildcards ActivityLifecycleCallbacks>
+
+	@Inject
+	lateinit var database: Provider<MangaDatabase>
+
+	@Inject
+	lateinit var settings: AppSettings
+
+	@Inject
+	lateinit var appLogger: AppLogger
+
+	@Inject
+	lateinit var workerFactory: HiltWorkerFactory
+
+	@Inject
+	lateinit var appValidator: AppValidator
+
+	@Inject
+	lateinit var workScheduleManager: WorkScheduleManager
+
+	@Inject
+	lateinit var localMangaIndexProvider: Provider<LocalMangaIndex>
+
+	@Inject
+	@LocalStorageChanges
+	lateinit var localStorageChanges: MutableSharedFlow<LocalManga?>
+
+	override val workManagerConfiguration: Configuration
+		get() = Configuration.Builder()
+			.setWorkerFactory(workerFactory)
+			.build()
+
+	override fun onCreate() {
+		super.onCreate()
+		PlatformRegistry.applicationContext = this // TODO replace with OkHttp.initialize
+		if (ACRA.isACRASenderServiceProcess()) {
+			return
+		}
+		AppCompatDelegate.setDefaultNightMode(settings.theme)
+		appLogger.rollSession() // preserve last run's log before a fresh session overwrites it
+		appLogger.setEnabled(settings.isVerboseLoggingEnabled)
+		// Keep default platform security provider.
+		setupActivityLifecycleCallbacks()
+		// File/DownloadManager I/O — off the main thread so it can't add to cold-start time.
+		processLifecycleScope.launch(Dispatchers.Default) {
+			cleanupDownloadedExtensionApks()
+		}
+		processLifecycleScope.launch {
+			ACRA.errorReporter.putCustomData("isOriginalApp", appValidator.isOriginalApp.getOrNull().toString())
+			ACRA.errorReporter.putCustomData("isMiui", RomCompat.isMiui.getOrNull().toString())
+		}
+		processLifecycleScope.launch(Dispatchers.Default) {
+			setupDatabaseObservers()
+			localStorageChanges.collect(localMangaIndexProvider.get())
+		}
+		workScheduleManager.init()
+	}
+
+	override fun attachBaseContext(base: Context) {
+		super.attachBaseContext(base)
+		if (ACRA.isACRASenderServiceProcess()) {
+			return
+		}
+		initAcra {
+			buildConfigClass = BuildConfig::class.java
+			reportFormat = StringFormat.JSON
+			
+			dialog {
+				text = getString(R.string.crash_text)
+				title = getString(R.string.error_occurred)
+				positiveButtonText = getString(R.string.close)
+				resIcon = R.drawable.ic_alert_outline
+				resTheme = android.R.style.Theme_Material_Light_Dialog_Alert
+			}
+		}
+	}
+
+	@WorkerThread
+	private fun setupDatabaseObservers() {
+		val tracker = database.get().invalidationTracker
+		databaseObserversProvider.get().forEach {
+			tracker.addObserver(it)
+		}
+	}
+
+	private fun setupActivityLifecycleCallbacks() {
+		activityLifecycleCallbacks.forEach {
+			registerActivityLifecycleCallbacks(it)
+		}
+	}
+
+	private fun cleanupDownloadedExtensionApks() {
+		runCatching {
+			val pendingIds = settings.pendingExtensionDownloads.toLongArray()
+			if (pendingIds.isNotEmpty()) {
+				val downloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+				downloadManager.remove(*pendingIds)
+			}
+			settings.pendingExtensionDownloads = emptySet()
+			getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+				?.listFiles()
+				?.forEach { file ->
+					if (file.isFile && file.name.endsWith(".apk", ignoreCase = true)) {
+						file.delete()
+					}
+				}
+		}
+	}
+}

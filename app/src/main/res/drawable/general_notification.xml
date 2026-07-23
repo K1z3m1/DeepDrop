@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generic app notification icon: the app's own bold "D" mark, matching the launcher glyph.
+     Vector instead of a bundled raster icon — one file covers every density and DPI. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+	android:width="24dp"
+	android:height="24dp"
+	android:viewportWidth="960"
+	android:viewportHeight="960">
+	<path
+		android:fillColor="@android:color/white"
+		android:pathData="M260,760L260,200L460,200Q593,200 676.5,283.5Q760,367 760,480Q760,593 676.5,676.5Q593,760 460,760L260,760ZM460,320L380,320L380,640L460,640Q543,640 601.5,591.5Q660,543 660,480Q660,417 601.5,368.5Q543,320 460,320Z" />
+</vector>

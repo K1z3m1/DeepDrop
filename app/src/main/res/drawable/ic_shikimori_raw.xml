@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shikimori mark, styled after the site's name (the Cyrillic letter "Ш" — "Sh"), drawn flat
+     to match how other tracker marks (ic_anilist, ic_mal) are done in this app: a single-colour
+     vector rather than a bundled raster logo. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+	android:width="24dp"
+	android:height="24dp"
+	android:tint="?colorControlNormal"
+	android:viewportWidth="24"
+	android:viewportHeight="24">
+	<path
+		android:fillColor="#FF000000"
+		android:pathData="M4,4L8,4L8,16L11,16L11,4L15,4L15,16L18,16L18,4L20,4L20,20L4,20Z" />
+</vector>
