@@ -1,0 +1,245 @@
+package org.koitharu.kotatsu.settings
+
+import android.content.Intent
+import android.os.Bundle
+import android.view.View
+import android.view.ViewGroup
+import androidx.activity.viewModels
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.isVisible
+import androidx.core.view.updateLayoutParams
+import androidx.core.view.updatePaddingRelative
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentFactory
+import androidx.fragment.app.commit
+import androidx.fragment.app.commitNow
+import androidx.lifecycle.lifecycleScope
+import androidx.preference.Preference
+import androidx.preference.PreferenceFragmentCompat
+import com.google.android.material.appbar.AppBarLayout
+import com.google.android.material.appbar.CollapsingToolbarLayout
+import androidx.window.layout.FoldingFeature
+import androidx.window.layout.WindowInfoTracker
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
+import org.koitharu.kotatsu.R
+import org.koitharu.kotatsu.core.model.MangaSource
+import org.koitharu.kotatsu.core.nav.AppRouter
+import org.koitharu.kotatsu.core.ui.BaseActivity
+import org.koitharu.kotatsu.core.util.ext.buildBundle
+import org.koitharu.kotatsu.core.util.ext.end
+import org.koitharu.kotatsu.core.util.ext.observe
+import org.koitharu.kotatsu.core.util.ext.observeEvent
+import org.koitharu.kotatsu.core.util.ext.start
+import org.koitharu.kotatsu.core.util.ext.bindExpandedSearchTitle
+import org.koitharu.kotatsu.core.util.ext.textAndVisible
+import android.widget.TextView
+import org.koitharu.kotatsu.databinding.ActivitySettingsBinding
+import org.koitharu.kotatsu.main.ui.owners.AppBarOwner
+import org.koitharu.kotatsu.settings.discord.DiscordSettingsFragment
+import org.koitharu.kotatsu.settings.search.SettingsItem
+import org.koitharu.kotatsu.settings.search.SettingsSearchFragment
+import org.koitharu.kotatsu.settings.search.SettingsSearchViewModel
+import org.koitharu.kotatsu.settings.sources.ExtensionsSettingsFragment
+import org.koitharu.kotatsu.settings.sources.SourceSettingsFragment
+import org.koitharu.kotatsu.settings.tracker.TrackerSettingsFragment
+
+@AndroidEntryPoint
+class SettingsActivity :
+	BaseActivity<ActivitySettingsBinding>(),
+	PreferenceFragmentCompat.OnPreferenceStartFragmentCallback,
+	AppBarOwner {
+
+	override val appBar: AppBarLayout
+		get() = viewBinding.appbar
+
+	private val isMasterDetails
+		get() = viewBinding.containerMaster != null
+
+	private val viewModel: SettingsSearchViewModel by viewModels()
+
+	override fun setTitle(title: CharSequence?) {
+		super.setTitle(title)
+		findViewById<CollapsingToolbarLayout>(R.id.collapsingToolbarLayout)?.title = title
+	}
+
+	override fun setTitle(titleId: Int) {
+		setTitle(getText(titleId))
+	}
+
+	override fun onCreate(savedInstanceState: Bundle?) {
+		super.onCreate(savedInstanceState)
+		// Settings always enters as a full-screen slide from the left, and (see finish())
+		// leaves back out to the left the same way it came in — one consistent axis.
+		@Suppress("DEPRECATION")
+		overridePendingTransition(R.anim.settings_slide_in_left_edge, R.anim.settings_slide_out_right_parallax)
+		setContentView(ActivitySettingsBinding.inflate(layoutInflater))
+		setDisplayHomeAsUp(isEnabled = true, showUpAsClose = false)
+		val fm = supportFragmentManager
+		val currentFragment = fm.findFragmentById(R.id.container)
+		if (currentFragment == null || (isMasterDetails && currentFragment is RootSettingsFragment)) {
+			openDefaultFragment()
+		}
+		if (isMasterDetails && fm.findFragmentById(R.id.container_master) == null) {
+			supportFragmentManager.commit {
+				setReorderingAllowed(true)
+				replace(R.id.container_master, RootSettingsFragment())
+			}
+		}
+		viewModel.isSearchActive.observe(this, ::toggleSearchMode)
+		viewModel.onNavigateToPreference.observeEvent(this, ::navigateToPreference)
+		observeFoldHinge()
+	}
+
+	override fun onApplyWindowInsets(v: View, insets: WindowInsetsCompat): WindowInsetsCompat {
+		val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+		val isTablet = viewBinding.containerMaster != null
+		viewBinding.appbar.updatePaddingRelative(
+			start = bars.start(v),
+			top = bars.top,
+			end = if (isTablet) 0 else bars.end(v),
+		)
+		viewBinding.textViewHeader?.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+			marginEnd = bars.end(v)
+			topMargin = bars.top
+		}
+		return insets
+	}
+
+	/**
+	 * While the search action view is expanded, Toolbar hides the CollapsingToolbarLayout's title
+	 * anchor, so the CTL cannot draw the title even in the expanded position. Swap in a real
+	 * TextView at the expanded title's exact position for the duration of the search.
+	 */
+	private fun applySearchTitleOverlay(isSearchActive: Boolean) {
+		val ctl = findViewById<CollapsingToolbarLayout>(R.id.collapsingToolbarLayout) ?: return
+		findViewById<TextView>(R.id.text_title_search)?.bindExpandedSearchTitle(ctl, ctl.title, isSearchActive)
+	}
+
+	override fun onPreferenceStartFragment(
+		caller: PreferenceFragmentCompat,
+		pref: Preference,
+	): Boolean {
+		val fragmentName = pref.fragment ?: return false
+		openFragment(
+			fragmentClass = FragmentFactory.loadFragmentClass(classLoader, fragmentName),
+			args = pref.peekExtras(),
+			isFromRoot = false,
+		)
+		return true
+	}
+
+	fun setSectionTitle(title: CharSequence?) {
+		viewBinding.textViewHeader?.apply {
+			textAndVisible = title
+		} ?: setTitle(title ?: getString(R.string.settings))
+	}
+
+	fun openFragment(fragmentClass: Class<out Fragment>, args: Bundle?, isFromRoot: Boolean) {
+		viewModel.discardSearch()
+		val fm = supportFragmentManager
+		val current = fm.findFragmentById(R.id.container)
+		val hasFragment = current != null
+		// Plain cross-fade instead of the M3 shared-axis slide/scale: cheaper to render every
+		// navigation (no offscreen transform layers) and matches the flatter, simpler look.
+		current?.apply {
+			exitTransition = android.transition.Fade()
+			reenterTransition = android.transition.Fade()
+		}
+		val fragment = fm.fragmentFactory.instantiate(classLoader, fragmentClass.name).apply {
+			arguments = args
+			enterTransition = android.transition.Fade()
+			returnTransition = android.transition.Fade()
+		}
+		fm.commit {
+			setReorderingAllowed(true)
+			replace(R.id.container, fragment)
+			if (!isMasterDetails || (hasFragment && !isFromRoot)) {
+				addToBackStack(null)
+			}
+		}
+	}
+
+	private fun toggleSearchMode(isEnabled: Boolean) {
+		applySearchTitleOverlay(isEnabled)
+		if (isEnabled &&
+			supportFragmentManager.findFragmentById(R.id.container_search) == null
+		) {
+			supportFragmentManager.commitNow {
+				setReorderingAllowed(true)
+				add(R.id.container_search, SettingsSearchFragment::class.java, null)
+			}
+		}
+		viewBinding.containerSearch.isVisible = isEnabled
+		if (!isEnabled) {
+			invalidateOptionsMenu()
+		}
+	}
+
+	private fun openDefaultFragment() {
+		val fragment = when (intent?.action) {
+			AppRouter.ACTION_READER -> ReaderSettingsFragment()
+			AppRouter.ACTION_SUGGESTIONS -> SuggestionsSettingsFragment()
+			AppRouter.ACTION_TRACKER -> TrackerSettingsFragment()
+			AppRouter.ACTION_SOURCES -> ExtensionsSettingsFragment()
+			AppRouter.ACTION_MANAGE_DISCORD -> DiscordSettingsFragment()
+			AppRouter.ACTION_PROXY -> ProxySettingsFragment()
+			AppRouter.ACTION_MANAGE_DOWNLOADS -> DownloadsSettingsFragment()
+			AppRouter.ACTION_SOURCE -> SourceSettingsFragment.newInstance(
+				MangaSource(intent.getStringExtra(AppRouter.KEY_SOURCE)),
+			)
+
+			AppRouter.ACTION_SETTINGS_SECTION -> intent.getStringExtra(AppRouter.KEY_FRAGMENT_CLASS)?.let { name ->
+				supportFragmentManager.fragmentFactory.instantiate(classLoader, name)
+			}
+
+			else -> null
+		} ?: if (isMasterDetails) AppearanceSettingsFragment() else RootSettingsFragment()
+		supportFragmentManager.commit {
+			setReorderingAllowed(true)
+			replace(R.id.container, fragment)
+		}
+	}
+
+	private fun navigateToPreference(item: SettingsItem) {
+		val args = buildBundle(1) {
+			putString(ARG_PREF_KEY, item.key)
+		}
+		openFragment(item.fragmentClass, args, true)
+		// Ask the target Compose screen to flash the matching row once (matched by title).
+		org.koitharu.kotatsu.settings.compose.SettingsSearchHighlight.request(item.title.toString())
+	}
+
+	private fun observeFoldHinge() {
+		val spacer = viewBinding.foldHingeSpacer ?: return
+		lifecycleScope.launch {
+			WindowInfoTracker.getOrCreate(this@SettingsActivity)
+				.windowLayoutInfo(this@SettingsActivity)
+				.collect { layoutInfo ->
+					val hingeWidth = layoutInfo.displayFeatures
+						.filterIsInstance<FoldingFeature>()
+						.firstOrNull { it.isSeparating && it.orientation == FoldingFeature.Orientation.VERTICAL }
+						?.bounds
+						?.width()
+						?: 0
+					spacer.isVisible = hingeWidth > 0
+					spacer.updateLayoutParams {
+						width = hingeWidth
+					}
+				}
+		}
+	}
+
+	override fun finish() {
+		super.finish()
+		// Mirror the entry animation so Settings always slides back out to the left,
+		// with the previous screen sliding back in from the right underneath it.
+		@Suppress("DEPRECATION")
+		overridePendingTransition(R.anim.settings_slide_in_right_parallax, R.anim.settings_slide_out_left_edge)
+	}
+
+	companion object {
+
+		const val ARG_PREF_KEY = "pref_key"
+	}
+}

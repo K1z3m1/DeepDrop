@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  DeepDrop launcher icon — a single bold "D" glyph, kept within the 66dp adaptive-icon
+  safe zone so it isn't clipped by circular/squircle/rounded-square launcher masks.
+  Pure vector (no raster art), and shared for light/dark/monochrome — the background
+  layer (ic_launcher_background, pure black) supplies the rest of the look.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+  <path
+      android:pathData="M28,24 L40,24 A30,30 0 0 1 40,84 L28,84 Z M40,36 A18,18 0 0 1 40,72 L40,36 Z"
+      android:fillColor="#FFFFFF"
+      android:fillType="evenOdd" />
+</vector>

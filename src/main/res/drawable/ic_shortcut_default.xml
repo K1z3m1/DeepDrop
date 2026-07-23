@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fallback icon for a manga shortcut whose favicon failed to load: the app's own bold "D"
+     mark (matching the launcher glyph) on a filled brand-colour circle. Vector, no raster asset. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+	android:width="108dp"
+	android:height="108dp"
+	android:viewportWidth="108"
+	android:viewportHeight="108">
+	<path
+		android:fillColor="@color/kotatsu_primary"
+		android:pathData="M54,4A50,50 0,1 1,54 104A50,50 0,1 1,54 4Z" />
+	<path
+		android:fillColor="@color/kotatsu_onPrimary"
+		android:pathData="M28,24 L40,24 A30,30 0 0 1 40,84 L28,84 Z M40,36 A18,18 0 0 1 40,72 L40,36 Z" />
+</vector>
