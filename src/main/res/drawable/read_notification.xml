@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "Chapter marked as read" notification icon: a plain checkmark. Vector, no raster asset. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+	android:width="24dp"
+	android:height="24dp"
+	android:viewportWidth="960"
+	android:viewportHeight="960">
+	<path
+		android:fillColor="@android:color/white"
+		android:pathData="M389,684L191,486L243,434L389,580L717,252L769,304L389,684Z" />
+</vector>
