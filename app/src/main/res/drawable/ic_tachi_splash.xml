@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- White drop on the splash background; reads on any theme (blue / dark). -->
+    <item
+        android:width="120dp"
+        android:height="120dp"
+        android:drawable="@drawable/ic_splash_drop"
+        android:gravity="center" />
+</layer-list>

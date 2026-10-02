@@ -1,0 +1,32 @@
+DROP VIEW IF EXISTS animeupdatesView;
+CREATE VIEW animeupdatesView AS
+SELECT
+    animes._id AS animeId,
+    animes.title AS animeTitle,
+    episodes._id AS episodeId,
+    episodes.name AS episodeName,
+    episodes.scanlator,
+    episodes.seen,
+    episodes.bookmark,
+    episodes.fillermark,
+    episodes.last_second_seen,
+    episodes.total_seconds AS totalSeconds,
+    animes.source,
+    animes.favorite,
+    animes.thumbnail_url AS thumbnailUrl,
+    animes.cover_last_modified AS coverLastModified,
+    episodes.date_upload AS dateUpload,
+    episodes.date_fetch AS datefetch
+FROM animes JOIN episodes
+ON animes._id = episodes.anime_id
+WHERE favorite = 1
+AND date_fetch > date_added
+AND (
+    NOT EXISTS (SELECT 1 FROM animes_categories AC WHERE AC.anime_id = animes._id)
+    OR EXISTS (
+        SELECT 1 FROM animes_categories AC
+        JOIN categories C ON C._id = AC.category_id
+        WHERE AC.anime_id = animes._id AND C.hidden = 0
+    )
+)
+ORDER BY date_fetch DESC;
