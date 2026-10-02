@@ -1,0 +1,210 @@
+package eu.kanade.tachiyomi.ui.category.manga
+
+import androidx.compose.runtime.Immutable
+import cafe.adriel.voyager.core.model.StateScreenModel
+import cafe.adriel.voyager.core.model.screenModelScope
+import dev.icerock.moko.resources.StringResource
+import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
+import kotlinx.collections.immutable.toImmutableSet
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import tachiyomi.domain.category.manga.interactor.CreateMangaCategoryWithName
+import tachiyomi.domain.category.manga.interactor.DeleteMangaCategory
+import tachiyomi.domain.category.manga.interactor.GetMangaCategories
+import tachiyomi.domain.category.manga.interactor.GetVisibleMangaCategories
+import tachiyomi.domain.category.manga.interactor.HideMangaCategory
+import tachiyomi.domain.category.manga.interactor.RenameMangaCategory
+import tachiyomi.domain.category.manga.interactor.ReorderMangaCategory
+import tachiyomi.domain.category.model.Category
+import tachiyomi.domain.library.service.LibraryPreferences
+import tachiyomi.i18n.MR
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
+
+class MangaCategoryScreenModel(
+    private val getAllCategories: GetMangaCategories = Injekt.get(),
+    private val getVisibleCategories: GetVisibleMangaCategories = Injekt.get(),
+    private val createCategoryWithName: CreateMangaCategoryWithName = Injekt.get(),
+    private val hideCategory: HideMangaCategory = Injekt.get(),
+    private val deleteCategory: DeleteMangaCategory = Injekt.get(),
+    private val reorderCategory: ReorderMangaCategory = Injekt.get(),
+    private val renameCategory: RenameMangaCategory = Injekt.get(),
+    private val libraryPreferences: LibraryPreferences = Injekt.get(),
+) : StateScreenModel<MangaCategoryScreenState>(MangaCategoryScreenState.Loading) {
+
+    private val _events: Channel<MangaCategoryEvent> = Channel()
+    val events = _events.receiveAsFlow()
+
+    init {
+        screenModelScope.launch {
+            val allCategories = if (libraryPreferences.hideHiddenCategoriesSettings().get()) {
+                getVisibleCategories.subscribe()
+            } else {
+                getAllCategories.subscribe()
+            }
+
+            combine(
+                allCategories,
+                libraryPreferences.autoHideMangaCategories().changes(),
+                libraryPreferences.categoryReadingModes().changes(),
+            ) { categories, autoHideIds, readingModes ->
+                MangaCategoryScreenState.Success(
+                    categories = categories
+                        .filterNot(Category::isSystemCategory)
+                        .toImmutableList(),
+                    autoHideCategoryIds = autoHideIds
+                        .mapNotNull(String::toLongOrNull)
+                        .toImmutableSet(),
+                    categoryReadingModes = readingModes
+                        .mapNotNull { entry ->
+                            val (id, mode) = entry.split(":", limit = 2).takeIf { it.size == 2 }
+                                ?: return@mapNotNull null
+                            (id.toLongOrNull() ?: return@mapNotNull null) to
+                                (mode.toIntOrNull() ?: return@mapNotNull null)
+                        }
+                        .toMap()
+                        .toImmutableMap(),
+                )
+            }.collectLatest { newState ->
+                mutableState.update { newState }
+            }
+        }
+    }
+
+    fun toggleAutoHide(category: Category) {
+        screenModelScope.launch {
+            val pref = libraryPreferences.autoHideMangaCategories()
+            val key = category.id.toString()
+            val current = pref.get()
+            val nowPrivate = key !in current
+            pref.set(if (nowPrivate) current + key else current - key)
+            // Making a category private hides it right away, so it starts hidden.
+            if (nowPrivate && !category.hidden) {
+                hideCategory.await(category)
+            }
+        }
+    }
+
+    fun setCategoryReadingMode(category: Category, mode: ReadingMode) {
+        screenModelScope.launch {
+            val pref = libraryPreferences.categoryReadingModes()
+            val others = pref.get().filterNot { it.startsWith("${category.id}:") }.toSet()
+            pref.set(
+                if (mode == ReadingMode.DEFAULT) others else others + "${category.id}:${mode.flagValue}",
+            )
+        }
+    }
+
+    fun createCategory(name: String) {
+        screenModelScope.launch {
+            when (createCategoryWithName.await(name)) {
+                is CreateMangaCategoryWithName.Result.InternalError -> _events.send(
+                    MangaCategoryEvent.InternalError,
+                )
+
+                else -> {}
+            }
+        }
+    }
+
+    fun hideCategory(category: Category) {
+        screenModelScope.launch {
+            when (hideCategory.await(category)) {
+                is HideMangaCategory.Result.InternalError -> _events.send(
+                    MangaCategoryEvent.InternalError,
+                )
+                else -> {}
+            }
+        }
+    }
+
+    fun deleteCategory(categoryId: Long) {
+        screenModelScope.launch {
+            when (deleteCategory.await(categoryId = categoryId)) {
+                is DeleteMangaCategory.Result.InternalError -> _events.send(
+                    MangaCategoryEvent.InternalError,
+                )
+                else -> {}
+            }
+        }
+    }
+
+    fun changeOrder(category: Category, newIndex: Int) {
+        screenModelScope.launch {
+            when (reorderCategory.await(category, newIndex)) {
+                is ReorderMangaCategory.Result.InternalError -> _events.send(
+                    MangaCategoryEvent.InternalError,
+                )
+                else -> {}
+            }
+        }
+    }
+
+    fun renameCategory(category: Category, name: String) {
+        screenModelScope.launch {
+            when (renameCategory.await(category, name)) {
+                is RenameMangaCategory.Result.InternalError -> _events.send(
+                    MangaCategoryEvent.InternalError,
+                )
+                else -> {}
+            }
+        }
+    }
+
+    fun showDialog(dialog: MangaCategoryDialog) {
+        mutableState.update {
+            when (it) {
+                MangaCategoryScreenState.Loading -> it
+                is MangaCategoryScreenState.Success -> it.copy(dialog = dialog)
+            }
+        }
+    }
+
+    fun dismissDialog() {
+        mutableState.update {
+            when (it) {
+                MangaCategoryScreenState.Loading -> it
+                is MangaCategoryScreenState.Success -> it.copy(dialog = null)
+            }
+        }
+    }
+}
+
+sealed interface MangaCategoryDialog {
+    data object Create : MangaCategoryDialog
+    data class Rename(val category: Category) : MangaCategoryDialog
+    data class Delete(val category: Category) : MangaCategoryDialog
+}
+
+sealed interface MangaCategoryEvent {
+    sealed class LocalizedMessage(val stringRes: StringResource) : MangaCategoryEvent
+    data object InternalError : LocalizedMessage(MR.strings.internal_error)
+}
+
+sealed interface MangaCategoryScreenState {
+
+    @Immutable
+    data object Loading : MangaCategoryScreenState
+
+    @Immutable
+    data class Success(
+        val categories: ImmutableList<Category>,
+        val autoHideCategoryIds: ImmutableSet<Long>,
+        val categoryReadingModes: ImmutableMap<Long, Int> = persistentMapOf(),
+        val dialog: MangaCategoryDialog? = null,
+    ) : MangaCategoryScreenState {
+
+        val isEmpty: Boolean
+            get() = categories.isEmpty()
+    }
+}

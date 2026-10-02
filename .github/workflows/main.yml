@@ -1,0 +1,79 @@
+name: Build app
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build ${{ matrix.variant }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: debug
+            task: assembleDebug
+            output: app/build/outputs/apk/debug
+          - variant: release
+            task: assembleRelease
+            output: app/build/outputs/apk/release
+
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up JDK
+        uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # v4.7.0
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Set up gradle
+        uses: gradle/actions/setup-gradle@94baf225fe0a508e581a564467443d0e2379123b # v4.3.0
+
+      # Fixes "./gradlew: Permission denied" (exit code 126)
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      # Uncomment to enforce code formatting
+      # - name: Check code format
+      #   run: ./gradlew spotlessCheck
+
+      # JitPack builds some dependencies on demand, so the first request can
+      # fail with "Could not find ..." - retry a few times.
+      - name: Build app (${{ matrix.variant }})
+        run: |
+          for attempt in 1 2 3; do
+            ./gradlew ${{ matrix.task }} --stacktrace && exit 0
+            echo "Attempt $attempt failed, retrying in 30s..."
+            sleep 30
+          done
+          exit 1
+
+      - name: Upload APKs (${{ matrix.variant }})
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: apk-${{ matrix.variant }}-${{ github.sha }}
+          path: ${{ matrix.output }}/*.apk
+          if-no-files-found: error
+
+      - name: Upload mapping
+        if: matrix.variant == 'release'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: mapping-${{ github.sha }}
+          path: app/build/outputs/mapping/release
+          if-no-files-found: ignore
