@@ -1,0 +1,31 @@
+package eu.kanade.presentation.more
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
+import eu.kanade.tachiyomi.R
+
+@Composable
+fun LogoHeader() {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        AsyncImage(
+            model = R.mipmap.ic_launcher,
+            contentDescription = null,
+            modifier = Modifier
+                .padding(vertical = 56.dp)
+                .size(64.dp),
+        )
+
+        HorizontalDivider()
+    }
+}
