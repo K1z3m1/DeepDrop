@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- canRetrieveWindowContent is intentionally omitted: NovaAccessibilityService
+     only reads event.packageName from TYPE_WINDOW_STATE_CHANGED events to know
+     which app is foreground and dispatches
+     synthetic gestures for touch pass-through. It never calls
+     getRootInActiveWindow() or inspects any AccessibilityNodeInfo, so it has
+     no need to read screen/window content — requesting that flag would only
+     widen what this service is trusted to do without a matching feature. -->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowStateChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagDefault"
+    android:canPerformGestures="true"
+    android:description="@string/accessibility_service_description"
+    android:notificationTimeout="0"
+    android:settingsActivity="com.firstt175.novaframe.ui.MainActivity" />
