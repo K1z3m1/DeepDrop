@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NovaFrame</string>
+    <string name="app_description">NovaFrame — แลนเชอร์เกม + เฟรมเจนเนอเรชันผ่าน Vulkan</string>
+    <string name="credits_title">เครดิต</string>
+    <string name="credits_section_channel">ช่อง</string>
+    <string name="credits_section_base">โปรเจกต์ต้นทาง</string>
+    <string name="credits_section_license">สัญญาอนุญาต</string>
+    <string name="credits_license_body">อยู่ภายใต้สัญญาอนุญาต GNU GPL v3.0 สืบทอดจากโปรเจกต์ต้นทาง สามารถขอซอร์สโค้ดได้; แตะด้านบนเพื่ออ่านสัญญาอนุญาตฉบับเต็ม</string>
+    <string name="accessibility_service_label">NovaFrame ส่งต่อการสัมผัส</string>
+    <string name="accessibility_service_description">ส่งต่อการสัมผัสจากโอเวอร์เลย์ของ NovaFrame ไปยังแอปที่อยู่ด้านล่าง เพื่อให้คุณเล่นเกมได้ในขณะที่โอเวอร์เลย์สร้างเฟรมกำลังแสดงอยู่</string>
+
+    <string name="notif_channel_session">เซสชัน NovaFrame</string>
+    <string name="notif_session_title">เซสชัน NovaFrame กำลังทำงาน</string>
+    <string name="notif_session_text">โอเวอร์เลย์สร้างเฟรมกำลังทำงานอยู่ แตะเพื่อหยุด</string>
+
+    <string name="legal_title">ประกาศทางกฎหมาย</string>
+    <string name="legal_warning_body"><![CDATA[
+        <b>คำเตือน — คุณต้องเป็นเจ้าของ Lossless Scaling บน Steam</b><br/><br/>
+        แอปนี้ต้องใช้ไฟล์ <b>Lossless.dll</b> จาก <b>Lossless Scaling</b> โดย THS
+        คุณต้องเลือกไฟล์นี้จาก <b>สำเนาที่คุณซื้อถูกต้องตามกฎหมาย</b> ของ Lossless Scaling บน Steam เท่านั้น<br/><br/>
+        <b>ห้ามดาวน์โหลด Lossless.dll จากแหล่งอื่นที่ไม่ใช่ Steam</b> การทำเช่นนั้นถือเป็นการละเมิดลิขสิทธิ์<br/><br/>
+        ผู้พัฒนาแอปนี้:<br/>
+        • <b>ไม่</b>แจกจ่าย Lossless.dll<br/>
+        • <b>ไม่มีส่วนเกี่ยวข้อง</b>กับ THS หรือ Lossless Scaling<br/>
+        • <b>ไม่รับผิดชอบ</b>ต่อการใช้งานแอปนี้ในทางที่ผิด<br/><br/>
+        การกดยืนยันแปลว่าคุณยืนยันว่าคุณมีสิทธิ์ใช้งาน Lossless Scaling บน Steam อย่างถูกต้อง
+    ]]></string>
+    <string name="legal_accept">ฉันเป็นเจ้าของสิทธิ์ Lossless Scaling — ดำเนินการต่อ</string>
+    <string name="legal_decline">ยกเลิก</string>
+
+    <string name="nav_dll">เลือกไฟล์ DLL</string>
+    <string name="nav_framegen_pacing">การสร้างเฟรมและการจัดจังหวะ</string>
+    <string name="nav_overlay_display">โอเวอร์เลย์และการแสดงผล</string>
+
+    <!-- Section eyebrows -->
+    <string name="section_frame_generation">การสร้างเฟรม</string>
+
+    <string name="dll_status_none">ยังไม่ได้เลือกไฟล์ Lossless.dll</string>
+    <string name="dll_pick_button">เลือก Lossless.dll</string>
+    <string name="dll_reextract_button">แตกไฟล์เชเดอร์ใหม่</string>
+
+    <string name="section_framegen_backend">แบ็กเอนด์การสร้างเฟรม</string>
+    <string name="backend_lsfg_dll">Lossless.dll</string>
+    <string name="backend_ncnn_ai">โมเดล AI (ncnn)</string>
+
+    <string name="ai_model_test_load_button">ทดสอบโหลดโมเดล</string>
+
+    <string name="param_multiplier">ตัวคูณเฟรม</string>
+    <string name="param_multiplier_desc">จำนวนเฟรมที่สร้างต่อเฟรมจริงหนึ่งเฟรม 2 = แทรกเฟรมหนึ่งเฟรมระหว่างแต่ละคู่ แนะนำ 3–4 สำหรับมือถือ</string>
+    <string name="param_flow_scale">สเกลการประมาณการเคลื่อนไหว</string>
+    <string name="param_flow_scale_desc">ความละเอียดในการประมาณการเคลื่อนไหวภายใน ยิ่งต่ำยิ่งเร็วแต่แม่นยำน้อยลง</string>
+    <string name="param_render_resolution_scale">ความละเอียดในการเรนเดอร์</string>
+    <string name="param_render_resolution_scale_desc">เปอร์เซ็นต์ของความละเอียดจริงของจอที่จะใช้จับภาพและเรนเดอร์ ค่ายิ่งต่ำยิ่งลดภาระ GPU ในทุกขั้นตอน ทั้งการจับภาพ การสร้างเฟรม และการประมวลผลภายหลัง แลกกับภาพที่นวลขึ้น มีผลเมื่อเริ่มจับภาพครั้งถัดไป</string>
+    <string name="param_performance_mode">โหมดประสิทธิภาพ (LSFG 3.1P)</string>
+    <string name="param_performance_mode_desc">ใช้เชเดอร์รุ่นที่เร็วขึ้นแต่คุณภาพต่ำลง แนะนำสำหรับ GPU ระดับกลาง</string>
+    <string name="param_hdr">โหมด HDR</string>
+    <string name="param_hdr_desc">เปิดใช้เฉพาะเมื่ออุปกรณ์และเกมของคุณส่งออกภาพแบบ HDR</string>
+    <string name="param_framegen_fp16">เชเดอร์สร้างเฟรมแบบ FP16</string>
+    <string name="param_framegen_fp16_desc">ใช้เชเดอร์ความละเอียดครึ่งหนึ่งที่คอมไพล์ไว้ล่วงหน้าใน Lossless.dll แทนชุด FP32 ความละเอียดเต็ม ลดภาระ GPU และแบนด์วิดท์หน่วยความจำ คุณภาพแทบไม่ต่างกัน หากเกิดปัญหาจะสลับกลับไปใช้ FP32 โดยอัตโนมัติ</string>
+
+    <string name="language_menu_item">ภาษา</string>
+    <string name="language_system">ค่าเริ่มต้นของระบบ</string>
+    <string name="language_english">English</string>
+    <string name="language_thai">ไทย</string>
+    <string name="language_apply">นำไปใช้</string>
+
+    <string name="credits_section_myproject">โปรเจกต์ของฉัน</string>
+    <string name="credits_section_libraries">ไลบรารีจากบุคคลที่สาม</string>
+    <string name="credits_free_notice_title">แอปนี้ฟรี 100%</string>
+    <string name="credits_free_notice_body">NovaFrame เป็นโอเพนซอร์สและฟรีตลอดไป (สัญญาอนุญาต GPL v3.0) หากคุณต้องจ่ายเงินเพื่อซื้อแอปนี้ ไม่ว่าจะจากหน้าร้านค้า ผู้ขายใน Telegram/Discord หรือที่ใดก็ตาม แสดงว่าไฟล์นั้นไม่ได้มาจากผู้พัฒนาโดยตรง และอาจถูกดัดแปลงหรือแฝงมัลแวร์มาด้วย โปรดโหลดจากลิงก์ทางการที่แสดงในหน้านี้เท่านั้น</string>
+    <string name="credits_build_official">ยืนยันแล้วว่าเป็นบิลด์ทางการ</string>
+    <string name="credits_build_unofficial">บิลด์นี้ไม่ได้เซ็นชื่อโดยผู้พัฒนาต้นฉบับ หากไม่แน่ใจว่าได้ไฟล์นี้มาจากไหน แนะนำให้โหลดใหม่จากลิงก์ทางการด้านบน</string>
+
+    <string name="perm_capture_pick_app">ในหน้าต่างถัดไปให้เลือก \"แอปเดียว\" แล้วเลือกเกม (ไม่ใช่ \"ทั้งหน้าจอ\")</string>
+    <string name="perm_capture_denied">การจับภาพหน้าจอถูกปฏิเสธ NovaFrame ไม่สามารถทำงานได้หากไม่มีสิทธิ์นี้</string>
+
+    <string name="crash_dialog_dismiss">ปิด</string>
+
+    <!-- Game launcher screen -->
+    <string name="toast_no_launch_button">ไม่พบปุ่มเปิดสำหรับ %1$s</string>
+    <string name="empty_no_apps_title">ไม่พบแอปที่เปิดได้</string>
+    <string name="action_settings">ตั้งค่า</string>
+    <string name="action_app_info">ข้อมูลแอป</string>
+    <string name="dialog_app_settings_title">ตั้งค่า • %1$s</string>
+    <string name="status_no_permission">○ ยังไม่พบสิทธิ์ Shizuku/ADB</string>
+    <string name="display_original_format">จอเดิม: %1$d×%2$d @ %3$ddpi</string>
+    <string name="display_calculated_format">คำนวณ: %1$d×%2$d @ %3$ddpi</string>
+    <string name="display_original_not_saved">ยังไม่ได้บันทึกค่าจอเดิม</string>
+    <string name="disable_animations_title">ปิด System Animation</string>
+    <string name="keep_awake_title">กันจอดับระหว่างชาร์จ</string>
+    <string name="limit_background_title">จำกัดแอพพื้นหลัง: 1 แอพ</string>
+    <string name="toast_shizuku_grant_failed">Shizuku ให้สิทธิ์ไม่สำเร็จ</string>
+    <string name="toast_no_permission_copied_adb">ยังไม่ได้รับสิทธิ์ — คัดลอกคำสั่ง ADB แล้ว</string>
+    <string name="toast_read_display_failed">อ่านความละเอียด/DPI จาก ADB ไม่สำเร็จ</string>
+    <string name="action_save">บันทึก</string>
+    <string name="toast_adb_copied_with_command">คัดลอกคำสั่ง ADB แล้ว: %1$s</string>
+    <string name="action_read_real_display">อ่านจอจริง</string>
+
+    <!-- Credits screen — donate section -->
+    <string name="credits_donate_eyebrow">บริจาค</string>
+    <string name="credits_donate_title">สนับสนุนผู้พัฒนา</string>
+    <string name="credits_donate_message">ขอบคุณที่สนับสนุนนะครับ เงินทุกบาทของคุณจะไม่สูญเปล่า — ถูกนำไปใช้เป็นทุนการศึกษาให้กับน้องๆ ครับ</string>
+
+    <!-- Device profile screen -->
+    <string name="profile_title">โปรไฟล์อุปกรณ์</string>
+    <string name="profile_button">โปรไฟล์</string>
+    <string name="profile_section_device">อุปกรณ์</string>
+    <string name="profile_model">รุ่นเครื่อง</string>
+    <string name="profile_android">Android</string>
+    <string name="profile_soc">ชิปเซ็ต</string>
+    <string name="profile_abi">ABI</string>
+    <string name="profile_section_access">สิทธิ์การเข้าถึง</string>
+    <string name="profile_root">Root</string>
+    <string name="profile_shizuku">Shizuku</string>
+    <string name="profile_section_cpu">ซีพียู</string>
+    <string name="profile_cpu_load">โหลด</string>
+    <string name="profile_cpu_temp">อุณหภูมิ</string>
+    <string name="profile_section_temps">อุณหภูมิ</string>
+    <string name="profile_cpu_temp_label">CPU</string>
+    <string name="profile_gpu_temp">อุณหภูมิ GPU</string>
+    <string name="profile_battery_temp">แบตเตอรี่</string>
+    <string name="profile_skin_temp">ผิวเครื่อง</string>
+    <string name="profile_npu_temp">NPU</string>
+    <string name="profile_thermal_status">การลดความร้อน (Throttle)</string>
+    <string name="profile_thermal_none">ไม่มี</string>
+    <string name="profile_thermal_light">เล็กน้อย</string>
+    <string name="profile_thermal_moderate">ปานกลาง</string>
+    <string name="profile_thermal_severe">รุนแรง</string>
+    <string name="profile_thermal_critical">วิกฤต</string>
+    <string name="profile_temp_src_shizuku_hal">แหล่งข้อมูล: Shizuku เซนเซอร์ความร้อนของระบบ</string>
+    <string name="profile_temp_src_shizuku_sysfs">แหล่งข้อมูล: Shizuku โซนความร้อนของเคอร์เนล</string>
+    <string name="profile_temp_src_sysfs">แหล่งข้อมูล: โซนความร้อนของเคอร์เนล</string>
+    <string name="profile_temp_src_battery">แหล่งข้อมูล: เซนเซอร์แบตเตอรี่อย่างเดียว</string>
+    <string name="profile_temp_src_none">ไม่มีแหล่งข้อมูลอุณหภูมิ</string>
+    <string name="profile_temp_need_shizuku">เชื่อมต่อ Shizuku เพื่ออ่านอุณหภูมิ CPU, GPU และผิวเครื่อง ถ้าไม่เชื่อม Android จะซ่อนเซนเซอร์ส่วนใหญ่</string>
+    <string name="profile_cpu_cores">จำนวนคอร์</string>
+    <string name="profile_value_na">ไม่มีข้อมูล</string>
+    <string name="profile_cluster_freq_format">%1$d MHz (สูงสุด %2$d)</string>
+    <string name="profile_cluster_freq_max_only_format">สูงสุด %1$d MHz</string>
+    <string name="profile_section_memory">หน่วยความจำ</string>
+    <string name="profile_ram_used">ใช้ไป</string>
+    <string name="profile_ram_free">เหลือ</string>
+    <string name="profile_ram_total">ทั้งหมด</string>
+    <string name="profile_section_gpu">GPU / Vulkan</string>
+    <string name="profile_gpu_name">GPU</string>
+    <string name="profile_gpu_vendor">ผู้ผลิต</string>
+    <string name="profile_gpu_type">ประเภท</string>
+    <string name="profile_gpu_driver">ไดรเวอร์</string>
+    <string name="profile_gpu_clock">ความถี่</string>
+    <string name="profile_gpu_load">การใช้งาน</string>
+    <string name="profile_gpu_vram">VRAM (โดยประมาณ)</string>
+    <string name="profile_section_npu">NPU / ตัวเร่ง AI</string>
+    <string name="profile_npu_present">มีหรือไม่</string>
+    <string name="profile_npu_yes">มี</string>
+    <string name="profile_npu_no">ไม่พบ</string>
+    <string name="profile_npu_name">ชื่อ</string>
+    <string name="profile_npu_vendor">ผู้ผลิต</string>
+    <string name="profile_npu_source">ตรวจพบผ่าน</string>
+    <string name="profile_vulkan_api">Vulkan API</string>
+    <string name="profile_section_display">หน้าจอ</string>
+    <string name="profile_display_resolution">ความละเอียด</string>
+    <string name="profile_display_refresh">อัตรารีเฟรช</string>
+    <string name="profile_display_density">ความหนาแน่นจุดภาพ</string>
+
+    <string name="settings_title">การตั้งค่า</string>
+    <string name="settings_general">ทั่วไป</string>
+    <string name="settings_games">เกม</string>
+    <string name="settings_system">ระบบ</string>
+    <string name="nav_framegen_pacing_desc">การสร้างเฟรม, FPS และการจัดจังหวะ</string>
+    <string name="nav_overlay_display_desc">HUD, โหมดแสดงผล, การปรับภาพ และเสียง</string>
+    <string name="nav_setup">การตั้งค่าเริ่มต้น</string>
+    <string name="nav_setup_desc">สิทธิ์และการเตรียมระบบ</string>
+    <string name="nav_profile_desc">ข้อมูลเครื่องและการวิเคราะห์ระบบ</string>
+    <string name="nav_dll_desc">เลือก DLL และจัดการเชเดอร์</string>
+    <string name="nav_credits_desc">เครดิตโอเพนซอร์สและสัญญาอนุญาต</string>
+    <string name="appearance_title">รูปลักษณ์</string>
+    <string name="appearance_desc">ธีม ความโปร่งใส มุมโค้ง เงา และแอนิเมชัน</string>
+    <string name="appearance_theme">ธีม</string>
+    <string name="appearance_theme_desc">เลือกรูปแบบหน้าตาโดยรวม</string>
+    <string name="appearance_dark">ดำ</string>
+    <string name="appearance_light">ขาว</string>
+    <string name="appearance_style">สไตล์</string>
+    <string name="appearance_style_desc">ปกติ = แบบทึบเดิม, Liquid Glass = ดีไซน์ iOS 27 แผงกระจกโปร่งแสง ปุ่มทรงแคปซูล และแถบแท็บลอย ใช้ทุกหน้า รวมถึง drawer ในเกม</string>
+    <string name="appearance_style_normal">ปกติ</string>
+    <string name="appearance_style_glass">Liquid Glass (iOS 27)</string>
+    <string name="appearance_glass_title">Liquid Glass</string>
+    <string name="appearance_glass_desc">เลื่อนจากใสมากไปจนถึงเข้มเต็มที่ ใส = เห็นพื้นหลังมากขึ้น, เข้ม = อ่านง่ายขึ้น</string>
+    <string name="appearance_glass_clear">ใส</string>
+    <string name="appearance_glass_tinted">เข้ม</string>
+    <string name="appearance_fine_tuning">ปรับแต่งละเอียด</string>
+    <string name="appearance_surface_opacity">ความทึบของพื้นผิว</string>
+    <string name="appearance_border_opacity">ความทึบของเส้นขอบ</string>
+    <string name="appearance_corner_radius">ความโค้งมน</string>
+    <string name="appearance_shadow">ความสูงของเงา</string>
+    <string name="appearance_animations">แอนิเมชัน</string>
+    <string name="appearance_animations_desc">เปิดใช้การเคลื่อนไหวและทรานซิชันของอินเทอร์เฟซ</string>
+    <string name="appearance_compact">เลย์เอาต์กะทัดรัด</string>
+    <string name="appearance_compact_desc">ลดระยะห่างให้เหมาะกับหน้าจอขนาดเล็ก</string>
+    <string name="appearance_apply">ใช้การตั้งค่า</string>
+
+    <string name="home_launcher">ตัวเปิดเกม</string>
+    <string name="home_my_games">เกมของฉัน</string>
+    <string name="home_settings">ตั้งค่า</string>
+    <string name="home_language">ตั้งค่าภาษา</string>
+    <string name="home_device">อุปกรณ์ของคุณ</string>
+    <string name="home_tagline">เล่นเกมได้สบายขึ้น จัดการได้ง่ายกว่า</string>
+    <string name="home_overlay_on">Overlay: เปิด</string>
+    <string name="home_overlay_off">Overlay: ปิด</string>
+    <string name="home_search">ค้นหาเกมหรือแอป...</string>
+    <string name="home_add_game">เพิ่มเกม</string>
+    <string name="home_last_played">เล่นล่าสุด</string>
+    <string name="home_launch_overlay">เปิดพร้อมโอเวอร์เลย์</string>
+    <string name="home_launch">เปิดเกม</string>
+    <string name="home_profile">โปรไฟล์</string>
+    <string name="home_gallery">แกลเลอรี</string>
+    <string name="home_no_games">ไม่พบแอปที่สามารถเพิ่มเป็นเกมได้</string>
+    <string name="home_add">เพิ่ม</string>
+    <string name="home_cancel">ยกเลิก</string>
+    <string name="home_removed">ลบ %1$s ออกจากเกมของฉันแล้ว</string>
+    <string name="home_remove">ลบออกจากเกมของฉัน</string>
+    <string name="home_setup_permissions">ไปที่หน้าตั้งค่าเริ่มต้นเพื่อให้สิทธิ์</string>
+    <string name="home_not_granted">ยังไม่ได้ให้สิทธิ์</string>
+    <string name="home_display">จอแสดงผล</string>
+    <string name="home_resolution">ความละเอียด</string>
+    <string name="home_session_behavior">พฤติกรรมของเซสชัน</string>
+    <string name="home_dynamic_background">ล้างพื้นหลังแบบไดนามิก</string>
+    <string name="home_performance">ประสิทธิภาพ</string>
+    <string name="home_requires_shizuku">ต้องใช้ Shizuku</string>
+    <string name="home_fixed_performance">โหมดประสิทธิภาพคงที่</string>
+    <string name="home_fixed_performance_desc">ล็อกความถี่ CPU/GPU ไว้ที่สูงสุดตลอดเซสชัน</string>
+    <string name="home_doze">รายการยกเว้น Doze</string>
+    <string name="home_doze_desc">ป้องกันไม่ให้บริการพื้นหลัง (แชทเสียง ฯลฯ) ถูกจำกัดการทำงาน</string>
+    <string name="home_force_stop">บังคับหยุดแอปพื้นหลัง</string>
+    <string name="home_force_stop_desc">ปิดแอปอื่นที่ติดตั้งไว้ทั้งหมดก่อนเริ่มเกม</string>
+    <string name="home_wifi">ล็อก Wi-Fi ประสิทธิภาพสูง</string>
+    <string name="home_wifi_desc">ป้องกันไม่ให้วิทยุ Wi-Fi พักระหว่างแพ็กเก็ต (ลดอาการปิงกระชาก)</string>
+    <string name="home_refresh">ล็อกอัตรารีเฟรช</string>
+    <string name="home_refresh_unavailable">อ่านค่าอัตรารีเฟรชที่รองรับของอุปกรณ์นี้ไม่ได้</string>
+    <string name="home_automatic">อัตโนมัติ</string>
+
+    <!-- Shared UI actions -->
+    <string name="action_back">ย้อนกลับ</string>
+    <string name="action_expand">ขยาย</string>
+    <string name="action_collapse">ย่อ</string>
+
+    <!-- First-launch disclosure screen, shown once before the home screen -->
+    <string name="disclosure_title">ก่อนเริ่มใช้งาน</string>
+    <string name="disclosure_subtitle">NovaFrame ต้องใช้สิทธิ์บางอย่างของอุปกรณ์เพื่อสร้างเฟรมทับเกมของคุณ ด้านล่างนี้คือสิทธิ์แต่ละอย่างและเหตุผล — สามารถตรวจสอบหรือเปลี่ยนแปลงได้ภายหลังจากเมนูตั้งค่า</string>
+    <string name="disclosure_item_overlay_title">แสดงผลทับแอปอื่น</string>
+    <string name="disclosure_item_overlay_desc">ใช้วาดโอเวอร์เลย์สร้างเฟรมทับบนเกมหรือแอปที่กำลังเปิดอยู่</string>
+    <string name="disclosure_item_a11y_title">บริการ Accessibility (ไม่บังคับ)</string>
+    <string name="disclosure_item_a11y_desc">ใช้เป็นพื้นผิว trusted overlay และช่วยส่งต่อการสัมผัสไปยังเกมด้านล่าง ไม่มีการอ่านหรือบันทึกเนื้อหาบนหน้าจอของคุณ</string>
+    <string name="disclosure_item_battery_title">ยกเว้นการจัดการพลังงานแบตเตอรี่</string>
+    <string name="disclosure_item_battery_desc">ทำให้เซสชันจับภาพ/สร้างเฟรมที่กำลังทำงานไม่ถูกระบบหยุดหรือปิดขณะทำงานเบื้องหลัง</string>
+    <string name="disclosure_item_display_title">ความละเอียดและ DPI รายแอป</string>
+    <string name="disclosure_item_display_desc">WRITE_SECURE_SETTINGS ให้สิทธิ์แยกต่างหากผ่าน Shizuku หรือคำสั่ง ADB ครั้งเดียวบนคอมพิวเตอร์ ใช้เพื่อเปลี่ยนความละเอียด/DPI ของแอปที่คุณเปิดเท่านั้น</string>
+    <string name="disclosure_item_privacy_title">ไม่มีข้อมูลออกจากอุปกรณ์ของคุณ</string>
+    <string name="disclosure_item_privacy_desc">NovaFrame ไม่ใช้อินเทอร์เน็ต ไม่เก็บข้อมูลการใช้งาน และไม่ส่งข้อมูลใดออกจากอุปกรณ์ของคุณ รายงานข้อขัดข้อง (ถ้ามี) จะถูกบันทึกไว้ในเครื่องเท่านั้น</string>
+    <string name="disclosure_footer">สามารถเปิดดูหน้านี้ซ้ำได้ทุกเมื่อจากเมนูตั้งค่า → ตั้งค่าเริ่มต้น</string>
+    <string name="disclosure_cta">ดำเนินการต่อ</string>
+
+    <!-- Setup screen (Settings → Setup): permission walkthrough -->
+    <string name="setup_title">ตั้งค่าเริ่มต้น</string>
+    <string name="setup_subtitle">สิทธิ์ทั้งหมดที่ NovaFrame ต้องใช้ รวมไว้ในที่เดียว ให้สิทธิ์แต่ละรายการด้านล่างเพียงครั้งเดียว</string>
+    <string name="setup_item_overlay_title">แสดงผลทับแอปอื่น</string>
+    <string name="setup_item_overlay_desc">จำเป็นสำหรับวาดโอเวอร์เลย์สร้างเฟรมทับบนเกม/แอป</string>
+    <string name="setup_item_a11y_title">บริการ Accessibility</string>
+    <string name="setup_item_a11y_desc">ใช้เป็นพื้นผิว trusted overlay เมื่อเปิดโหมดช่วยเหลือด้านการสัมผัส</string>
+    <string name="setup_item_battery_title">ยกเว้นการจัดการพลังงานแบตเตอรี่</string>
+    <string name="setup_item_battery_desc">ทำให้เซสชันจับภาพ/สร้างเฟรมทำงานที่ความสำคัญสูงสุดต่อไปในเบื้องหลัง</string>
+    <string name="setup_item_secure_settings_desc">จำเป็นสำหรับเปลี่ยนความละเอียด/DPI รายแอป ให้สิทธิ์ผ่าน Shizuku หรือรันคำสั่ง ADB บนคอมพิวเตอร์</string>
+    <string name="setup_action_grant">อนุญาต</string>
+    <string name="setup_action_enable">เปิดใช้งาน</string>
+    <string name="setup_action_exempt">ยกเว้น</string>
+    <string name="setup_action_grant_via_shizuku">ให้สิทธิ์ผ่าน Shizuku</string>
+    <string name="setup_action_connect_shizuku">เชื่อมต่อ Shizuku</string>
+    <string name="setup_action_copy_adb">คัดลอกคำสั่ง ADB</string>
+    <string name="setup_status_ready">พร้อมใช้งาน</string>
+    <string name="setup_status_pending">ยังต้องทำ</string>
+    <string name="setup_toast_shizuku_retry">อนุญาตข้อความขอสิทธิ์ของ Shizuku แล้วแตะปุ่มนี้อีกครั้ง</string>
+    <string name="setup_toast_shizuku_not_running">Shizuku ยังไม่ได้ทำงาน</string>
+    <string name="setup_toast_grant_failed">ให้สิทธิ์ไม่สำเร็จ — ใช้คำสั่ง ADB ด้านล่างแทน</string>
+    <string name="setup_toast_copied">คัดลอกแล้ว</string>
+
+    <!-- In-game settings drawer: frame scheduling section -->
+    <string name="drawer_sched_wait_for_busy">รอเจนที่ค้างอยู่ก่อนไปต่อ (บล็อกเฟรมจริงถัดไปจนกว่าเจนคู่ก่อนจะเสร็จ)</string>
+    <string name="drawer_sched_allow_when_busy">อนุญาตให้เริ่มเจนใหม่แม้เจนก่อนหน้ายังไม่เสร็จ</string>
+    <string name="drawer_sched_lossless_queue">คิวเฟรมจริงแบบไม่มีการทิ้ง (ไม่จำกัดตามค่าด้านล่าง)</string>
+    <string name="drawer_queue_depth_label">จำนวนเฟรมจริงที่รอคิวได้ (ก่อนทิ้งของเก่า)</string>
+    <string name="drawer_autodisable_device_lost">ปิดเจนอัตโนมัติเมื่อ GPU driver ค้าง (device-lost)</string>
+    <string name="drawer_resume_framegen">เริ่มเจนเฟรมใหม่หลังถูกปิดอัตโนมัติ (device-lost)</string>
+    <string name="drawer_resume_framegen_resumed">เริ่มใหม่แล้ว — กำลังลองเจนเฟรมอีกครั้ง</string>
+    <string name="drawer_resume_framegen_not_latched">ยังไม่ถูกปิด — ไม่มีอะไรให้เริ่มใหม่</string>
+</resources>

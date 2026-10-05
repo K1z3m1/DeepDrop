@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NovaFrame</string>
+    <string name="app_description">NovaFrame — game launcher + Vulkan frame generation overlay</string>
+    <string name="credits_title">Credits</string>
+    <string name="credits_section_channel">Channel</string>
+    <string name="credits_section_base">Base project</string>
+    <string name="credits_section_license">License</string>
+    <string name="credits_license_body">Licensed under GNU GPL v3.0, inherited from the base project. Source is available on request; tap above for the full license text.</string>
+    <string name="accessibility_service_label">NovaFrame Touch Passthrough</string>
+    <string name="accessibility_service_description">Forwards touch events from the NovaFrame overlay to the underlying app so you can interact with games while the frame-generation overlay is visible.</string>
+
+    <string name="notif_channel_session">NovaFrame Session</string>
+    <string name="notif_session_title">NovaFrame session active</string>
+    <string name="notif_session_text">Frame generation overlay is running. Tap to stop.</string>
+
+    <string name="legal_title">Legal notice</string>
+    <string name="legal_warning_body"><![CDATA[
+        <b>WARNING — You must own Lossless Scaling on Steam.</b><br/><br/>
+        This application requires the <b>Lossless.dll</b> file from <b>Lossless Scaling</b> by THS.
+        You must select this file from <b>your own legally purchased copy</b> of Lossless Scaling on Steam.<br/><br/>
+        <b>Do NOT download Lossless.dll from third-party sources.</b> Doing so is copyright infringement.<br/><br/>
+        The developers of this application:<br/>
+        • do <b>not</b> distribute Lossless.dll<br/>
+        • are <b>not affiliated</b> with THS or Lossless Scaling<br/>
+        • take <b>no responsibility</b> for any misuse of this app<br/><br/>
+        By continuing, you confirm you own a valid Lossless Scaling Steam license.
+    ]]></string>
+    <string name="legal_accept">I own a Lossless Scaling license — continue</string>
+    <string name="legal_decline">Cancel</string>
+
+    <string name="nav_dll">Select DLL</string>
+    <string name="nav_framegen_pacing">Frame generation &amp; pacing</string>
+    <string name="nav_overlay_display">Overlay &amp; display</string>
+
+    <!-- Section eyebrows -->
+    <string name="section_frame_generation">Frame generation</string>
+    <string name="dll_status_none">No Lossless.dll selected yet.</string>
+    <string name="dll_pick_button">Select Lossless.dll</string>
+    <string name="dll_reextract_button">Re-extract shaders</string>
+
+    <string name="section_framegen_backend">FRAME-GEN BACKEND</string>
+    <string name="backend_lsfg_dll">Lossless.dll</string>
+    <string name="backend_ncnn_ai">AI model (ncnn)</string>
+
+    <string name="ai_model_test_load_button">Test model load</string>
+
+    <string name="param_multiplier">Frame multiplier</string>
+    <string name="param_multiplier_desc">Number of frames produced per real frame. 2 = one interpolated frame between each pair. 3–4 recommended on mobile.</string>
+    <string name="param_flow_scale">Flow scale</string>
+    <string name="param_flow_scale_desc">Internal motion estimation resolution. Lower = faster but less accurate.</string>
+    <string name="param_render_resolution_scale">Render resolution</string>
+    <string name="param_render_resolution_scale_desc">Percentage of the display\'s native resolution to capture and render at. Lower values cut GPU cost across capture and frame-gen, at the cost of a softer image. Takes effect on the next capture (re)start.</string>
+    <string name="param_performance_mode">Performance mode (LSFG 3.1P)</string>
+    <string name="param_performance_mode_desc">Use the faster, lower-quality shader variant. Recommended on mid-range GPUs.</string>
+    <string name="param_hdr">HDR mode</string>
+    <string name="param_hdr_desc">Enable only if your device and game output HDR.</string>
+    <string name="param_framegen_fp16">FP16 frame-gen shaders</string>
+    <string name="param_framegen_fp16_desc">Use the half-precision shader variants pre-compiled inside Lossless.dll instead of the full-precision FP32 set. Reduces GPU load and memory bandwidth. Quality is virtually identical; falls back to FP32 automatically if anything goes wrong.</string>
+
+    <string name="language_menu_item">Language</string>
+    <string name="language_system">System default</string>
+    <string name="language_english">English</string>
+    <string name="language_thai">ไทย (Thai)</string>
+    <string name="language_apply">Apply</string>
+
+    <string name="credits_section_myproject">My project</string>
+    <string name="credits_section_libraries">Third-party libraries</string>
+    <string name="credits_free_notice_title">This app is 100% free</string>
+    <string name="credits_free_notice_body">NovaFrame is free and open source (GPL v3.0) and always will be. If you paid money for this app — on a store listing, a Telegram/Discord seller, or anywhere else — that copy did not come from the developer and may be a modified or malicious build. Only get it from the official links on this page.</string>
+    <string name="credits_build_official">Verified official build</string>
+    <string name="credits_build_unofficial">Unofficial build — not signed by the original developer. Re-download from the official links above if you\'re unsure where this copy came from.</string>
+
+    <string name="perm_capture_pick_app">In the next dialog choose \"A single app\" and pick the game (not \"Entire screen\").</string>
+    <string name="perm_capture_denied">Screen capture was denied. NovaFrame cannot run without it.</string>
+
+    <string name="crash_dialog_dismiss">Dismiss</string>
+
+    <!-- Game launcher screen -->
+    <string name="toast_no_launch_button">No launch button found for %1$s</string>
+    <string name="empty_no_apps_title">No launchable apps found</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_app_info">App info</string>
+    <string name="dialog_app_settings_title">Settings • %1$s</string>
+    <string name="status_no_permission">○ No Shizuku/ADB permission yet</string>
+    <string name="display_original_format">Original: %1$d×%2$d @ %3$ddpi</string>
+    <string name="display_calculated_format">Calculated: %1$d×%2$d @ %3$ddpi</string>
+    <string name="display_original_not_saved">Original display values not saved yet</string>
+    <string name="disable_animations_title">Disable System Animation</string>
+    <string name="keep_awake_title">Keep screen on while charging</string>
+    <string name="limit_background_title">Limit background apps: 1 app</string>
+    <string name="toast_shizuku_grant_failed">Shizuku permission grant failed</string>
+    <string name="toast_no_permission_copied_adb">Permission not granted yet — ADB command copied</string>
+    <string name="toast_read_display_failed">Failed to read resolution/DPI from ADB</string>
+    <string name="action_save">Save</string>
+    <string name="toast_adb_copied_with_command">ADB command copied: %1$s</string>
+    <string name="action_read_real_display">Read actual display</string>
+
+    <!-- Credits screen — donate section -->
+    <string name="credits_donate_eyebrow">Donate</string>
+    <string name="credits_donate_title">Support the developer</string>
+    <string name="credits_donate_message">Thank you for your support — every donation you make won\'t go to waste. It goes toward funding education for kids in need.</string>
+
+    <!-- Device profile screen -->
+    <string name="profile_title">Device Profile</string>
+    <string name="profile_button">Profile</string>
+    <string name="profile_section_device">Device</string>
+    <string name="profile_model">Model</string>
+    <string name="profile_android">Android</string>
+    <string name="profile_soc">Chipset</string>
+    <string name="profile_abi">ABI</string>
+    <string name="profile_section_access">Access</string>
+    <string name="profile_root">Root</string>
+    <string name="profile_shizuku">Shizuku</string>
+    <string name="profile_section_cpu">CPU</string>
+    <string name="profile_cpu_load">Load</string>
+    <string name="profile_cpu_temp">Temperature</string>
+    <string name="profile_section_temps">Temperatures</string>
+    <string name="profile_cpu_temp_label">CPU</string>
+    <string name="profile_gpu_temp">GPU temperature</string>
+    <string name="profile_battery_temp">Battery</string>
+    <string name="profile_skin_temp">Device surface</string>
+    <string name="profile_npu_temp">NPU</string>
+    <string name="profile_thermal_status">Throttling</string>
+    <string name="profile_thermal_none">None</string>
+    <string name="profile_thermal_light">Light</string>
+    <string name="profile_thermal_moderate">Moderate</string>
+    <string name="profile_thermal_severe">Severe</string>
+    <string name="profile_thermal_critical">Critical</string>
+    <string name="profile_temp_src_shizuku_hal">Source: Shizuku, system thermal sensors</string>
+    <string name="profile_temp_src_shizuku_sysfs">Source: Shizuku, kernel thermal zones</string>
+    <string name="profile_temp_src_sysfs">Source: kernel thermal zones</string>
+    <string name="profile_temp_src_battery">Source: battery sensor only</string>
+    <string name="profile_temp_src_none">No temperature source available</string>
+    <string name="profile_temp_need_shizuku">Connect Shizuku to read CPU, GPU and surface temperatures. Without it Android hides most sensors.</string>
+    <string name="profile_cpu_cores">Cores</string>
+    <string name="profile_value_na">N/A</string>
+    <string name="profile_cluster_freq_format">%1$d MHz (max %2$d)</string>
+    <string name="profile_cluster_freq_max_only_format">up to %1$d MHz</string>
+    <string name="profile_section_memory">Memory</string>
+    <string name="profile_ram_used">Used</string>
+    <string name="profile_ram_free">Free</string>
+    <string name="profile_ram_total">Total</string>
+    <string name="profile_section_gpu">GPU / Vulkan</string>
+    <string name="profile_gpu_name">GPU</string>
+    <string name="profile_gpu_vendor">Vendor</string>
+    <string name="profile_gpu_type">Type</string>
+    <string name="profile_gpu_driver">Driver</string>
+    <string name="profile_gpu_clock">Clock</string>
+    <string name="profile_gpu_load">Load</string>
+    <string name="profile_gpu_vram">VRAM (est.)</string>
+    <string name="profile_section_npu">NPU / AI Accelerator</string>
+    <string name="profile_npu_present">Present</string>
+    <string name="profile_npu_yes">Yes</string>
+    <string name="profile_npu_no">Not detected</string>
+    <string name="profile_npu_name">Name</string>
+    <string name="profile_npu_vendor">Vendor</string>
+    <string name="profile_npu_source">Detected via</string>
+    <string name="profile_vulkan_api">Vulkan API</string>
+    <string name="profile_section_display">Display</string>
+    <string name="profile_display_resolution">Resolution</string>
+    <string name="profile_display_refresh">Refresh rate</string>
+    <string name="profile_display_density">Density</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_general">General</string>
+    <string name="settings_games">Games</string>
+    <string name="settings_system">System</string>
+    <string name="nav_framegen_pacing_desc">Frame generation, FPS and pacing</string>
+    <string name="nav_overlay_display_desc">HUD, present mode, image enhancement and sound</string>
+    <string name="nav_setup">Setup</string>
+    <string name="nav_setup_desc">Permissions and system preparation</string>
+    <string name="nav_profile_desc">Device information and diagnostics</string>
+    <string name="nav_dll_desc">Choose DLL and manage shaders</string>
+    <string name="nav_credits_desc">Open-source credits and license</string>
+    <string name="appearance_title">Appearance</string>
+    <string name="appearance_desc">Theme, glass transparency, corners, shadows and motion</string>
+    <string name="appearance_theme">Theme</string>
+    <string name="appearance_theme_desc">Choose the overall visual style</string>
+    <string name="appearance_dark">Dark</string>
+    <string name="appearance_light">Light</string>
+    <string name="appearance_style">Style</string>
+    <string name="appearance_style_desc">Normal keeps the solid look. Liquid Glass follows the iOS 27 design: lit translucent panels, capsule controls and a floating tab bar, including the in-game drawer.</string>
+    <string name="appearance_style_normal">Normal</string>
+    <string name="appearance_style_glass">Liquid Glass (iOS 27)</string>
+    <string name="appearance_glass_title">Liquid Glass</string>
+    <string name="appearance_glass_desc">Slide from ultra clear to fully tinted. Clear shows more of the background; Tinted is easier to read.</string>
+    <string name="appearance_glass_clear">Clear</string>
+    <string name="appearance_glass_tinted">Tinted</string>
+    <string name="appearance_fine_tuning">Fine tuning</string>
+    <string name="appearance_surface_opacity">Surface opacity</string>
+    <string name="appearance_border_opacity">Border opacity</string>
+    <string name="appearance_corner_radius">Corner radius</string>
+    <string name="appearance_shadow">Shadow elevation</string>
+    <string name="appearance_animations">Animations</string>
+    <string name="appearance_animations_desc">Enable interface motion and transitions</string>
+    <string name="appearance_compact">Compact layout</string>
+    <string name="appearance_compact_desc">Reduce spacing for smaller screens</string>
+    <string name="appearance_apply">Apply appearance</string>
+
+    <string name="home_launcher">Game Launcher</string>
+    <string name="home_my_games">My Games</string>
+    <string name="home_settings">Settings</string>
+    <string name="home_language">Language settings</string>
+    <string name="home_device">Your device</string>
+    <string name="home_tagline">Play games more comfortably. Manage them more easily.</string>
+    <string name="home_overlay_on">Overlay: On</string>
+    <string name="home_overlay_off">Overlay: Off</string>
+    <string name="home_search">Search games or apps...</string>
+    <string name="home_add_game">Add game</string>
+    <string name="home_last_played">Last played</string>
+    <string name="home_launch_overlay">Launch with overlay</string>
+    <string name="home_launch">Launch</string>
+    <string name="home_profile">Profile</string>
+    <string name="home_gallery">Gallery</string>
+    <string name="home_no_games">No apps available to add as games</string>
+    <string name="home_add">Add</string>
+    <string name="home_cancel">Cancel</string>
+    <string name="home_removed">Removed %1$s from My Games</string>
+    <string name="home_remove">Remove from My Games</string>
+    <string name="home_setup_permissions">Open Initial Setup to grant permissions</string>
+    <string name="home_not_granted">Not granted</string>
+    <string name="home_display">Display</string>
+    <string name="home_resolution">Resolution</string>
+    <string name="home_session_behavior">Session behavior</string>
+    <string name="home_dynamic_background">Dynamic background cleanup</string>
+    <string name="home_performance">Performance</string>
+    <string name="home_requires_shizuku">Requires Shizuku</string>
+    <string name="home_fixed_performance">Fixed performance mode</string>
+    <string name="home_fixed_performance_desc">Lock CPU/GPU frequencies at maximum throughout the session</string>
+    <string name="home_doze">Doze exemption list</string>
+    <string name="home_doze_desc">Prevent background services (voice chat, etc.) from being restricted</string>
+    <string name="home_force_stop">Force-stop background apps</string>
+    <string name="home_force_stop_desc">Stop all other installed apps before starting the game</string>
+    <string name="home_wifi">High-performance Wi-Fi lock</string>
+    <string name="home_wifi_desc">Prevent the Wi-Fi radio from sleeping between packets (reduces ping spikes)</string>
+    <string name="home_refresh">Refresh-rate lock</string>
+    <string name="home_refresh_unavailable">Unable to read this device\'s supported refresh rates</string>
+    <string name="home_automatic">Automatic</string>
+
+    <!-- Shared UI actions -->
+    <string name="action_back">Back</string>
+    <string name="action_expand">Expand</string>
+    <string name="action_collapse">Collapse</string>
+
+    <!-- First-launch disclosure screen, shown once before the home screen -->
+    <string name="disclosure_title">Before you start</string>
+    <string name="disclosure_subtitle">NovaFrame needs a few device permissions to generate frames over your games. Here\'s what each one is for — you can review or change any of them later from Settings.</string>
+    <string name="disclosure_item_overlay_title">Display over other apps</string>
+    <string name="disclosure_item_overlay_desc">Draws the frame-generation overlay on top of the game or app you\'re running.</string>
+    <string name="disclosure_item_a11y_title">Accessibility service (optional)</string>
+    <string name="disclosure_item_a11y_desc">Only used to detect when a chosen app opens so its overlay can start automatically, and to forward your touches through the overlay to the game underneath. It never reads or records your screen content.</string>
+    <string name="disclosure_item_battery_title">Battery optimization exemption</string>
+    <string name="disclosure_item_battery_desc">Keeps a running capture/frame-generation session from being paused or killed by the system while in the background.</string>
+    <string name="disclosure_item_display_title">Per-app resolution &amp; DPI</string>
+    <string name="disclosure_item_display_desc">WRITE_SECURE_SETTINGS, granted separately through Shizuku or a one-time ADB command on a computer, used only to change resolution/DPI for the app you launch.</string>
+    <string name="disclosure_item_privacy_title">Nothing leaves your device</string>
+    <string name="disclosure_item_privacy_desc">NovaFrame doesn\'t use the internet, collect analytics, or send anything off your device. Crash reports, if any, are saved locally only.</string>
+    <string name="disclosure_footer">You can revisit this at any time from Settings → Setup.</string>
+    <string name="disclosure_cta">Continue</string>
+
+    <!-- Setup screen (Settings → Setup): permission walkthrough -->
+    <string name="setup_title">Initial setup</string>
+    <string name="setup_subtitle">Every permission NovaFrame needs, in one place. Grant each item below once.</string>
+    <string name="setup_item_overlay_title">Display over other apps</string>
+    <string name="setup_item_overlay_desc">Needed to draw the frame-generation overlay on top of a game/app.</string>
+    <string name="setup_item_a11y_title">Accessibility service</string>
+    <string name="setup_item_a11y_desc">Hosts the trusted overlay when you enable the accessibility fallback.</string>
+    <string name="setup_item_battery_title">Battery optimization exemption</string>
+    <string name="setup_item_battery_desc">Keeps the capture/frame-generation session running at top priority in the background.</string>
+    <string name="setup_item_secure_settings_desc">Needed to change resolution/DPI per app. Grant it via Shizuku or by running an ADB command on a computer.</string>
+    <string name="setup_action_grant">Grant</string>
+    <string name="setup_action_enable">Enable</string>
+    <string name="setup_action_exempt">Exempt</string>
+    <string name="setup_action_grant_via_shizuku">Grant via Shizuku</string>
+    <string name="setup_action_connect_shizuku">Connect Shizuku</string>
+    <string name="setup_action_copy_adb">Copy ADB command</string>
+    <string name="setup_status_ready">Ready</string>
+    <string name="setup_status_pending">Still needed</string>
+    <string name="setup_toast_shizuku_retry">Allow Shizuku\'s permission prompt, then tap this button again</string>
+    <string name="setup_toast_shizuku_not_running">Shizuku isn\'t running yet</string>
+    <string name="setup_toast_grant_failed">Couldn\'t grant it — use the ADB command below instead</string>
+    <string name="setup_toast_copied">Copied</string>
+
+    <!-- In-game settings drawer: frame scheduling section -->
+    <string name="drawer_sched_wait_for_busy">Wait for a pending generation before continuing (blocks the next real frame until the prior pair finishes)</string>
+    <string name="drawer_sched_allow_when_busy">Allow starting a new generation even while the previous one hasn\'t finished</string>
+    <string name="drawer_sched_lossless_queue">Lossless real-frame queue (ignores the limit below)</string>
+    <string name="drawer_queue_depth_label">Real frames allowed to queue (before dropping the oldest)</string>
+    <string name="drawer_autodisable_device_lost">Auto-disable frame gen when the GPU driver hangs (device-lost)</string>
+    <string name="drawer_resume_framegen">RESUME FRAME GEN AFTER DEVICE-LOST</string>
+    <string name="drawer_resume_framegen_resumed">RESUMED — RETRYING FRAME GEN</string>
+    <string name="drawer_resume_framegen_not_latched">NOT DISABLED — NOTHING TO RESUME</string>
+</resources>
