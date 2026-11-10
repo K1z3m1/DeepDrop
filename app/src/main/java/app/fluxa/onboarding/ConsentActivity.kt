@@ -62,25 +62,24 @@ class ConsentActivity : Activity() {
         root.addView(page, FrameLayout.LayoutParams(-1, -1))
 
         // ---- scrolling content
-        val body = LinearLayout(kit.ctx).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(kit.dp(12), kit.dp(10), kit.dp(12), kit.dp(8))
+        val body = ResponsiveColumns(kit.ctx).apply {
+            setPadding(kit.dp(12), kit.dp(10), kit.dp(12), kit.dp(16))
         }
-        body.addView(buildHeader(), LinearLayout.LayoutParams(-1, -2))
-        if (!review) body.addView(buildLanguage(), LinearLayout.LayoutParams(-1, -2).apply { topMargin = kit.dp(18) })
+        body.addView(buildHeader().spanFull(), LinearLayout.LayoutParams(-1, -2))
+        if (!review) body.addView(buildLanguage().spanFull(), LinearLayout.LayoutParams(-1, -2).apply { topMargin = kit.dp(18) })
 
         val cards = listOf(buildAboutCard(), buildPermissionCard(), buildDataCard(), buildRiskCard(), buildDocsCard())
         cards.forEach { c ->
             body.addView(c, LinearLayout.LayoutParams(-1, -2).apply { topMargin = kit.dp(AppSettings.cardGap) })
         }
         if (!review) {
-            body.addView(buildAgreeCard(), LinearLayout.LayoutParams(-1, -2).apply { topMargin = kit.dp(AppSettings.cardGap) })
+            body.addView(buildAgreeCard().spanFull(), LinearLayout.LayoutParams(-1, -2).apply { topMargin = kit.dp(AppSettings.cardGap) })
         } else {
             val at = Consent.acceptedAt(this)
             if (at > 0L) {
                 val date = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(at))
                 body.addView(
-                    kit.text(I18n.f("ยินยอมไว้เมื่อ {0}", date), 12.5f, Palette.MUTED).apply { gravity = Gravity.CENTER },
+                    kit.text(I18n.f("ยินยอมไว้เมื่อ {0}", date), 12.5f, Palette.MUTED).apply { gravity = Gravity.CENTER }.spanFull(),
                     LinearLayout.LayoutParams(-1, -2).apply { topMargin = kit.dp(18) },
                 )
             }
@@ -88,12 +87,12 @@ class ConsentActivity : Activity() {
                 kit.text("ถอนความยินยอมได้ทุกเมื่อ และจะต้องยินยอมใหม่เมื่อเปิดแอพครั้งถัดไป", 12.5f, Palette.DIM).apply {
                     gravity = Gravity.CENTER
                     setLineSpacing(0f, 1.2f)
-                },
+                }.spanFull(),
                 LinearLayout.LayoutParams(-1, -2).apply { topMargin = kit.dp(8) },
             )
         }
         page.addView(
-            CenteredScrollView(kit.ctx).apply {
+            CenteredScrollView(kit.ctx, kit.ctx.pageMaxDp()).apply {
                 isVerticalScrollBarEnabled = false
                 overScrollMode = View.OVER_SCROLL_NEVER
                 addView(body)

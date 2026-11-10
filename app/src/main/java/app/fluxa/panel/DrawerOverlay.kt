@@ -99,6 +99,11 @@ class DrawerOverlay(
     private var panel: View? = null
     private var dim: View? = null
     private var panelW = 0
+    /** Short landscape window (a phone held sideways): smaller dials / buttons so the panel fits without clipping. */
+    private var compact = false
+    private var edgeGap = 0
+    /** Margins around the floating card (left, top, right, bottom): the edge gap or the system inset, whichever is larger. */
+    private var gaps = intArrayOf(0, 0, 0, 0)
     private var sheet: View? = null
     private var tileRepaint: (() -> Unit)? = null
     /** The drag-enabled button grid, its hint line and the save / cancel bar (edit mode). */
@@ -309,19 +314,45 @@ class DrawerOverlay(
         val embedded = embedHost
         // landscape: the window is short and wide, so the panel gets more width (more tile columns) instead of a tall narrow strip
         val wide = screenW > screenH
+        // floating panel: ~40% of the width in landscape (a tall card with a small gap to the screen edge), never wider than the screen
+        edgeGap = if (embedded != null) 0 else dp(8)
         val panelWidth = if (embedded != null) screenW
-            else if (wide) minOf(dp(560), (screenW * 0.62f).toInt())
-            else minOf(dp(420), (screenW * 0.9f).toInt())
+            else if (wide) (screenW * 0.40f).toInt().coerceIn(dp(340), dp(440)).coerceAtMost(screenW - 2 * edgeGap)
+            else minOf(dp(420), screenW - 2 * edgeGap)
         panelW = panelWidth
+        compact = embedded == null && screenH < dp(520)
         val card = buildPanel()
-        root.addView(
-            card,
-            FrameLayout.LayoutParams(
-                if (embedded != null) FrameLayout.LayoutParams.MATCH_PARENT else panelWidth,
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                if (embedded != null || PanelPrefs.left(host)) Gravity.START else Gravity.END,
-            ),
+        val cardLp = FrameLayout.LayoutParams(
+            if (embedded != null) FrameLayout.LayoutParams.MATCH_PARENT else panelWidth,
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            if (embedded != null || PanelPrefs.left(host)) Gravity.START else Gravity.END,
         )
+        gaps = intArrayOf(edgeGap, edgeGap, edgeGap, edgeGap)
+        cardLp.setMargins(edgeGap, edgeGap, edgeGap, edgeGap)
+        root.addView(card, cardLp)
+        if (embedded == null) {
+            // keep the card clear of the camera cut-out and the system bars
+            root.setOnApplyWindowInsetsListener { _, ins ->
+                @Suppress("DEPRECATION")
+                val l = maxOf(edgeGap, ins.systemWindowInsetLeft)
+                @Suppress("DEPRECATION")
+                val t = maxOf(edgeGap, ins.systemWindowInsetTop)
+                @Suppress("DEPRECATION")
+                val r = maxOf(edgeGap, ins.systemWindowInsetRight)
+                @Suppress("DEPRECATION")
+                val b = maxOf(edgeGap, ins.systemWindowInsetBottom)
+                gaps = intArrayOf(l, t, r, b)
+                (card.layoutParams as? FrameLayout.LayoutParams)?.let {
+                    it.setMargins(l, t, r, b)
+                    card.layoutParams = it
+                }
+                (sheet?.layoutParams as? FrameLayout.LayoutParams)?.let {
+                    it.setMargins(l, t, r, b)
+                    sheet?.layoutParams = it
+                }
+                ins
+            }
+        }
         if (embedded != null) {
             scrim = root
             panel = card
@@ -671,7 +702,7 @@ class DrawerOverlay(
     private fun lp(w: Int = -1, h: Int = -2) = LinearLayout.LayoutParams(w, h)
 
     private fun buildPanel(): LinearLayout {
-        val r = dp(28).toFloat()
+        val r = dp(if (compact) 22 else 28).toFloat()
         val left = PanelPrefs.left(host)
         val card = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
@@ -679,9 +710,7 @@ class DrawerOverlay(
                 setColor(Palette.PANEL)
                 setStroke(dp(1), Palette.STROKE)
                 // rounded on the side that faces the game
-                cornerRadii =
-                    if (left) floatArrayOf(0f, 0f, r, r, r, r, 0f, 0f)
-                    else floatArrayOf(r, r, 0f, 0f, 0f, 0f, r, r)
+                cornerRadius = r
             }
             isClickable = true // swallow taps so they don't reach the scrim
         }
@@ -690,25 +719,26 @@ class DrawerOverlay(
 
         // ---- switch grid: tap = on/off, long-press = settings sheet
         buildTiles()
-        val cols = if (panelW >= dp(520)) 5 else if (panelW >= dp(400)) 4 else 3
+        val cols = if (panelW >= dp(520)) 5 else if (panelW >= dp(300)) 4 else 3
         val grid = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(12), dp(22), dp(12), dp(14))
+            if (compact) setPadding(dp(10), dp(10), dp(10), dp(10)) else setPadding(dp(12), dp(22), dp(12), dp(14))
         }
-        val dials = LinearLayout(ctx).apply { setPadding(dp(4), dp(10), dp(4), dp(2)) }
+        val dials = LinearLayout(ctx).apply { if (compact) setPadding(dp(2), dp(2), dp(2), 0) else setPadding(dp(4), dp(10), dp(4), dp(2)) }
         dialBox = dials
         grid.addView(dials, lp())
         renderDials()
+        grid.addView(View(ctx).apply { setBackgroundColor(Palette.DIVIDER) }, lp(-1, dp(1)).apply { topMargin = dp(if (compact) 8 else 12); marginStart = dp(4); marginEnd = dp(4) })
         val tg = TileGrid(ctx).apply {
             this.cols = cols
-            cellHeight = if (embedHost == null && panelW >= dp(520)) dp(100) else dp(116)
+            cellHeight = if (compact) dp(84) else if (embedHost == null && panelW >= dp(520)) dp(100) else dp(116)
             host = gridHost
         }
         gridView = tg
-        grid.addView(tg, lp().apply { topMargin = dp(14) })
+        grid.addView(tg, lp().apply { topMargin = dp(if (compact) 10 else 14) })
         val hint = text("", 11.5f, color = Palette.DIM).apply { gravity = Gravity.CENTER }
         hintText = hint
-        grid.addView(hint, lp().apply { topMargin = dp(18) })
+        grid.addView(hint, lp().apply { topMargin = dp(if (compact) 8 else 18) })
         editing = false
         fillGrid()
         val scroller = ScrollView(ctx).apply {
@@ -730,7 +760,7 @@ class DrawerOverlay(
         val strip = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(dp(4), dp(14), dp(4), dp(14))
+            setPadding(dp(4), dp(if (compact) 8 else 14), dp(4), dp(if (compact) 8 else 14))
         }
         strip.addView(kit.icon(R.drawable.fluxa_ic_close, 40, Palette.MUTED).apply {
             setPadding(dp(11), dp(11), dp(11), dp(11))
@@ -1052,9 +1082,11 @@ class DrawerOverlay(
     }
 
     private fun tileView(t: Tile, repaint: MutableList<() -> Unit>): View {
-        val icon = kit.icon(t.icon, 28, Palette.MUTED)
+        val plateDp = if (compact) 46 else 60
+        val iconDp = if (compact) 24 else 28
+        val icon = kit.icon(t.icon, iconDp, Palette.MUTED)
         val plate = FrameLayout(ctx).apply {
-            addView(icon, FrameLayout.LayoutParams(dp(28), dp(28), Gravity.CENTER))
+            addView(icon, FrameLayout.LayoutParams(dp(iconDp), dp(iconDp), Gravity.CENTER))
         }
         val label = text(t.label, 11.5f, bold = true, color = Palette.MUTED).apply {
             gravity = Gravity.CENTER
@@ -1069,8 +1101,8 @@ class DrawerOverlay(
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
             setPadding(dp(2), dp(2), dp(2), dp(2))
-            addView(plate, lp(dp(60), dp(60)))
-            addView(label, lp(-1, -2).apply { topMargin = dp(6) })
+            addView(plate, lp(dp(plateDp), dp(plateDp)))
+            addView(label, lp(-1, -2).apply { topMargin = dp(if (compact) 4 else 6) })
         }
         if (editing && t.id != PanelLayout.PINNED) {
             val hid = t.id in workHidden
@@ -1083,7 +1115,7 @@ class DrawerOverlay(
         val dimmed = editing && t.id in workHidden
         repaint.add {
             val s = t.state()
-            plate.background = if (s == true) kit.lit(18) else kit.rounded(Palette.CHIP_HI, 18, Palette.STROKE, 1)
+            plate.background = if (s == true) kit.lit(if (compact) 14 else 18) else kit.rounded(Palette.CHIP_HI, if (compact) 14 else 18)
             icon.setColorFilter(if (s == true) Palette.PRIMARY else if (s == null) Palette.TEXT else Palette.MUTED)
             label.setTextColor(if (s == true) Palette.TEXT else Palette.MUTED)
             t.dynLabel?.let { d -> label.text = d() }
@@ -1121,7 +1153,7 @@ class DrawerOverlay(
         }
         val head = LinearLayout(ctx).apply {
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(24), dp(18), dp(20), dp(14))
+            setPadding(dp(if (compact) 16 else 24), dp(if (compact) 12 else 18), dp(if (compact) 14 else 20), dp(if (compact) 8 else 14))
         }
         head.addView(
             text(title, 19f, bold = true).apply {
@@ -1149,29 +1181,33 @@ class DrawerOverlay(
 
         val content = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(24), dp(2), dp(24), dp(10))
+            setPadding(dp(if (compact) 16 else 24), dp(2), dp(if (compact) 16 else 24), dp(10))
         }
         flat = true
         try { build(content) } finally { flat = false }
         card.addView(ScrollView(ctx).apply { isVerticalScrollBarEnabled = false; addView(content) }, lp(-1, 0).apply { weight = 1f })
 
+        card.addView(View(ctx).apply { setBackgroundColor(Palette.DIVIDER) }, lp(-1, dp(1)))
         card.addView(
             text("เสร็จ", 15f, bold = true, color = Palette.PRIMARY).apply {
                 gravity = Gravity.CENTER
-                setPadding(dp(36), dp(11), dp(36), dp(11))
-                background = kit.lit(14)
+                setPadding(dp(16), dp(if (compact) 11 else 14), dp(16), dp(if (compact) 11 else 14))
                 isClickable = true
                 setOnClickListener { closeSheet() }
             },
-            lp(-2, -2).apply { gravity = Gravity.CENTER_HORIZONTAL; topMargin = dp(6); bottomMargin = dp(16) },
+            lp(-1, -2),
         )
 
         panel?.visibility = View.INVISIBLE
         sheet = card
-        root.addView(
-            card,
-            FrameLayout.LayoutParams(minOf(dp(560), (sw * 0.8f).toInt()), minOf(dp(440), (sh * 0.9f).toInt()), Gravity.CENTER),
+        val sheetW = if (embedHost != null) minOf(dp(560), (sw * 0.8f).toInt()) else panelW // same footprint as the panel it replaces
+        val sheetLp = FrameLayout.LayoutParams(
+            sheetW,
+            if (embedHost != null) minOf(dp(440), (sh * 0.9f).toInt()) else FrameLayout.LayoutParams.MATCH_PARENT,
+            if (embedHost != null) Gravity.CENTER else if (PanelPrefs.left(host)) Gravity.START else Gravity.END,
         )
+        if (embedHost == null) sheetLp.setMargins(gaps[0], gaps[1], gaps[2], gaps[3])
+        root.addView(card, sheetLp)
     }
 
     private fun closeSheet() {
@@ -1206,10 +1242,10 @@ class DrawerOverlay(
             setPadding(dp(14), dp(12), dp(14), dp(16))
         }
         addView(text(title, 12f, bold = true, color = Palette.MUTED).apply { letterSpacing = 0.06f })
-        page.addView(this, lp().apply { topMargin = dp(12) })
+        page.addView(this, lp().apply { topMargin = dp(18) })
     }
 
-    private fun gap(g: LinearLayout, v: View, top: Int = 16) = g.addView(v, lp().apply { topMargin = dp(top) })
+    private fun gap(g: LinearLayout, v: View, top: Int = 14) = g.addView(v, lp().apply { topMargin = dp(top) })
 
     private fun slider(
         g: LinearLayout, title: String, min: Int, max: Int, value: Int, step: Int = 1,
@@ -1235,9 +1271,10 @@ class DrawerOverlay(
         val sw = FlatSwitch(ctx, checked, animate = false) { onChange(it) }
         row.addView(text(title, 13.5f, bold = true), lp(0, -2).apply { weight = 1f; marginEnd = dp(12) })
         row.addView(sw, lp(dp(48), dp(28)))
+        row.minimumHeight = dp(44)
         row.isClickable = true
         row.setOnClickListener { sw.toggle() }
-        gap(g, row)
+        gap(g, row, 6)
     }
 
     private fun note(g: LinearLayout, value: String) =
@@ -1256,13 +1293,13 @@ class DrawerOverlay(
         // Width the header can use: the panel minus its edge strip, grid padding and the box padding.
         // The two dials shrink first, so the centre column always keeps room for its text.
         val dialCount = (if (PanelPrefs.showCpu(host)) 1 else 0) + (if (PanelPrefs.showGpu(host)) 1 else 0)
-        val usable = panelW - (if (embedHost != null) 0 else dp(49)) - dp(32)
-        val midMin = dp(124)
+        val usable = panelW - (if (embedHost != null) 0 else dp(49)) - dp(if (compact) 20 else 32)
+        val midMin = dp(if (compact) 100 else 124)
         fun add(t: DialTile) {
             t.applyLook(host)
             if (dialCount > 0) {
                 val room = (usable - midMin - dp(12)) / dialCount
-                t.dial.prefSizePx = minOf(t.dial.prefSizePx, room).coerceAtLeast(dp(56))
+                t.dial.prefSizePx = minOf(t.dial.prefSizePx, room, if (compact) dp(88) else Int.MAX_VALUE).coerceAtLeast(dp(56))
             }
             box.addView(t, lp(-2, -2))
         }

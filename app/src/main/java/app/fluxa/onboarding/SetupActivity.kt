@@ -61,20 +61,19 @@ class SetupActivity : Activity() {
         }
         root.addView(page, FrameLayout.LayoutParams(-1, -1))
 
-        val body = LinearLayout(kit.ctx).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(kit.dp(12), kit.dp(10), kit.dp(12), kit.dp(8))
+        val body = ResponsiveColumns(kit.ctx).apply {
+            setPadding(kit.dp(12), kit.dp(10), kit.dp(12), kit.dp(16))
         }
-        body.addView(kit.text("ตั้งค่าเริ่มต้น", 21f, Palette.TEXT, bold = true, spacing = -0.01f))
+        body.addView(kit.text("ตั้งค่าเริ่มต้น", 21f, Palette.TEXT, bold = true, spacing = -0.01f).spanFull(), LinearLayout.LayoutParams(-1, -2))
         body.addView(
-            kit.text("ทำตามรายการด้านล่างให้พร้อมก่อนกด เริ่ม · ข้อที่ไม่บังคับข้ามได้", 13f, Palette.MUTED),
-            LinearLayout.LayoutParams(-2, -2).apply { topMargin = kit.dp(4) },
+            kit.text("ทำตามรายการด้านล่างให้พร้อมก่อนกด เริ่ม · ข้อที่ไม่บังคับข้ามได้", 13f, Palette.MUTED).spanFull(),
+            LinearLayout.LayoutParams(-1, -2).apply { topMargin = kit.dp(4) },
         )
         body.addView(buildStatusCard(), LinearLayout.LayoutParams(-1, -2).apply { topMargin = kit.dp(18) })
         body.addView(buildHelpCard(), LinearLayout.LayoutParams(-1, -2).apply { topMargin = kit.dp(AppSettings.cardGap) })
 
         page.addView(
-            CenteredScrollView(kit.ctx).apply {
+            CenteredScrollView(kit.ctx, kit.ctx.pageMaxDp()).apply {
                 isVerticalScrollBarEnabled = false
                 overScrollMode = View.OVER_SCROLL_NEVER
                 addView(body)

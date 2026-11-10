@@ -220,45 +220,17 @@ class MainActivity : Activity() {
 
         val land = kit.landscape
         fun pageOf(cards: List<View>): ScrollView {
-            val box = LinearLayout(kit.ctx).apply {
-                orientation = LinearLayout.VERTICAL
+            // 1 column upright, 2 on a landscape phone / tablet, 3 on a big tablet; the first card (title) and
+            // pages with fewer than 3 cards always stay full width
+            val box = ResponsiveColumns(kit.ctx).apply {
                 setPadding(kit.dp(12), kit.dp(8), kit.dp(12), kit.dp(12))
             }
             val gap = kit.dp(AppSettings.cardGap)
-            if (!land || cards.size < 3) {
-                cards.forEachIndexed { i, v ->
-                    box.addView(v, LinearLayout.LayoutParams(-1, -2).apply { if (i > 0) topMargin = gap })
-                }
-            } else {
-                // landscape: the first card (header / title) spans the width, the rest flow into two columns
-                box.addView(cards[0], LinearLayout.LayoutParams(-1, -2))
-                val cols = LinearLayout(kit.ctx).apply { orientation = LinearLayout.HORIZONTAL }
-                val left = LinearLayout(kit.ctx).apply { orientation = LinearLayout.VERTICAL }
-                val right = LinearLayout(kit.ctx).apply { orientation = LinearLayout.VERTICAL }
-                // put each card in the currently shorter column (heights measured at the real column width),
-                // so the two sides end up about the same height; falls back to alternating if a measure fails
-                val sw = kit.dp(resources.configuration.screenWidthDp)
-                val colW = (minOf(sw, kit.dp(980)) - kit.dp(24) - gap) / 2
-                var hl = 0
-                var hr = 0
-                cards.drop(1).forEachIndexed { i, v ->
-                    val h = runCatching {
-                        v.measure(
-                            View.MeasureSpec.makeMeasureSpec(colW, View.MeasureSpec.EXACTLY),
-                            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
-                        )
-                        v.measuredHeight
-                    }.getOrDefault(-1)
-                    val toLeft = if (h < 0) i % 2 == 0 else hl <= hr
-                    val col = if (toLeft) left else right
-                    col.addView(v, LinearLayout.LayoutParams(-1, -2).apply { if (col.childCount > 0) topMargin = gap })
-                    if (h >= 0) { if (toLeft) hl += h + gap else hr += h + gap }
-                }
-                cols.addView(left, LinearLayout.LayoutParams(0, -2, 1f))
-                cols.addView(right, LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = gap })
-                box.addView(cols, LinearLayout.LayoutParams(-1, -2).apply { topMargin = gap })
+            cards.forEachIndexed { i, v ->
+                if (i == 0 || cards.size < 3) v.spanFull()
+                box.addView(v, LinearLayout.LayoutParams(-1, -2).apply { if (i > 0) topMargin = gap })
             }
-            return CenteredScrollView(kit.ctx, if (land) 980 else 680).apply {
+            return CenteredScrollView(kit.ctx, kit.ctx.pageMaxDp()).apply {
                 isVerticalScrollBarEnabled = false
                 clipToPadding = false // content scrolls under the floating dock
                 overScrollMode = View.OVER_SCROLL_NEVER
@@ -1482,7 +1454,7 @@ class MainActivity : Activity() {
     private val anchors = HashMap<String, View>()
     private val catCards = HashMap<String, List<View>>()
     private var openCat: String? = null
-    private lateinit var setBox: LinearLayout
+    private lateinit var setBox: ResponsiveColumns
     private lateinit var setScroll: ScrollView
     private lateinit var searchEdit: EditText
     private lateinit var searchBar: View
@@ -1534,13 +1506,12 @@ class MainActivity : Activity() {
     }
 
     private fun settingsPage(): ScrollView {
-        setBox = LinearLayout(kit.ctx).apply {
-            orientation = LinearLayout.VERTICAL
+        setBox = ResponsiveColumns(kit.ctx).apply {
             setPadding(kit.dp(12), kit.dp(8), kit.dp(12), kit.dp(12))
         }
         searchBar = buildSearchBar()
         hubBody = LinearLayout(kit.ctx).apply { orientation = LinearLayout.VERTICAL }
-        setScroll = CenteredScrollView(kit.ctx).apply {
+        setScroll = CenteredScrollView(kit.ctx, kit.ctx.pageMaxDp()).apply {
             isVerticalScrollBarEnabled = false
             clipToPadding = false
             overScrollMode = View.OVER_SCROLL_NEVER
@@ -1555,13 +1526,16 @@ class MainActivity : Activity() {
         hubBody.removeAllViews()
         val cat = openCat
         if (cat == null) {
-            setBox.addView(pageTitle("ตั้งค่า", "ค้นหา หรือเลือกหมวดที่ต้องการปรับ"))
-            setBox.addView(searchBar, LinearLayout.LayoutParams(-1, -2).apply { topMargin = kit.dp(14) })
-            setBox.addView(hubBody, LinearLayout.LayoutParams(-1, -2).apply { topMargin = kit.dp(14) })
+            // the category list stays a readable column in the middle of a wide landscape window
+            val side = maxOf(0, (minOf(kit.dp(resources.configuration.screenWidthDp), kit.dp(980)) - kit.dp(24) - kit.dp(680)) / 2)
+            fun hubLp(top: Int) = LinearLayout.LayoutParams(-1, -2).apply { topMargin = top; marginStart = side; marginEnd = side }
+            setBox.addView(pageTitle("ตั้งค่า", "ค้นหา หรือเลือกหมวดที่ต้องการปรับ").spanFull(), hubLp(0))
+            setBox.addView(searchBar.spanFull(), hubLp(kit.dp(14)))
+            setBox.addView(hubBody.spanFull(), hubLp(kit.dp(14)))
             fillHubBody()
         } else {
             val c = setCats.first { it.id == cat }
-            setBox.addView(detailHeader(c))
+            setBox.addView(detailHeader(c).spanFull(), LinearLayout.LayoutParams(-1, -2))
             catCards[cat].orEmpty().forEachIndexed { i, v ->
                 (v.parent as? ViewGroup)?.removeView(v)
                 setBox.addView(v, LinearLayout.LayoutParams(-1, -2).apply { topMargin = kit.dp(if (i == 0) 12 else AppSettings.cardGap) })

@@ -22,6 +22,7 @@ import android.graphics.drawable.LayerDrawable
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
 import android.view.animation.LinearInterpolator
 import android.view.animation.OvershootInterpolator
@@ -236,6 +237,126 @@ class CenteredScrollView(ctx: Context, private val maxDp: Int = 680) : ScrollVie
         super.measureChildWithMargins(child, capped(parentWidthMeasureSpec), widthUsed, parentHeightMeasureSpec, heightUsed)
     }
 }
+
+/**
+ * ScrollView that wraps its content but never grows taller than [maxPx]: dialogs keep their title and
+ * close button on screen in a short landscape window instead of running off the bottom.
+ */
+class MaxHeightScrollView(ctx: Context, private val maxPx: Int) : ScrollView(ctx) {
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val limit = View.MeasureSpec.makeMeasureSpec(maxPx.coerceAtLeast(1), View.MeasureSpec.AT_MOST)
+        super.onMeasure(widthMeasureSpec, limit)
+    }
+}
+
+/** Height in px that a dialog's scrolling body may use: the window minus room for its title, buttons and the screen gap. */
+fun Context.dialogBodyMax(reserveDp: Int = 150): Int {
+    val d = resources.displayMetrics
+    return (d.heightPixels * 0.92f - reserveDp * d.density).toInt().coerceAtLeast((120 * d.density).toInt())
+}
+
+/**
+ * Vertical stack of cards that becomes two balanced columns when the window is wide enough (landscape / tablet)
+ * and stays a plain single column otherwise. Children marked with [spanFull] (titles, search bars, the agree
+ * card ...) always take the whole width; the rest go into whichever column is currently shorter, and are
+ * measured at the real column width. Margins work like in a vertical LinearLayout.
+ */
+class ResponsiveColumns(
+    ctx: Context,
+    private val minColPx: Int = (340 * ctx.resources.displayMetrics.density).toInt(),
+    private val gapPx: Int = (12 * ctx.resources.displayMetrics.density).toInt(),
+) : ViewGroup(ctx) {
+    private var xs = IntArray(0)
+    private var ys = IntArray(0)
+    private var ws = IntArray(0)
+    private var hs = IntArray(0)
+
+    override fun checkLayoutParams(p: ViewGroup.LayoutParams?): Boolean = p is ViewGroup.MarginLayoutParams
+    override fun generateLayoutParams(p: ViewGroup.LayoutParams?): ViewGroup.LayoutParams =
+        if (p == null) generateDefaultLayoutParams() else ViewGroup.MarginLayoutParams(p)
+    override fun generateLayoutParams(attrs: android.util.AttributeSet?): ViewGroup.LayoutParams = ViewGroup.MarginLayoutParams(context, attrs)
+    override fun generateDefaultLayoutParams(): ViewGroup.LayoutParams = ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val w = View.MeasureSpec.getSize(widthMeasureSpec)
+        val inner = (w - paddingLeft - paddingRight).coerceAtLeast(0)
+        // 1 column on phones held upright, 2 on a landscape phone / small tablet, 3 on a big tablet or foldable
+        val cols = when {
+            inner >= 3 * minColPx + 2 * gapPx -> 3
+            inner >= 2 * minColPx + gapPx -> 2
+            else -> 1
+        }
+        val colW = if (cols > 1) (inner - (cols - 1) * gapPx) / cols else inner
+        val n = childCount
+        if (xs.size != n) { xs = IntArray(n); ys = IntArray(n); ws = IntArray(n); hs = IntArray(n) }
+        val colBottom = IntArray(cols) { paddingTop }
+        for (i in 0 until n) {
+            val c = getChildAt(i)
+            if (c.visibility == View.GONE) { ws[i] = 0; hs[i] = 0; continue }
+            val lp = c.layoutParams as ViewGroup.MarginLayoutParams
+            val full = cols == 1 || c.tag == FULL
+            val slotW = if (full) inner else colW
+            val avail = (slotW - lp.leftMargin - lp.rightMargin).coerceAtLeast(0)
+            val wSpec = when {
+                lp.width >= 0 -> View.MeasureSpec.makeMeasureSpec(lp.width, View.MeasureSpec.EXACTLY)
+                lp.width == ViewGroup.LayoutParams.WRAP_CONTENT -> View.MeasureSpec.makeMeasureSpec(avail, View.MeasureSpec.AT_MOST)
+                else -> View.MeasureSpec.makeMeasureSpec(avail, View.MeasureSpec.EXACTLY)
+            }
+            val hSpec = if (lp.height >= 0) View.MeasureSpec.makeMeasureSpec(lp.height, View.MeasureSpec.EXACTLY)
+                else View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+            c.measure(wSpec, hSpec)
+            val mw = c.measuredWidth
+            val mh = c.measuredHeight
+            if (full) {
+                val y = (colBottom.maxOrNull() ?: paddingTop) + lp.topMargin
+                xs[i] = paddingLeft + lp.leftMargin; ys[i] = y; ws[i] = mw; hs[i] = mh
+                val b = y + mh + lp.bottomMargin
+                for (k in 0 until cols) colBottom[k] = b
+            } else {
+                var col = 0
+                for (k in 1 until cols) if (colBottom[k] < colBottom[col]) col = k
+                val y = colBottom[col] + lp.topMargin
+                xs[i] = paddingLeft + col * (colW + gapPx) + lp.leftMargin; ys[i] = y; ws[i] = mw; hs[i] = mh
+                colBottom[col] = y + mh + lp.bottomMargin
+            }
+        }
+        val h = (colBottom.maxOrNull() ?: paddingTop) + paddingBottom
+        setMeasuredDimension(w, View.resolveSize(h, heightMeasureSpec))
+    }
+
+    override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
+        for (i in 0 until childCount) {
+            val c = getChildAt(i)
+            if (c.visibility == View.GONE || i >= xs.size) continue
+            c.layout(xs[i], ys[i], xs[i] + ws[i], ys[i] + hs[i])
+        }
+    }
+
+    companion object {
+        const val FULL = "span_full"
+    }
+}
+
+/** Marks a child of [ResponsiveColumns] as always full width. */
+fun <T : View> T.spanFull(): T { tag = ResponsiveColumns.FULL; return this }
+
+/** Width a page's scrolling content may use: wider in landscape so [ResponsiveColumns] can split into two columns. */
+fun Context.pageMaxDp(): Int = when (widthClass()) {
+    WidthClass.COMPACT -> 680
+    WidthClass.MEDIUM -> 840
+    WidthClass.EXPANDED -> 1240
+}
+
+/** Window width buckets (same breakpoints as Material): phone upright / small tablet / landscape phone, tablet, foldable. */
+enum class WidthClass { COMPACT, MEDIUM, EXPANDED }
+
+fun Context.widthClass(): WidthClass {
+    val w = resources.configuration.screenWidthDp
+    return if (w < 600) WidthClass.COMPACT else if (w < 840) WidthClass.MEDIUM else WidthClass.EXPANDED
+}
+
+/** Short window (a phone held sideways): vertical space is the scarce thing, so screens use tighter headers and docks. */
+fun Context.isShortWindow(): Boolean = resources.configuration.screenHeightDp < 480
 
 /** Small view-building kit shared by the launcher screen, the compare screen and the in-game drawer. */
 class Kit(val ctx: Context) {

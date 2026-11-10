@@ -168,7 +168,7 @@ class AboutActivity : Activity() {
             link(inner, "Ko-fi", "https://ko-fi.com/firstk1z3m1")
         }
         card.addView(
-            ScrollView(kit.ctx).apply { isVerticalScrollBarEnabled = false; addView(inner) },
+            MaxHeightScrollView(kit.ctx, kit.ctx.dialogBodyMax()).apply { isVerticalScrollBarEnabled = false; addView(inner) },
             LinearLayout.LayoutParams(-1, -2),
         )
         card.addView(

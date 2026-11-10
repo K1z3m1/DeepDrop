@@ -181,7 +181,7 @@ class ProfileActivity : Activity() {
     private lateinit var avatar: AvatarView
     private lateinit var nameView: TextView
     private lateinit var chips: LinearLayout
-    private lateinit var content: LinearLayout
+    private lateinit var content: ResponsiveColumns
     private lateinit var tabViews: List<Pair<TextView, View>>
     private lateinit var backBtn: View
     private lateinit var bannerEdit: View
@@ -201,7 +201,7 @@ class ProfileActivity : Activity() {
 
         val root = FrameLayout(kit.ctx)
         root.addView(AuroraBackground(kit.ctx), FrameLayout.LayoutParams(-1, -1))
-        scroll = CenteredScrollView(kit.ctx).apply {
+        scroll = CenteredScrollView(kit.ctx, minOf(kit.ctx.pageMaxDp(), 980)).apply {
             isVerticalScrollBarEnabled = false
             overScrollMode = View.OVER_SCROLL_NEVER
             clipToPadding = false
@@ -306,8 +306,7 @@ class ProfileActivity : Activity() {
             marginStart = kit.dp(16); marginEnd = kit.dp(16)
         })
 
-        content = LinearLayout(kit.ctx).apply {
-            orientation = LinearLayout.VERTICAL
+        content = ResponsiveColumns(kit.ctx).apply {
             setPadding(kit.dp(12), kit.dp(10), kit.dp(12), kit.dp(16))
         }
         col.addView(content, LinearLayout.LayoutParams(-1, -2))

@@ -86,7 +86,7 @@ fun showLegalSheet(activity: Activity, kit: Kit, title: String, paragraphs: List
         )
     }
     card.addView(
-        ScrollView(kit.ctx).apply { isVerticalScrollBarEnabled = false; addView(inner) },
+        MaxHeightScrollView(kit.ctx, kit.ctx.dialogBodyMax()).apply { isVerticalScrollBarEnabled = false; addView(inner) },
         LinearLayout.LayoutParams(-1, -2),
     )
     card.addView(
