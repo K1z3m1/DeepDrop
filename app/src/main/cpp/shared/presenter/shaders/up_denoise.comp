@@ -1,0 +1,79 @@
+// Pre-upscale denoise + deblock, run at the source (render) resolution.
+//   1. edge-preserving bilateral filter over a 13-tap diamond (noise / grain / dither / compression mush)
+//   2. light deblock on an 8x8 grid: where a block boundary has only a small luma step, the two
+//      pixels next to it are pulled together; real edges (large step) are left alone.
+// The deblock only helps when the frame is a 1:1 decode of block-coded video; on other content the
+// grid is not aligned, but the small-step gate keeps it very gentle. p1 = strength 0..2
+// (1 = the old maximum; above 1 the filter widens to a 25-tap diamond (radius 3), the range sigma
+// and the deblock threshold keep growing).
+
+#version 450
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) uniform sampler2D srcTex;
+layout(set = 0, binding = 1) uniform writeonly image2D dstImg;
+
+layout(push_constant) uniform PC {
+    float srcW;
+    float srcH;
+    float dstW; // size of the image this pass runs on (== srcW/srcH for the pre-passes)
+    float dstH;
+    float sharp;
+    float p1;
+    float p2;
+    float p3;
+} pc;
+
+ivec2 dims() { return ivec2(int(pc.dstW), int(pc.dstH)); }
+
+vec3 fetchRGB(ivec2 p) {
+    return texelFetch(srcTex, clamp(p, ivec2(0), dims() - ivec2(1)), 0).rgb;
+}
+
+float lumaOf(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
+
+void main() {
+    ivec2 ip = ivec2(gl_GlobalInvocationID.xy);
+    if (ip.x >= int(pc.dstW) || ip.y >= int(pc.dstH)) return;
+
+    float s = clamp(pc.p1, 0.0, 2.0);
+    vec3 c = fetchRGB(ip);
+    int maxMan = s > 1.0 ? 3 : 2;
+
+    // ---- bilateral ----
+    float sigma = mix(0.03, 0.14, s);
+    float inv2 = 1.0 / (2.0 * sigma * sigma);
+    vec3 acc = c;
+    float wsum = 1.0;
+    for (int dy = -3; dy <= 3; dy++) {
+        for (int dx = -3; dx <= 3; dx++) {
+            int man = abs(dx) + abs(dy);
+            if (man == 0 || man > maxMan) continue;
+            float ws = (man == 1) ? 1.0 : (man == 2 ? ((abs(dx) == abs(dy)) ? 0.7 : 0.5) : 0.35);
+            vec3 q = fetchRGB(ip + ivec2(dx, dy));
+            vec3 d = q - c;
+            float w = ws * exp(-dot(d, d) * inv2);
+            acc += q * w;
+            wsum += w;
+        }
+    }
+    vec3 res = mix(c, acc / wsum, min(0.5 + 0.5 * s, 1.0));
+
+    // ---- deblock (8x8 grid) ----
+    float thr = mix(0.012, 0.07, s);
+    int mx = ip.x & 7;
+    int my = ip.y & 7;
+    if (mx == 0 || mx == 7) {
+        vec3 o = fetchRGB(ip + ivec2(mx == 0 ? -1 : 1, 0));
+        float st = abs(lumaOf(c) - lumaOf(o));
+        if (st < thr) res = mix(res, o, 0.5 * (1.0 - st / thr));
+    }
+    if (my == 0 || my == 7) {
+        vec3 o = fetchRGB(ip + ivec2(0, my == 0 ? -1 : 1));
+        float st = abs(lumaOf(c) - lumaOf(o));
+        if (st < thr) res = mix(res, o, 0.5 * (1.0 - st / thr));
+    }
+
+    imageStore(dstImg, ip, vec4(clamp(res, 0.0, 1.0), 1.0));
+}

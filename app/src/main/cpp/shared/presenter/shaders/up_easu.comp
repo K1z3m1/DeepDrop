@@ -1,0 +1,135 @@
+// FSR 1 edge-adaptive spatial upscaling (EASU), re-expressed for a Vulkan compute pass.
+// Algorithm: AMD FidelityFX Super Resolution 1.0 (MIT licence, Copyright (c) 2021 Advanced Micro
+// Devices, Inc.). Taps are fetched with texelFetch (no textureGather) so it does not depend on a
+// driver's gather rounding.
+
+#version 450
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) uniform sampler2D srcTex;
+layout(set = 0, binding = 1) uniform writeonly image2D dstImg;
+
+layout(push_constant) uniform PC {
+    float srcW;
+    float srcH;
+    float dstW;
+    float dstH;
+    float sharp; // unused here (RCAS strength)
+} pc;
+
+vec3 fetchRGB(ivec2 p) {
+    p = clamp(p, ivec2(0), ivec2(int(pc.srcW) - 1, int(pc.srcH) - 1));
+    return texelFetch(srcTex, p, 0).rgb;
+}
+
+float lumaOf(vec3 c) { return c.b * 0.5 + (c.r * 0.5 + c.g); }
+
+void easuSet(inout vec2 dir, inout float len, float w, float lA, float lB, float lC, float lD,
+             float lE) {
+    float lenX = max(abs(lD - lC), abs(lC - lB));
+    float dirX = lD - lB;
+    dir.x += dirX * w;
+    lenX = lenX > 1e-6 ? clamp(abs(dirX) / lenX, 0.0, 1.0) : 0.0;
+    lenX *= lenX;
+    len += lenX * w;
+    float lenY = max(abs(lE - lC), abs(lC - lA));
+    float dirY = lE - lA;
+    dir.y += dirY * w;
+    lenY = lenY > 1e-6 ? clamp(abs(dirY) / lenY, 0.0, 1.0) : 0.0;
+    lenY *= lenY;
+    len += lenY * w;
+}
+
+void easuTap(inout vec3 aC, inout float aW, vec2 off, vec2 dir, vec2 len, float lob, float clp,
+             vec3 c) {
+    vec2 v;
+    v.x = (off.x * dir.x) + (off.y * dir.y);
+    v.y = (off.x * (-dir.y)) + (off.y * dir.x);
+    v *= len;
+    float d2 = v.x * v.x + v.y * v.y;
+    d2 = min(d2, clp);
+    float wB = 0.4 * d2 - 1.0;
+    float wA = lob * d2 - 1.0;
+    wB *= wB;
+    wA *= wA;
+    wB = 1.5625 * wB - 0.5625;
+    float w = wB * wA;
+    aC += c * w;
+    aW += w;
+}
+
+void main() {
+    ivec2 ip = ivec2(gl_GlobalInvocationID.xy);
+    if (ip.x >= int(pc.dstW) || ip.y >= int(pc.dstH)) return;
+
+    vec2 scale = vec2(pc.srcW / pc.dstW, pc.srcH / pc.dstH);
+    vec2 pp = vec2(ip) * scale + (0.5 * scale - 0.5);
+    vec2 fpv = floor(pp);
+    ivec2 fp = ivec2(fpv);
+    pp -= fpv;
+
+    //    b c
+    //  e f g h
+    //  i j k l
+    //    n o
+    vec3 b = fetchRGB(fp + ivec2(0, -1));
+    vec3 c = fetchRGB(fp + ivec2(1, -1));
+    vec3 e = fetchRGB(fp + ivec2(-1, 0));
+    vec3 f = fetchRGB(fp + ivec2(0, 0));
+    vec3 g = fetchRGB(fp + ivec2(1, 0));
+    vec3 h = fetchRGB(fp + ivec2(2, 0));
+    vec3 i = fetchRGB(fp + ivec2(-1, 1));
+    vec3 j = fetchRGB(fp + ivec2(0, 1));
+    vec3 k = fetchRGB(fp + ivec2(1, 1));
+    vec3 l = fetchRGB(fp + ivec2(2, 1));
+    vec3 n = fetchRGB(fp + ivec2(0, 2));
+    vec3 o = fetchRGB(fp + ivec2(1, 2));
+
+    float bL = lumaOf(b), cL = lumaOf(c), eL = lumaOf(e), fL = lumaOf(f);
+    float gL = lumaOf(g), hL = lumaOf(h), iL = lumaOf(i), jL = lumaOf(j);
+    float kL = lumaOf(k), lL = lumaOf(l), nL = lumaOf(n), oL = lumaOf(o);
+
+    vec2 dir = vec2(0.0);
+    float len = 0.0;
+    easuSet(dir, len, (1.0 - pp.x) * (1.0 - pp.y), bL, eL, fL, gL, jL);
+    easuSet(dir, len, pp.x * (1.0 - pp.y), cL, fL, gL, hL, kL);
+    easuSet(dir, len, (1.0 - pp.x) * pp.y, fL, iL, jL, kL, nL);
+    easuSet(dir, len, pp.x * pp.y, gL, jL, kL, lL, oL);
+
+    float dirR = dir.x * dir.x + dir.y * dir.y;
+    bool zro = dirR < (1.0 / 32768.0);
+    dirR = inversesqrt(max(dirR, 1e-12));
+    dirR = zro ? 1.0 : dirR;
+    dir.x = zro ? 1.0 : dir.x;
+    dir *= vec2(dirR);
+
+    len = len * 0.5;
+    len *= len;
+    float stretch = (dir.x * dir.x + dir.y * dir.y) / max(max(abs(dir.x), abs(dir.y)), 1e-6);
+    vec2 len2 = vec2(1.0 + (stretch - 1.0) * len, 1.0 - 0.5 * len);
+    float lob = 0.5 + ((1.0 / 4.0 - 0.04) - 0.5) * len;
+    float clp = 1.0 / lob;
+
+    vec3 min4 = min(min(f, g), min(j, k));
+    vec3 max4 = max(max(f, g), max(j, k));
+
+    vec3 aC = vec3(0.0);
+    float aW = 0.0;
+    easuTap(aC, aW, vec2(0.0, -1.0) - pp, dir, len2, lob, clp, b);
+    easuTap(aC, aW, vec2(1.0, -1.0) - pp, dir, len2, lob, clp, c);
+    easuTap(aC, aW, vec2(-1.0, 1.0) - pp, dir, len2, lob, clp, i);
+    easuTap(aC, aW, vec2(0.0, 1.0) - pp, dir, len2, lob, clp, j);
+    easuTap(aC, aW, vec2(0.0, 0.0) - pp, dir, len2, lob, clp, f);
+    easuTap(aC, aW, vec2(-1.0, 0.0) - pp, dir, len2, lob, clp, e);
+    easuTap(aC, aW, vec2(1.0, 1.0) - pp, dir, len2, lob, clp, k);
+    easuTap(aC, aW, vec2(2.0, 1.0) - pp, dir, len2, lob, clp, l);
+    easuTap(aC, aW, vec2(2.0, 0.0) - pp, dir, len2, lob, clp, h);
+    easuTap(aC, aW, vec2(1.0, 0.0) - pp, dir, len2, lob, clp, g);
+    easuTap(aC, aW, vec2(1.0, 2.0) - pp, dir, len2, lob, clp, o);
+    easuTap(aC, aW, vec2(0.0, 2.0) - pp, dir, len2, lob, clp, n);
+
+    vec3 pix = abs(aW) > 1e-6 ? aC / aW : f;
+    pix = min(max4, max(min4, pix));
+    imageStore(dstImg, ip, vec4(clamp(pix, 0.0, 1.0), 1.0));
+}
