@@ -1,0 +1,125 @@
+// Final pass at output resolution: deband + colour grade + dither.
+//   deband (p1 = strength 0..2; above 1 = a third iteration and a wider threshold / range): for each pixel average 4 taps on a ring of random radius / angle
+//     (2 iterations); when every tap is within a small threshold of the centre the pixel is pulled
+//     to the average, which melts the contour steps of smooth gradients. Real edges exceed the
+//     threshold and are kept.
+//   colour grade (gBright / gContrast / gSat / gVib / gTemp / gTint, each -1..1, 0 = untouched):
+//     white balance (temperature + tint, luma preserving) -> brightness (gamma lift, keeps black and
+//     white points) -> contrast (S-curve, no clipping) -> saturation + vibrance (vibrance pushes
+//     the dull colours more than the already vivid ones).
+//   dither (p2 = amplitude in 8-bit LSB, 0 = off): triangular-PDF noise before the 8-bit store, so
+//     what is left of the banding turns into fine noise. p3 = per-frame seed.
+//   Order: deband -> grade -> dither.
+
+#version 450
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) uniform sampler2D srcTex;
+layout(set = 0, binding = 1) uniform writeonly image2D dstImg;
+
+layout(push_constant) uniform PC {
+    float srcW;
+    float srcH;
+    float dstW;
+    float dstH;
+    float sharp;
+    float p1;
+    float p2;
+    float p3;
+    float gBright;
+    float gContrast;
+    float gSat;
+    float gVib;
+    float gTemp;
+    float gTint;
+} pc;
+
+const vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
+
+ivec2 dims() { return ivec2(int(pc.dstW), int(pc.dstH)); }
+vec3 fetchRGB(ivec2 p) { return texelFetch(srcTex, clamp(p, ivec2(0), dims() - ivec2(1)), 0).rgb; }
+
+uint pcg(uint v) {
+    uint state = v * 747796405u + 2891336453u;
+    uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+    return (word >> 22u) ^ word;
+}
+
+float u01(uint h) { return float(h >> 8u) * (1.0 / 16777216.0); }
+
+// ---- colour grade ----
+vec3 grade(vec3 c) {
+    // white balance: warm = more red / less blue, magenta tint = less green. The gains are
+    // normalised so the overall brightness stays put.
+    if (pc.gTemp != 0.0 || pc.gTint != 0.0) {
+        vec3 g = vec3(1.0 + 0.20 * pc.gTemp + 0.07 * pc.gTint,
+                      1.0 - 0.14 * pc.gTint,
+                      1.0 - 0.20 * pc.gTemp + 0.07 * pc.gTint);
+        c = clamp(c * (g / dot(g, LUMA)), 0.0, 1.0);
+    }
+    // brightness as a gamma curve: lifts / lowers the midtones without clipping white or crushing black
+    if (pc.gBright != 0.0) {
+        c = pow(c, vec3(exp2(-pc.gBright * 0.8)));
+    }
+    // contrast: + = smoothstep S-curve, - = flatten towards mid grey
+    if (pc.gContrast > 0.0) {
+        c = mix(c, c * c * (3.0 - 2.0 * c), pc.gContrast);
+    } else if (pc.gContrast < 0.0) {
+        c = 0.5 + (c - 0.5) * (1.0 + 0.7 * pc.gContrast);
+    }
+    // saturation + vibrance
+    if (pc.gSat != 0.0 || pc.gVib != 0.0) {
+        float l = dot(c, LUMA);
+        float mx = max(c.r, max(c.g, c.b));
+        float mn = min(c.r, min(c.g, c.b));
+        float sat = (mx - mn) / max(mx, 1e-4);
+        float amt = max(1.0 + pc.gSat + pc.gVib * (1.0 - sat), 0.0);
+        c = mix(vec3(l), c, amt);
+    }
+    return clamp(c, 0.0, 1.0);
+}
+
+void main() {
+    ivec2 ip = ivec2(gl_GlobalInvocationID.xy);
+    if (ip.x >= int(pc.dstW) || ip.y >= int(pc.dstH)) return;
+
+    vec3 c = fetchRGB(ip);
+    float s = clamp(pc.p1, 0.0, 2.0);
+    uint seed = uint(max(pc.p3, 0.0));
+    uint h = pcg(uint(ip.x) + pcg(uint(ip.y) + pcg(seed)));
+
+    if (s > 0.0) {
+        float thr = mix(2.0, 12.0, s) / 255.0;
+        float range = mix(8.0, 32.0, s);
+        int iters = s > 1.0 ? 3 : 2;
+        for (int it = 0; it < iters; it++) {
+            h = pcg(h);
+            float dist = u01(h) * range + 1.0;
+            h = pcg(h);
+            float ang = u01(h) * 6.2831853;
+            ivec2 o = ivec2(round(vec2(cos(ang), sin(ang)) * dist));
+            vec3 p1 = fetchRGB(ip + o);
+            vec3 p2 = fetchRGB(ip - o);
+            vec3 p3 = fetchRGB(ip + ivec2(-o.y, o.x));
+            vec3 p4 = fetchRGB(ip + ivec2(o.y, -o.x));
+            vec3 avg = (p1 + p2 + p3 + p4) * 0.25;
+            vec3 dm = max(max(abs(c - p1), abs(c - p2)), max(abs(c - p3), abs(c - p4)));
+            float worst = max(dm.r, max(dm.g, dm.b));
+            float w = 1.0 - smoothstep(0.5 * thr, thr, worst);
+            c = mix(c, avg, w);
+        }
+    }
+
+    c = grade(c);
+
+    if (pc.p2 > 0.0) {
+        h = pcg(h ^ 0x9E3779B9u);
+        float n1 = u01(h);
+        h = pcg(h);
+        float n2 = u01(h);
+        c += (n1 + n2 - 1.0) * pc.p2 / 255.0;
+    }
+
+    imageStore(dstImg, ip, vec4(clamp(c, 0.0, 1.0), 1.0));
+}
