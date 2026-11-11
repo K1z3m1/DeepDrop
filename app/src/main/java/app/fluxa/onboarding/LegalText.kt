@@ -24,7 +24,7 @@ object LegalText {
     )
 
     val PRIVACY = listOf(
-        "แอพขอสิทธิ์อินเทอร์เน็ตเพียงเพื่อวัดค่า ping (เชื่อมต่อไปที่ 8.8.8.8) และไม่ส่งหรือแชร์ข้อมูลส่วนตัวใด ๆ ออกจากเครื่องของคุณ",
+        "แอพขอสิทธิ์อินเทอร์เน็ตเพื่อ 3 อย่างเท่านั้น: วัดค่า ping (เชื่อมต่อไปที่ 8.8.8.8), ทดสอบความเร็วเน็ต (speed.cloudflare.com) และดูข้อมูล IP สาธารณะ (Cloudflare และ ipinfo.io) สองอย่างหลังทำงานเฉพาะเมื่อคุณกดเองในหน้ารายละเอียดเครือข่าย ปลายทางเหล่านั้นเห็น IP ของคุณตามปกติของการเชื่อมต่ออินเทอร์เน็ต แต่แอพไม่ส่งข้อมูลส่วนตัวอื่นใดออกจากเครื่อง",
         "ภาพหน้าจอที่จับถูกประมวลผลบนเครื่องเพื่อสร้างเฟรมเท่านั้น ไม่ถูกอัปโหลด",
         "บริการ Accessibility ใช้แสดง overlay ให้แตะทะลุไปที่เกมได้ และรู้ชื่อแอพที่เปิดอยู่เพื่อสรุปสถิติการเล่นในเครื่อง ไม่อ่านหรือเก็บเนื้อหาบนหน้าจอ",
         "ไมโครโฟนใช้เฉพาะเมื่อคุณเลือกอัดเสียงนอก และวิดีโอที่อัดถูกเก็บในโฟลเดอร์ Movies บนเครื่อง",
@@ -47,7 +47,7 @@ object LegalText {
 /** Remembers whether the user accepted the current version of the terms + privacy policy. */
 object Consent {
     /** Bump when the terms, privacy policy or requested permissions change, to ask everyone again. */
-    const val VERSION = 1
+    const val VERSION = 2
 
     private const val K_VERSION = "consent_version"
     private const val K_TIME = "consent_time"

@@ -186,7 +186,13 @@ abstract class DetailPage(protected val act: Activity, protected val kit: Kit) {
     protected fun copy(text: String) {
         if (text == "--" || text.isBlank()) return
         val cm = act.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        cm.setPrimaryClip(ClipData.newPlainText("Fluxa", text))
+        // values here include the local / public IP: keep them out of the clipboard preview and other apps' reach
+        val clip = ClipData.newPlainText("Fluxa", text).apply {
+            description.extras = android.os.PersistableBundle().apply {
+                putBoolean("android.content.extra.IS_SENSITIVE", true)
+            }
+        }
+        cm.setPrimaryClip(clip)
         I18n.toastMake(act, "คัดลอกแล้ว", Toast.LENGTH_SHORT).show()
     }
 
@@ -270,6 +276,7 @@ private class CpuPage(act: Activity, kit: Kit) : DetailPage(act, kit) {
     override fun onStart() {
         val g = gen
         thread(name = "cpu-detail") {
+            android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND)
             while (alive && g == gen) {
                 val cores = SocInfo.cores()
                 val t = SocInfo.cpuTempC() ?: SocInfo.batteryTempC(act)
@@ -385,6 +392,7 @@ private class GpuPage(act: Activity, kit: Kit) : DetailPage(act, kit) {
     override fun onStart() {
         val g = gen
         thread(name = "gpu-detail") {
+            android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND)
             if (!identityLoaded) {
                 val id = SocInfo.gpuIdentity()
                 val steps = ClockReader.gpuSteps()
@@ -462,6 +470,7 @@ private class BatteryPage(act: Activity, kit: Kit) : DetailPage(act, kit) {
     override fun onStart() {
         val g = gen
         thread(name = "battery-detail") {
+            android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND)
             while (alive && g == gen) {
                 val b = SocInfo.battery(act)
                 ui.post { if (alive && g == gen) render(b) }
@@ -652,6 +661,7 @@ private class RamPage(act: Activity, kit: Kit) : DetailPage(act, kit) {
     private fun refreshRam() {
         if (!::usedV.isInitialized) return
         thread(name = "ram-detail") {
+            android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND)
             val m = tools.ram()
             val mi = SocInfo.meminfo()
             val low = runCatching {
@@ -901,7 +911,7 @@ private class NetworkPage(act: Activity, kit: Kit) : DetailPage(act, kit) {
         linkBox = l
         val ip = addCard(body, "IP และรายละเอียด")
         ipBox = ip
-        note(body, "แตะที่แถวเพื่อคัดลอกค่า · IP สาธารณะ/ผู้ให้บริการ ถามจาก Cloudflare และ ipinfo.io ผ่าน HTTPS ตอนเปิดหน้านี้")
+        note(body, "แตะที่แถวเพื่อคัดลอกค่า · IP สาธารณะ/ผู้ให้บริการ จะถามจาก Cloudflare และ ipinfo.io ผ่าน HTTPS เฉพาะเมื่อคุณกดปุ่มดูข้อมูลเท่านั้น")
     }
 
     private fun stat(parent: LinearLayout, label: String, color: Int): TextView {
@@ -936,7 +946,16 @@ private class NetworkPage(act: Activity, kit: Kit) : DetailPage(act, kit) {
 
     override fun onStart() {
         loadLink()
-        loadPublic()
+        showPublicPrompt()
+    }
+
+    /** The public-IP lookup contacts third parties (Cloudflare, ipinfo.io), so it only runs when the user asks. */
+    private fun showPublicPrompt() {
+        clearRows(ipBox)
+        ipBox.addView(
+            button("ดูข้อมูล IP สาธารณะ") { loadPublic() },
+            lp(-1, -2).apply { topMargin = kit.dp(12) },
+        )
     }
 
     override fun onStop() {

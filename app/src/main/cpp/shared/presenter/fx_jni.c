@@ -1,6 +1,7 @@
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
 #include <jni.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -8,8 +9,18 @@
 
 #define FX_FN(name) Java_app_fluxa_FluxaNative_##name
 
+/* Hard ceilings for anything that arrives over JNI. The Kotlin side already clamps these, but the
+ * native layer must not trust its caller: oversized values would turn into huge Vulkan allocations. */
+#define FX_JNI_MAX_DIM 16384
+#define FX_JNI_MAX_MULTIPLIER 16
+#define FX_JNI_MAX_FLOW_SIDE 4096
+#define FX_JNI_MAX_DRIVER_LEN 256
+
+static inline bool fx_dim_ok(jint v) { return v > 0 && v <= FX_JNI_MAX_DIM; }
+
 static char* fx_copy_utf(JNIEnv* env, jstring value) {
     if (!value) return NULL;
+    if ((*env)->GetStringUTFLength(env, value) > FX_JNI_MAX_DRIVER_LEN) return NULL;
     const char* chars = (*env)->GetStringUTFChars(env, value, NULL);
     if (!chars) return NULL;
     char* copy = strdup(chars);
@@ -26,7 +37,10 @@ JNIEXPORT jlong JNICALL FX_FN(nativeCreate)(JNIEnv* env, jclass clazz, jobject c
                                             jint upscaleMode, jint upscaleSharp,
                                             jlong upscaleLook) {
     (void)clazz;
-    if (!output || width <= 0 || height <= 0) return 0;
+    if (!output || !fx_dim_ok(width) || !fx_dim_ok(height)) return 0;
+    if (outWidth < 0 || outWidth > FX_JNI_MAX_DIM || outHeight < 0 || outHeight > FX_JNI_MAX_DIM) return 0;
+    if (multiplier < 1 || multiplier > FX_JNI_MAX_MULTIPLIER) multiplier = 1;
+    if (flowSide > FX_JNI_MAX_FLOW_SIDE) flowSide = FX_JNI_MAX_FLOW_SIDE;
 
     ANativeWindow* window = ANativeWindow_fromSurface(env, output);
     if (!window) return 0;
@@ -62,6 +76,9 @@ JNIEXPORT void JNICALL FX_FN(nativeConfigure)(JNIEnv* env, jclass clazz, jlong h
     (void)env;
     (void)clazz;
     FxPresenter* fg = (FxPresenter*)(intptr_t)handle;
+    if (!fg) return;
+    if (multiplier < 1 || multiplier > FX_JNI_MAX_MULTIPLIER) multiplier = 1;
+    if (flowSide > FX_JNI_MAX_FLOW_SIDE) flowSide = FX_JNI_MAX_FLOW_SIDE;
     const uint32_t dis_min_side = flowSide > 0 ? (uint32_t)flowSide : FX_DIS_MIN_SIDE_DEFAULT;
     fx_configure(fg, (uint32_t)multiplier, refreshRate, sourceRate, dis_min_side,
                  (uint32_t)presentMode, upscaleMode < 0 ? 1u : (uint32_t)upscaleMode,
@@ -125,7 +142,7 @@ JNIEXPORT jboolean JNICALL FX_FN(nativeRecordStart)(JNIEnv* env, jclass clazz, j
                                                     jobject surface, jint width, jint height) {
     (void)clazz;
     FxPresenter* fg = (FxPresenter*)(intptr_t)handle;
-    if (!fg || !surface || width <= 0 || height <= 0) return JNI_FALSE;
+    if (!fg || !surface || !fx_dim_ok(width) || !fx_dim_ok(height)) return JNI_FALSE;
     ANativeWindow* window = ANativeWindow_fromSurface(env, surface);
     if (!window) return JNI_FALSE;
     const bool live = fx_record_start(fg, window, (uint32_t)width, (uint32_t)height);
@@ -145,7 +162,7 @@ JNIEXPORT void JNICALL FX_FN(nativeRecordHud)(JNIEnv* env, jclass clazz, jlong h
     (void)clazz;
     FxPresenter* fg = (FxPresenter*)(intptr_t)handle;
     if (!fg) return;
-    if (!pixels || width <= 0 || height <= 0) {
+    if (!pixels || !fx_dim_ok(width) || !fx_dim_ok(height)) {
         fx_record_hud(fg, NULL, 0, 0, 0, 0);
         return;
     }

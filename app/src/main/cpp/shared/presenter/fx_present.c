@@ -10,6 +10,8 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/prctl.h>
+#include <sys/resource.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -1771,6 +1773,12 @@ static void fx_track_arrivals(FxPresenter* fg) {
 
 static void* fx_thread(void* arg) {
     FxPresenter* fg = (FxPresenter*)arg;
+
+    /* Name the thread (shows in systrace/profilers) and lift it slightly above normal priority: this thread
+     * paces every generated frame, so scheduler jitter from background work shows up directly as judder.
+     * Failure (not permitted) is harmless; the thread just keeps the default priority. */
+    prctl(PR_SET_NAME, "fluxa-present", 0, 0, 0);
+    (void)setpriority(PRIO_PROCESS, (id_t)gettid(), -4);
 
     while (true) {
         pthread_mutex_lock(&fg->lock);

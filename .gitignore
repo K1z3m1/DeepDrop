@@ -4,3 +4,10 @@ local.properties
 .idea/
 build/
 .cxx/
+
+# signing material: never commit
+*.jks
+*.keystore
+keystore.properties
+*.p12
+*.pem

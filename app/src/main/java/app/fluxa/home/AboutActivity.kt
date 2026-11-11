@@ -3,6 +3,7 @@ package app.fluxa
 import android.app.Activity
 import android.app.Dialog
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
@@ -17,12 +18,16 @@ import android.widget.ScrollView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import java.io.ByteArrayInputStream
+import java.security.MessageDigest
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
 
 /** About screen: logo, version, and four rows (terms, privacy, open source, contact) that open a sheet. */
 class AboutActivity : Activity() {
     private lateinit var kit: Kit
 
-    private enum class Page { TERMS, PRIVACY, SOURCE, CONSENT, CONTACT }
+    private enum class Page { TERMS, PRIVACY, VERIFY, SOURCE, CONSENT, CONTACT }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -92,6 +97,7 @@ class AboutActivity : Activity() {
         val rows = listOf(
             Triple(AboutIcon.Kind.DOC, "ข้อตกลงการใช้งาน", Page.TERMS),
             Triple(AboutIcon.Kind.SHIELD, "นโยบายความเป็นส่วนตัว", Page.PRIVACY),
+            Triple(AboutIcon.Kind.CHECK, "ตรวจสอบความถูกต้องของแอพ", Page.VERIFY),
             Triple(AboutIcon.Kind.CHECK, "ทบทวนการยินยอม", Page.CONSENT),
             Triple(AboutIcon.Kind.CODE, "แหล่งที่มา (Open Source)", Page.SOURCE),
             Triple(AboutIcon.Kind.MAIL, "ติดต่อผู้พัฒนา", Page.CONTACT),
@@ -136,10 +142,45 @@ class AboutActivity : Activity() {
         setContentView(root)
     }
 
+    /**
+     * Signing certificate SHA-256 of the installed app, for comparing with the value published by the developer.
+     * Returns (fingerprint, isDebugKey) pairs; empty when the signature cannot be read.
+     */
+    private fun signerInfo(): List<Pair<String, Boolean>> = runCatching {
+        val info = packageManager.getPackageInfo(packageName, PackageManager.GET_SIGNING_CERTIFICATES)
+        val si = info.signingInfo ?: return@runCatching emptyList()
+        val sigs = if (si.hasMultipleSigners()) si.apkContentsSigners else si.signingCertificateHistory
+        sigs.orEmpty().map { sig ->
+            val der = sig.toByteArray()
+            val fp = MessageDigest.getInstance("SHA-256").digest(der).joinToString(":") { "%02X".format(it) }
+            val cert = CertificateFactory.getInstance("X.509").generateCertificate(ByteArrayInputStream(der)) as X509Certificate
+            fp to cert.subjectX500Principal.name.contains("Android Debug", ignoreCase = true)
+        }
+    }.getOrDefault(emptyList())
+
+    private fun verifyParagraphs(): List<String> {
+        val version = runCatching { packageManager.getPackageInfo(packageName, 0).versionName }.getOrNull() ?: "?"
+        val signers = signerInfo()
+        val out = ArrayList<String>()
+        out += I18n.tr("ลายเซ็นของแอพนี้ (SHA-256) ใช้เทียบกับค่าที่ผู้พัฒนาประกาศไว้ใน SECURITY.md ของโปรเจกต์ หากไม่ตรงกัน แปลว่าแอพถูกแก้ไขหรือไม่ได้มาจากผู้พัฒนา ควรถอนการติดตั้งแล้วดาวน์โหลดใหม่จากแหล่งทางการ")
+        out += I18n.tr("ชื่อแพ็กเกจ") + ": $packageName"
+        out += I18n.tr("เวอร์ชัน") + ": $version"
+        if (signers.isEmpty()) {
+            out += I18n.tr("ไม่พบลายเซ็น (อ่านค่าไม่ได้)")
+        } else {
+            signers.forEach { (fp, _) -> out += I18n.tr("ลายเซ็น SHA-256") + ":\n" + fp }
+            if (signers.any { it.second }) {
+                out += I18n.tr("แอพนี้ไม่ได้เซ็นด้วยคีย์เผยแพร่ (เป็นรุ่นทดสอบ) อย่าติดตั้งต่อหากไม่ได้สร้างเอง")
+            }
+        }
+        return out
+    }
+
     private fun showPage(p: Page) {
         val (title, paragraphs) = when (p) {
             Page.TERMS -> "ข้อตกลงการใช้งาน" to LegalText.TERMS
             Page.PRIVACY -> "นโยบายความเป็นส่วนตัว" to LegalText.PRIVACY
+            Page.VERIFY -> "ตรวจสอบความถูกต้องของแอพ" to verifyParagraphs()
             Page.SOURCE -> "แหล่งที่มา (Open Source)" to LegalText.SOURCE
             Page.CONSENT -> "ทบทวนการยินยอม" to emptyList<String>()
             Page.CONTACT -> "ติดต่อผู้พัฒนา" to emptyList<String>()
@@ -195,7 +236,13 @@ class AboutActivity : Activity() {
                 background = kit.glassBtn(14)
                 isClickable = true
                 setOnClickListener {
-                    runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+                    // only ever hand a plain https:// link to another app (no intent:, file:, javascript: ...)
+                    val uri = Uri.parse(url)
+                    if (uri.scheme == "https" && !uri.host.isNullOrEmpty()) {
+                        runCatching {
+                            startActivity(Intent(Intent.ACTION_VIEW, uri).addCategory(Intent.CATEGORY_BROWSABLE))
+                        }
+                    }
                 }
             },
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = kit.dp(10) },

@@ -1237,6 +1237,15 @@ class MainActivity : Activity() {
             setUi(PanelPrefs.K_SIDE, i, false); true
         })
 
+        card.addView(kit.caption("ขนาดแผง (ความกว้าง)").also { anchors["panel_scale"] = it })
+        card.addView(Slider(kit, PanelPrefs.MIN_PANEL_SCALE, PanelPrefs.MAX_PANEL_SCALE, PanelPrefs.panelScale(this), step = 5, format = { "$it %" }) {
+            setUi(PanelPrefs.K_PANEL_SCALE, it, false)
+        })
+        card.addView(kit.caption("ขนาด HUD (ตัวเลข fps บนจอ)").also { anchors["hud_scale"] = it })
+        card.addView(Slider(kit, PanelPrefs.MIN_HUD_SCALE, PanelPrefs.MAX_HUD_SCALE, PanelPrefs.hudScale(this), step = 10, format = { "$it %" }) {
+            setUi(PanelPrefs.K_HUD_SCALE, it, false)
+        })
+
         card.addView(kit.section("หน้าปัดบนแผง").also { anchors["panel_dial"] = it })
         card.addView(
             preview,

@@ -37,7 +37,7 @@ import kotlin.math.min
 /**
  * Settings drawer drawn above the game as accessibility overlays.
  *  - a thin strip on the right edge: swipe right -> left opens the drawer
- *  - the drawer: header with live fps, a grid of on/off switches (tap = toggle, long-press = settings sheet), pinned stop button
+ *  - the drawer: compact panel with CPU/GPU dials, a grid of on/off switches (tap = toggle, long-press = settings sheet), pinned stop button
  * Dragging any slider fades the drawer out so the change can be judged on the live game; it comes
  * back on release. Tapping the dim area or the X closes it.
  */
@@ -81,13 +81,7 @@ class DrawerOverlay(
     private var edge: View? = null
     private var dialBox: LinearLayout? = null
     // performance-panel page (dials, stats, power mode, refresh rate, brightness) + the right-hand rail
-    private var railTab = 0 // 0 = performance panel, 1 = game tools
-    private var perfPageView: View? = null
-    private var toolsPageView: View? = null
-    private val railIcons = arrayOfNulls<android.widget.ImageView>(2)
-    private val railLabels = arrayOfNulls<TextView>(2)
     private var statGame: TextView? = null
-    private var statFps: TextView? = null
     private var statBat: TextView? = null
     private var statOutFps = -1f
     private var sessionStart = 0L
@@ -100,6 +94,11 @@ class DrawerOverlay(
     private var dialsDirty = false
     /** Moves the swipe-in strip to the other edge as soon as the side setting changes. */
     private val sideListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        // HUD size changed from the app's settings page while a session is running
+        if (key == PanelPrefs.K_HUD_SCALE && attached) {
+            val v = PanelPrefs.hudScale(host)
+            if (v != (hudScale * 100f + 0.5f).toInt()) applyHudScale(v)
+        }
         if (key == PanelPrefs.K_SIDE && attached && showEdge) {
             edge?.let { runCatching { wm.removeViewImmediate(it) } }
             edge = null
@@ -140,6 +139,16 @@ class DrawerOverlay(
     private val frameBuf = IntArray(FrameGraphView.SHOWN)
     private var open = false
     private var hudEnabled = prefs.getBoolean("hud", true)
+    /** Locked = click-through (as before). Unlocked = the HUD can be dragged anywhere on screen. */
+    private var hudLocked = prefs.getBoolean("hud_lock", true)
+    // portrait and landscape keep their own spot: one shared pixel pair would land off-screen after a rotation
+    private val hudKeyX = if (screenW > screenH) "hud_x_land" else "hud_x_port"
+    private val hudKeyY = if (screenW > screenH) "hud_y_land" else "hud_y_port"
+    private var hudX = prefs.getInt(hudKeyX, (8 * density).toInt()).coerceIn(0, max(0, screenW - (48 * density).toInt()))
+    private var hudY = prefs.getInt(hudKeyY, (24 * density).toInt()).coerceIn(0, max(0, screenH - (32 * density).toInt()))
+    private var hudParams: WindowManager.LayoutParams? = null
+    /** HUD size setting as a factor (1.0 = 100 %), changed live from the HUD page. */
+    private var hudScale = PanelPrefs.hudScale(host) / 100f
     /** Burn the fps HUD into the recorded video too (live toggle, independent of the on-screen HUD). */
     private var hudInVideo = prefs.getBoolean("hud_rec", true)
     private var hudSentToVideo = false
@@ -151,6 +160,22 @@ class DrawerOverlay(
     private var lastTime = 0L
 
     private fun dp(v: Int) = (v * density).toInt()
+    private fun dp(v: Int, scale: Float) = (v * density * scale).toInt()
+
+    /** HUD size slider: resizes the texts, padding and graph of the on-screen HUD at once (no rebuild). */
+    private fun applyHudScale(percent: Int) {
+        val s = percent / 100f
+        hudScale = s
+        hudText?.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f * s)
+        hudClockText?.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f * s)
+        hudStatText?.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f * s)
+        hudGraph?.setUiScale(s)
+        (hud as? LinearLayout)?.setPadding(dp(9, s), dp(4, s), dp(9, s), dp(4, s))
+        hud?.requestLayout()
+        // the video copy of the HUD follows the new size on its next refresh
+        lastVideoHudKey = ""
+        updateVideoHud()
+    }
 
     // ---------------------------------------------------------------- edge strip
 
@@ -219,18 +244,18 @@ class DrawerOverlay(
 
     /** Small click-through "in/out" fps counter in the top-left corner. */
     private fun addHud() {
-        val label = text("--/--", 12f, bold = true, color = Palette.PRIMARY)
-        val graph = FrameGraphView(ctx).apply { visibility = View.GONE }
-        val clock = text("--:--", 11f, bold = true, color = Palette.MUTED).apply {
+        val label = text("--/--", 12f * hudScale, bold = true, color = Palette.PRIMARY)
+        val graph = FrameGraphView(ctx).apply { visibility = View.GONE; setUiScale(hudScale) }
+        val clock = text("--:--", 11f * hudScale, bold = true, color = Palette.MUTED).apply {
             visibility = if (hudClock) View.VISIBLE else View.GONE
         }
-        val stats = text("CPU --%  GPU --%  RAM --%", 11f, bold = true, color = Palette.MUTED).apply {
+        val stats = text("CPU --%  GPU --%  RAM --%", 11f * hudScale, bold = true, color = Palette.MUTED).apply {
             visibility = if (hudStats) View.VISIBLE else View.GONE
             fontFeatureSettings = "tnum"
         }
         val view = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(9), dp(4), dp(9), dp(4))
+            setPadding(dp(9, hudScale), dp(4, hudScale), dp(9, hudScale), dp(4, hudScale))
             background = kit.rounded(Palette.a(Palette.BG, 0xB3), 10, Palette.STROKE, 1)
             visibility = if (hudEnabled) View.VISIBLE else View.GONE
             addView(label)
@@ -247,18 +272,86 @@ class DrawerOverlay(
             WindowManager.LayoutParams.WRAP_CONTENT,
             windowType,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                (if (hudLocked) WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE else 0) or
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
                 WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
             PixelFormat.TRANSLUCENT,
         )
         lp.gravity = Gravity.TOP or Gravity.START
-        lp.x = dp(8)
-        lp.y = dp(24)
+        lp.x = hudX
+        lp.y = hudY
         lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+        hudParams = lp
+        view.setOnTouchListener(hudDragListener())
         hud = view
         if (runCatching { wm.addView(view, lp) }.isFailure) hud = null
+        else view.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> view.post { clampHud() } }
+    }
+
+    /** Drag the HUD around while it is unlocked; the position is saved when the finger lifts. */
+    private fun hudDragListener(): View.OnTouchListener {
+        var startX = 0
+        var startY = 0
+        var downX = 0f
+        var downY = 0f
+        return View.OnTouchListener { v, e ->
+            val lp = hudParams ?: return@OnTouchListener false
+            if (hudLocked) return@OnTouchListener false
+            when (e.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    startX = lp.x
+                    startY = lp.y
+                    downX = e.rawX
+                    downY = e.rawY
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val maxX = max(0, screenW - v.width)
+                    val maxY = max(0, screenH - v.height)
+                    lp.x = (startX + (e.rawX - downX)).toInt().coerceIn(0, maxX)
+                    lp.y = (startY + (e.rawY - downY)).toInt().coerceIn(0, maxY)
+                    runCatching { wm.updateViewLayout(v, lp) }
+                    true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    hudX = lp.x
+                    hudY = lp.y
+                    prefs.edit().putInt(hudKeyX, hudX).putInt(hudKeyY, hudY).apply()
+                    // the HUD copy burned into the recording follows the new spot
+                    lastVideoHudKey = ""
+                    updateVideoHud()
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    /** Keeps the whole HUD on screen (after the first layout and after a size change). */
+    private fun clampHud() {
+        val v = hud ?: return
+        val lp = hudParams ?: return
+        if (v.width <= 0) return
+        val x = lp.x.coerceIn(0, max(0, screenW - v.width))
+        val y = lp.y.coerceIn(0, max(0, screenH - v.height))
+        if (x == lp.x && y == lp.y) return
+        lp.x = x
+        lp.y = y
+        hudX = x
+        hudY = y
+        runCatching { wm.updateViewLayout(v, lp) }
+        lastVideoHudKey = ""
+    }
+
+    private fun setHudLocked(locked: Boolean) {
+        hudLocked = locked
+        prefs.edit().putBoolean("hud_lock", locked).apply()
+        val v = hud ?: return
+        val lp = hudParams ?: return
+        lp.flags = if (locked) lp.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+        else lp.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()
+        runCatching { wm.updateViewLayout(v, lp) }
     }
 
     fun detach() {
@@ -285,6 +378,7 @@ class DrawerOverlay(
         edge = null
         hud?.let { runCatching { wm.removeViewImmediate(it) } }
         hud = null
+        hudParams = null
         hudText = null
         hudClockText = null
         hudStatText = null
@@ -323,8 +417,14 @@ class DrawerOverlay(
         }
         root.addView(dimView, FrameLayout.LayoutParams(-1, -1))
         val embedded = embedHost
-        val panelWidth = if (embedded != null) screenW else if (screenW > screenH) minOf(dp(620), (screenW * 0.72f).toInt())
-            else minOf(dp(420), (screenW * 0.9f).toInt())
+        // compact panel: narrower than before so more of the game stays visible behind it
+        // panel width follows the "panel size" setting (80-130 %), never wider than 92 % of the screen
+        val pScale = PanelPrefs.panelScale(host) / 100f
+        val panelWidth = if (embedded != null) screenW else minOf(
+            if (screenW > screenH) minOf(dp(470), (screenW * 0.52f).toInt()) * pScale
+            else minOf(dp(340), (screenW * 0.78f).toInt()) * pScale,
+            screenW * 0.92f,
+        ).toInt()
         panelW = panelWidth
         val card = buildPanel()
         root.addView(
@@ -396,10 +496,7 @@ class DrawerOverlay(
             editBar = null
             editing = false // leaving the panel while editing = cancel
             dialBox = null
-            perfPageView = null
-            toolsPageView = null
             statGame = null
-            statFps = null
             statBat = null
             cpuTile = null
             gpuTile = null
@@ -453,6 +550,7 @@ class DrawerOverlay(
     }
 
     private var lastHudLine = ""
+    private var lastVideoHudKey = ""
 
     /** Pct + charging flag + "time  {ic:bolt}pct%" text for the HUD second line. */
     private var lastClockPct = -1
@@ -469,7 +567,23 @@ class DrawerOverlay(
         return batIntent
     }
 
+    // clockLine runs for the on-screen HUD and for the video HUD every second: build it once per ~0.9 s
+    private var clockLineCache = ""
+    private var clockLineAt = 0L
+    private var timeFormat: java.text.DateFormat? = null
+    private var timeFormatAt = 0L
+    private val batteryManager: BatteryManager? by lazy { host.getSystemService(Context.BATTERY_SERVICE) as? BatteryManager }
+    private val clockDate = Date()
+
     private fun clockLine(): String {
+        val now = SystemClock.elapsedRealtime()
+        if (clockLineCache.isNotEmpty() && now - clockLineAt < 900) return clockLineCache
+        clockLineAt = now
+        clockLineCache = buildClockLine()
+        return clockLineCache
+    }
+
+    private fun buildClockLine(): String {
         val bat = batteryIntent()
         val level = bat?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
         val scale = bat?.getIntExtra(BatteryManager.EXTRA_SCALE, 100) ?: 100
@@ -478,7 +592,12 @@ class DrawerOverlay(
         val pct = if (level >= 0 && scale > 0) level * 100 / scale else -1
         lastClockPct = pct
         lastClockCharging = charging
-        val time = android.text.format.DateFormat.getTimeFormat(host).format(Date())
+        val now = SystemClock.elapsedRealtime()
+        // the 12 / 24 h setting is re-read once a minute, not on every tick
+        val tf = timeFormat?.takeIf { now - timeFormatAt < 60_000 }
+            ?: android.text.format.DateFormat.getTimeFormat(host).also { timeFormat = it; timeFormatAt = now }
+        clockDate.time = System.currentTimeMillis()
+        val time = tf.format(clockDate)
         val watt = batteryWatts(bat)
         val base = if (pct >= 0) "$time  ${if (charging) "{ic:bolt}" else ""}$pct%" else time
         return if (watt.isNotEmpty()) "$base  $watt" else base
@@ -486,8 +605,7 @@ class DrawerOverlay(
 
     /** Current battery power as "x.x W" (empty when the phone does not report current / voltage). */
     private fun batteryWatts(bat: Intent?): String {
-        val bm = host.getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
-        val raw = bm?.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW) ?: 0L
+        val raw = batteryManager?.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW) ?: 0L
         val mv = bat?.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0) ?: 0
         // phones report the current in µA or mA, positive or negative: normalise to amps
         val amps = Math.abs(raw).let { if (it >= 10_000L) it / 1_000_000.0 else it / 1000.0 }
@@ -557,6 +675,7 @@ class DrawerOverlay(
             if (hudSentToVideo) {
                 Fluxa.setRecordHud(null, 0, 0, 0, 0)
                 hudSentToVideo = false
+                lastVideoHudKey = ""
             }
             return
         }
@@ -566,30 +685,34 @@ class DrawerOverlay(
         val scale = min(vw.toFloat() / screenW, vh.toFloat() / screenH)
         val second = listOf(if (hudClock) clockLine() else "", if (hudStats) usageLine() else "")
             .filter { it.isNotEmpty() }.joinToString("  ")
+        // same text, same size, same colour as the last upload: skip the bitmap + buffer allocation
+        val key = "$lastHudLine|$second|$scale|$hudScale|$hudX,$hudY|${lastClockPct in 0..15 && !lastClockCharging}"
+        if (hudSentToVideo && key == lastVideoHudKey) return
         val bmp = renderHud(lastHudLine, second, scale) ?: return
+        lastVideoHudKey = key
         val buf = ByteBuffer.allocate(bmp.width * bmp.height * 4)
         bmp.copyPixelsToBuffer(buf)
         val w = bmp.width
         val h = bmp.height
         bmp.recycle()
-        Fluxa.setRecordHud(buf.array(), w, h, (8 * density * scale).toInt(), (24 * density * scale).toInt())
+        Fluxa.setRecordHud(buf.array(), w, h, (hudX * scale).toInt(), (hudY * scale).toInt())
         hudSentToVideo = true
     }
 
     /** Same look as the on-screen HUD (aqua bold text on deep navy, hairline), solid background. */
     private fun renderHud(line: String, second: String, scale: Float): Bitmap? {
-        val px = density * scale // dp -> video px
+        val px = density * scale * hudScale // dp -> video px (follows the HUD size setting)
         val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Palette.PRIMARY
             typeface = Typeface.DEFAULT_BOLD
-            textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12f, host.resources.displayMetrics) * scale
+            textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12f, host.resources.displayMetrics) * scale * hudScale
         }
         val padX = 9 * px
         val padY = 4 * px
         val fm = textPaint.fontMetrics
         val secondPaint = Paint(textPaint).apply {
             color = if (lastClockPct in 0..15 && !lastClockCharging) Palette.DANGER else Palette.MUTED
-            textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 11f, host.resources.displayMetrics) * scale
+            textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 11f, host.resources.displayMetrics) * scale * hudScale
         }
         val lineH = fm.descent - fm.ascent
         val secondH = if (second.isEmpty()) 0f else secondPaint.fontMetrics.let { it.descent - it.ascent } + px
@@ -725,18 +848,21 @@ class DrawerOverlay(
         grid.addView(hint, lp().apply { topMargin = dp(18) })
         editing = false
         fillGrid()
-        val toolsScroller = ScrollView(ctx).apply {
-            isVerticalScrollBarEnabled = false
-            addView(grid)
+        // one page: performance dials + sliders on top, the switch grid below, one shared scroll
+        // (the embedded page keeps only the grid)
+        val single = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
+        if (embedHost == null) {
+            single.addView(buildPerfPage(), lp())
+            single.addView(
+                View(ctx).apply { setBackgroundColor(Palette.DIVIDER) },
+                lp(-1, dp(1)).apply { marginStart = dp(18); marginEnd = dp(18) },
+            )
         }
-        val perf = buildPerfPage()
-        perfPageView = perf
-        toolsPageView = toolsScroller
-        val pages = FrameLayout(ctx)
-        pages.addView(perf, FrameLayout.LayoutParams(-1, -1))
-        pages.addView(toolsScroller, FrameLayout.LayoutParams(-1, -1))
-        if (embedHost != null) railTab = 1
-        applyRailTab()
+        single.addView(grid, lp())
+        val pages = ScrollView(ctx).apply {
+            isVerticalScrollBarEnabled = false
+            addView(single)
+        }
 
         val content = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
         content.addView(pages, lp(-1, 0).apply { weight = 1f })
@@ -750,44 +876,19 @@ class DrawerOverlay(
         editBar = bar
         content.addView(bar, lp())
 
-        // ---- rail: Performance panel / Game tools tabs, edit button, close + stop at the bottom
-        fun railItem(icon: Int, label: String, tab: Int): LinearLayout = LinearLayout(ctx).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(dp(4), dp(12), dp(4), dp(12))
-            isClickable = true
-            contentDescription = I18n.tr(label)
-            val ic = kit.icon(icon, 34, Palette.MUTED)
-            val tv = text(I18n.tr(label), 12f, bold = true, color = Palette.MUTED).apply { gravity = Gravity.CENTER }
-            railIcons[tab] = ic
-            railLabels[tab] = tv
-            addView(ic, lp(dp(34), dp(34)))
-            addView(tv, lp(-1, -2).apply { topMargin = dp(6) })
-            setOnClickListener {
-                if (editing && tab != 1) cancelEdit()
-                railTab = tab
-                applyRailTab()
-            }
-        }
+        // ---- rail: edit button, close + stop at the bottom
         val strip = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
             setPadding(dp(6), dp(16), dp(6), dp(14))
         }
-        strip.addView(railItem(R.drawable.fluxa_ic_dashboard, "แผงประสิทธิภาพ", 0), lp())
-        strip.addView(railItem(R.drawable.fluxa_ic_gamepad, "เครื่องมือเกม", 1), lp().apply { topMargin = dp(6) })
-        strip.addView(View(ctx).apply { setBackgroundColor(Palette.DIVIDER) }, lp(dp(28), dp(1)).apply { topMargin = dp(10); bottomMargin = dp(12) })
         strip.addView(
             kit.icon(R.drawable.fluxa_ic_edit, 24, Palette.TEXT).apply {
                 setPadding(dp(13), dp(13), dp(13), dp(13))
                 background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(Palette.a(Palette.TEXT, 0x33)) }
                 isClickable = true
                 contentDescription = I18n.tr("แก้ไขปุ่ม")
-                setOnClickListener {
-                    railTab = 1
-                    applyRailTab()
-                    enterEdit()
-                }
+                setOnClickListener { enterEdit() }
             },
             lp(dp(50), dp(50)),
         )
@@ -828,17 +929,6 @@ class DrawerOverlay(
         return card
     }
 
-    /** Shows the page picked on the rail and highlights its tab. */
-    private fun applyRailTab() {
-        perfPageView?.visibility = if (railTab == 0) View.VISIBLE else View.GONE
-        toolsPageView?.visibility = if (railTab == 1) View.VISIBLE else View.GONE
-        for (i in 0..1) {
-            val c = if (i == railTab) Palette.PRIMARY else Palette.MUTED
-            railIcons[i]?.setColorFilter(c)
-            railLabels[i]?.setTextColor(c)
-        }
-    }
-
     // ---------------------------------------------------------------- performance page
 
     private fun statCell(row: LinearLayout, label: String, align: Int): TextView {
@@ -850,7 +940,7 @@ class DrawerOverlay(
         return v
     }
 
-    private fun buildPerfPage(): ScrollView {
+    private fun buildPerfPage(): LinearLayout {
         val col = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(18), dp(20), dp(18), dp(16))
@@ -861,10 +951,9 @@ class DrawerOverlay(
         col.addView(dials, lp())
         renderDials()
 
-        // game time / fps / battery
+        // game time / battery
         val stats = LinearLayout(ctx).apply { gravity = Gravity.CENTER_VERTICAL }
         statGame = statCell(stats, "ระยะเวลาเล่น", Gravity.START)
-        statFps = statCell(stats, "FPS", Gravity.CENTER_HORIZONTAL)
         statBat = statCell(stats, "แบตเตอรี่คงเหลือ", Gravity.END)
         col.addView(stats, lp().apply { topMargin = dp(10) })
         updateStats()
@@ -887,10 +976,7 @@ class DrawerOverlay(
         col.addView(View(ctx).apply { setBackgroundColor(Palette.DIVIDER) }, lp(-1, dp(1)).apply { topMargin = dp(16) })
         col.addView(sliders, lp().apply { topMargin = dp(4) })
 
-        return ScrollView(ctx).apply {
-            isVerticalScrollBarEnabled = false
-            addView(col)
-        }
+        return col
     }
 
     /** Sets the real screen brightness (manual mode); needs "Modify system settings". */
@@ -911,7 +997,6 @@ class DrawerOverlay(
         val g = statGame ?: return
         val hours = (SystemClock.elapsedRealtime() - sessionStart) / 3_600_000.0
         g.text = String.format("%.1f h", hours)
-        statFps?.text = if (statOutFps >= 0f) String.format("%.0f", statOutFps) else "--"
         clockLine() // refreshes lastClockPct
         statBat?.text = if (lastClockPct >= 0) "$lastClockPct %" else "--"
     }
@@ -1536,6 +1621,10 @@ class DrawerOverlay(
             true
         }
         note(pos, "ปัดจากขอบด้านที่เลือกเพื่อเปิดแผง · ถ้าชนกับท่าทางย้อนกลับของ Android ให้เลือกอีกด้าน")
+        slider(pos, "ขนาดแผง (ความกว้าง)", PanelPrefs.MIN_PANEL_SCALE, PanelPrefs.MAX_PANEL_SCALE, PanelPrefs.panelScale(host), step = 5, format = { "$it %" }) { v ->
+            prefs.edit().putInt(PanelPrefs.K_PANEL_SCALE, v).apply()
+            panelRebuild = true
+        }
 
         buttonsGroup(page)
 
@@ -1851,6 +1940,11 @@ class DrawerOverlay(
 
     private fun hudPage(page: LinearLayout) {
         val g = group(page, "HUD")
+        slider(g, "ขนาด HUD", PanelPrefs.MIN_HUD_SCALE, PanelPrefs.MAX_HUD_SCALE, (hudScale * 100).toInt(), step = 10, format = { "$it %" }) { v ->
+            prefs.edit().putInt(PanelPrefs.K_HUD_SCALE, v).apply()
+            applyHudScale(v)
+        }
+        toggle(g, "ล็อก HUD (ปิดเพื่อลากย้ายตำแหน่ง)", hudLocked) { on -> setHudLocked(on) }
         toggle(g, "แสดงเวลาและแบตเตอรี่บนจอ", hudClock) { on ->
             hudClock = on
             prefs.edit().putBoolean("hud_clock", on).apply()

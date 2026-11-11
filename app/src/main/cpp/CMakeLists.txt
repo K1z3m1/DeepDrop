@@ -9,8 +9,26 @@ set(CMAKE_C_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
 set(FX_OPT_FLAGS "-O2 -ffunction-sections -fdata-sections -fno-unwind-tables -fno-asynchronous-unwind-tables -fomit-frame-pointer")
+
+# Memory-safety / exploit-mitigation hardening (all build types):
+#  - stack protector on every function with a local buffer or address-taken local
+#  - FORTIFY_SOURCE: bounds-checked memcpy/strcpy/etc. where the size is known at compile time
+#  - stack-clash protection, and zero-initialised automatic variables (no stale-stack info leaks)
+#  - branch protection (PAC/BTI on arm64, CET on x86_64) so ROP/JOP gadgets are harder to chain
+#  - linker: full RELRO + immediate binding, non-executable stack, no text relocations
+set(FX_HARDEN_FLAGS "-fstack-protector-strong -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -fstack-clash-protection -ftrivial-auto-var-init=zero -fno-delete-null-pointer-checks -fPIC -Wformat -Wformat-security -Werror=format-security")
+if(ANDROID_ABI STREQUAL "arm64-v8a")
+    set(FX_HARDEN_FLAGS "${FX_HARDEN_FLAGS} -mbranch-protection=standard")
+elseif(ANDROID_ABI STREQUAL "x86_64")
+    set(FX_HARDEN_FLAGS "${FX_HARDEN_FLAGS} -fcf-protection=full")
+endif()
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FX_HARDEN_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FX_HARDEN_FLAGS}")
+set(FX_HARDEN_LINK "-Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${FX_HARDEN_LINK}")
+
 set(CMAKE_C_FLAGS_RELEASE "${FX_OPT_FLAGS} -DNDEBUG")
-set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "-Wl,--gc-sections -Wl,--exclude-libs,ALL -Wl,-O2 -Wl,--as-needed")
+set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "-Wl,--gc-sections -Wl,--icf=safe -Wl,--exclude-libs,ALL -Wl,-O2 -Wl,--as-needed")
 
 find_program(GLSLC glslc REQUIRED HINTS
     "${CMAKE_ANDROID_NDK}/shader-tools/linux-x86_64"

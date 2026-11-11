@@ -26,6 +26,14 @@ object PanelPrefs {
     const val K_COLOR = "panel_dial_color"     // 0 accent, 1 by load, 2 secondary
     const val K_PCT = "panel_dial_pct"
 
+    const val K_HUD_SCALE = "hud_scale"        // % of the fps HUD size
+    const val K_PANEL_SCALE = "panel_scale"    // % of the drawer panel width
+
+    const val MIN_HUD_SCALE = 60
+    const val MAX_HUD_SCALE = 200
+    const val MIN_PANEL_SCALE = 80
+    const val MAX_PANEL_SCALE = 130
+
     const val MIN_SIZE = 64
     const val MAX_SIZE = 140
     const val DEFAULT_SIZE = 96
@@ -39,6 +47,8 @@ object PanelPrefs {
     fun size(ctx: Context) = p(ctx).getInt(K_SIZE, DEFAULT_SIZE).coerceIn(MIN_SIZE, MAX_SIZE)
     fun color(ctx: Context) = p(ctx).getInt(K_COLOR, 0).coerceIn(0, 2)
     fun showPct(ctx: Context) = p(ctx).getBoolean(K_PCT, true)
+    fun hudScale(ctx: Context) = p(ctx).getInt(K_HUD_SCALE, 100).coerceIn(MIN_HUD_SCALE, MAX_HUD_SCALE)
+    fun panelScale(ctx: Context) = p(ctx).getInt(K_PANEL_SCALE, 100).coerceIn(MIN_PANEL_SCALE, MAX_PANEL_SCALE)
 }
 
 /** Reads CPU / GPU clocks from sysfs. Phones differ a lot, and some block these files for apps (then null). */
@@ -47,14 +57,24 @@ object ClockReader {
         runCatching { File(path).readText().trim().toLong() }.getOrDefault(0L)
 
     /** Highest current clock and highest possible clock over all cores, in kHz; null when sysfs is not readable. */
+    @Volatile private var cpuMaxKhz = 0L
+    private val cpuCurPaths: Array<String> by lazy {
+        Array(Runtime.getRuntime().availableProcessors()) { "/sys/devices/system/cpu/cpu$it/cpufreq/scaling_cur_freq" }
+    }
+
     fun cpuKhz(): Pair<Long, Long>? {
-        var cur = 0L
-        var max = 0L
-        for (i in 0 until Runtime.getRuntime().availableProcessors()) {
-            val base = "/sys/devices/system/cpu/cpu$i/cpufreq/"
-            cur = maxOf(cur, readLong(base + "scaling_cur_freq"))
-            max = maxOf(max, readLong(base + "cpuinfo_max_freq"), readLong(base + "scaling_max_freq"))
+        // the maximum clock never changes: scan it once (3 file reads per core) and afterwards read only the current clock
+        if (cpuMaxKhz <= 0L) {
+            var m = 0L
+            for (i in cpuCurPaths.indices) {
+                val base = "/sys/devices/system/cpu/cpu$i/cpufreq/"
+                m = maxOf(m, readLong(base + "cpuinfo_max_freq"), readLong(base + "scaling_max_freq"))
+            }
+            cpuMaxKhz = m
         }
+        var cur = 0L
+        for (path in cpuCurPaths) cur = maxOf(cur, readLong(path))
+        val max = cpuMaxKhz
         if (cur <= 0 || max <= 0) return null
         return cur to maxOf(cur, max)
     }
