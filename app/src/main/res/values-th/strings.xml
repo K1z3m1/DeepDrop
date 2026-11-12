@@ -1,0 +1,589 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+
+    <string name="app_desc">เว็บเบราว์เซอร์ฟรีและโอเพนซอร์สที่บล็อกโฆษณาและตัวติดตาม</string>
+    <string name="action_new_tab">แท็บใหม่</string>
+    <string name="action_share">แชร์</string>
+    <string name="action_print">พิมพ์</string>
+    <string name="action_history">ประวัติ</string>
+    <string name="action_bookmarks">บุ๊กมาร์ก</string>
+    <string name="action_downloads">ดาวน์โหลด</string>
+    <string name="action_add_bookmark">เพิ่มบุ๊กมาร์ก</string>
+    <string name="action_copy">คัดลอกลิงก์</string>
+    <string name="action_forward">ถัดไป</string>
+    <string name="action_sort">เรียงลำดับ</string>
+    <string name="settings">ตั้งค่า</string>
+    <string name="location">การเข้าถึงตำแหน่งที่ตั้ง</string>
+    <string name="password">บันทึกรหัสผ่านของคุณ</string>
+    <string name="agent">ยูสเซอร์เอเจนต์</string>
+    <string name="flash">เปิดใช้ Adobe Flash</string>
+    <string name="home">หน้าแรก</string>
+    <string name="action_menu">เมนู</string>
+    <string name="fullscreen">ซ่อนแถบ URL ขณะเลื่อนหน้า</string>
+    <string name="java">เปิดใช้ JavaScript</string>
+    <string name="download">ตำแหน่งดาวน์โหลด</string>
+    <string name="settings_advanced">ตั้งค่าขั้นสูง</string>
+    <string name="settings_advanced_explain">เนื้อหาช่อง URL โหมดการแสดงผล การเข้ารหัสข้อความ&#8230;</string>
+    <string name="apache">Apache License 2.0</string>
+    <string name="version">เวอร์ชันแอปพลิเคชัน</string>
+    <string name="cache">ล้างแคชเมื่อออก</string>
+    <string name="reflow">เปิดใช้การจัดข้อความใหม่</string>
+    <string name="block">บล็อกรูปภาพ</string>
+    <string name="window">อนุญาตให้เว็บไซต์เปิดหน้าต่างใหม่</string>
+    <string name="cookies">เปิดใช้คุกกี้</string>
+    <string name="importbookmarks">นำเข้าบุ๊กมาร์กจากเบราว์เซอร์</string>
+    <string name="size">ขนาดตัวอักษร</string>
+
+    <string name="recommended">แนะนำ</string>
+    <string name="search">เสิร์ชเอนจิน</string>
+    <string name="search_hint">ค้นหาหรือป้อนที่อยู่เว็บ</string>
+    <string name="wideViewPort">ใช้วิวพอร์ตแบบกว้าง</string>
+    <string name="overViewMode">โหลดหน้าเว็บในโหมดภาพรวม</string>
+    <string name="restore">กู้คืนแท็บเมื่อเปิดแอป</string>
+    <string name="supported_browsers_title">เบราว์เซอร์ที่รองรับ</string>
+    <string name="stock_browser">เบราว์เซอร์ที่มากับเครื่อง</string>
+    <string name="stock_browser_unavailable">ไม่พบเบราว์เซอร์ที่มากับเครื่อง</string>
+    <string name="stock_browser_available">พบเบราว์เซอร์ที่มากับเครื่องที่รองรับ</string>
+    <string name="fullScreenOption">ซ่อนแถบสถานะขณะท่องเว็บ</string>
+    <string name="clear_cookies">ล้างคุกกี้ของเบราว์เซอร์</string>
+    <string name="clear_history">ล้างประวัติของเบราว์เซอร์</string>
+    <string name="dialog_image">คุณต้องการทำอะไรกับรูปภาพนี้</string>
+    <string name="action_download">ดาวน์โหลด</string>
+    <string name="action_open">เปิด</string>
+    <string name="dialog_link">คุณต้องการทำอะไรกับลิงก์นี้</string>
+    <string name="dialog_title_share">แชร์หน้านี้</string>
+    <string name="dialog_history_long_press">คุณต้องการทำอะไรกับรายการประวัตินี้</string>
+    <string name="dialog_bookmark">คุณต้องการทำอะไรกับบุ๊กมาร์กนี้</string>
+    <string name="action_delete">ลบ</string>
+    <string name="action_blank">หน้าว่าง</string>
+    <string name="agent_default">ค่าเริ่มต้น</string>
+    <string name="agent_android_phone">Android (โทรศัพท์)</string>
+    <string name="agent_android_tablet">Android (แท็บเล็ต)</string>
+    <string name="agent_mobile">มือถือ</string>
+    <string name="agent_custom">กำหนดเอง</string>
+    <string name="title_search_engine">เสิร์ชเอนจิน</string>
+    <string name="action_ok">ตกลง</string>
+    <string name="dialog_download">คุณต้องการดาวน์โหลดไฟล์นี้หรือไม่ (%1$s)</string>
+    <string name="unknown_size">ไม่ทราบขนาด</string>
+    <string name="action_cancel">ยกเลิก</string>
+    <string name="title_warning">คำเตือน</string>
+    <string name="dialog_adobe_not_installed">ไม่ได้ติดตั้ง Adobe Flash Player\nกรุณาติดตั้ง Flash Player</string>
+    <string name="title_user_agent">ยูสเซอร์เอเจนต์</string>
+    <string name="title_download_location">ตำแหน่งดาวน์โหลด</string>
+    <string name="download_failed">ดาวน์โหลดล้มเหลว เกิดข้อผิดพลาด:</string>
+    <string name="download_successful">ดาวน์โหลดสำเร็จ</string>
+    <string name="title_custom_homepage">หน้าแรกที่กำหนดเอง</string>
+    <string name="action_webpage">หน้าเว็บ</string>
+    <string name="title_clear_history">ล้างประวัติ</string>
+    <string name="title_clear_cookies">ล้างคุกกี้</string>
+    <string name="dialog_history">คุณต้องการล้างประวัติของเบราว์เซอร์หรือไม่</string>
+    <string name="dialog_cookies">คุณต้องการล้างคุกกี้ของเบราว์เซอร์หรือไม่</string>
+    <string name="action_yes">ใช่</string>
+    <string name="action_no">ไม่</string>
+    <string name="title_text_size">ขนาดตัวอักษร</string>
+    <string name="size_largest">ใหญ่ที่สุด</string>
+    <string name="size_large">ใหญ่</string>
+    <string name="size_normal">ปกติ</string>
+    <string name="size_small">เล็ก</string>
+    <string name="size_smallest">เล็กที่สุด</string>
+    <string name="title_error">ข้อผิดพลาด</string>
+    <string name="dialog_import_error">ไม่พบเบราว์เซอร์ที่จะนำเข้าบุ๊กมาร์ก</string>
+    <string name="hint_title">ชื่อเรื่อง</string>
+    <string name="hint_url">URL</string>
+    <string name="title_edit_bookmark">แก้ไขบุ๊กมาร์ก</string>
+    <string name="action_edit">แก้ไข</string>
+    <string name="action_incognito">แท็บส่วนตัวใหม่</string>
+    <string name="action_homepage">ค่าเริ่มต้น</string>
+    <string name="action_back">กลับ</string>
+    <string name="action_refresh">รีเฟรช</string>
+    <string name="action_find">ค้นหาในหน้า</string>
+    <string name="download_pending">กำลังเริ่มดาวน์โหลด\u2026</string>
+    <string name="cannot_download">ดาวน์โหลดได้เฉพาะ URL แบบ HTTP หรือ HTTPS</string>
+    <string name="problem_download">พบ URL ที่ไม่ถูกต้อง ไม่สามารถดาวน์โหลดได้</string>
+    <string name="problem_location_download">ไม่สามารถดาวน์โหลดไปยังตำแหน่งที่ระบุได้</string>
+    <string name="download_no_sdcard_dlg_title">ไม่มี SD การ์ด</string>
+    <string name="download_no_sdcard_dlg_msg">ต้องใช้ที่เก็บข้อมูล USB เพื่อดาวน์โหลดไฟล์</string>
+    <string name="download_sdcard_busy_dlg_title">ที่เก็บข้อมูล USB ไม่พร้อมใช้งาน</string>
+    <string name="download_sdcard_busy_dlg_msg">ที่เก็บข้อมูลกำลังถูกใช้งาน หากต้องการดาวน์โหลด ให้แตะ \'ปิดที่เก็บข้อมูล USB\' ในการแจ้งเตือน</string>
+    <string name="incognito_cookies">เปิดใช้คุกกี้ในแท็บส่วนตัว</string>
+    <string name="title_flash">Adobe Flash</string>
+    <string name="action_manual">ด้วยตนเอง</string>
+    <string name="action_auto">อัตโนมัติ</string>
+    <string name="action_follow_me">ข้อมูลเพิ่มเติม</string>
+    <string name="clear_cache">ล้างแคช</string>
+    <string name="message_cache_cleared">ล้างแคชแล้ว</string>
+    <string name="message_import">นำเข้าบุ๊กมาร์กแล้ว</string>
+    <string name="message_clear_history">ล้างประวัติแล้ว</string>
+    <string name="message_cookies_cleared">ล้างคุกกี้แล้ว</string>
+    <string name="max_tabs">เปิดแท็บถึงจำนวนสูงสุดแล้ว</string>
+    <string name="message_text_copied">คัดลอกข้อความไปยังคลิปบอร์ดแล้ว</string>
+    <string name="message_link_copied">คัดลอกลิงก์ไปยังคลิปบอร์ดแล้ว</string>
+    <string name="message_blocked_local">ไฟล์ในเครื่องถูกบล็อกไม่ให้โหลด</string>
+    <string name="licenses">สัญญาอนุญาตโอเพนซอร์ส</string>
+    <string name="suggestion">ค้นหา</string>
+    <string name="block_ads">บล็อกโฆษณาและตัวติดตาม</string>
+    <string name="message_insecure_connection">การเชื่อมต่อกับเว็บไซต์นี้ไม่ปลอดภัย: %1$s ต้องการเข้าชมเว็บไซต์ต่อหรือไม่</string>
+    <string name="message_certificate_date_invalid">วันที่ของใบรับรองไม่ถูกต้อง</string>
+    <string name="message_certificate_expired">ใบรับรองหมดอายุแล้ว</string>
+    <string name="message_certificate_domain_mismatch">โดเมนในใบรับรองไม่ตรงกับโดเมนของเว็บไซต์</string>
+    <string name="message_certificate_invalid">ใบรับรองไม่ถูกต้อง</string>
+    <string name="message_certificate_not_yet_valid">ใบรับรองยังไม่มีผลใช้งาน</string>
+    <string name="message_certificate_untrusted">ใบรับรองไม่น่าเชื่อถือ</string>
+    <string name="title_form_resubmission">การส่งแบบฟอร์มซ้ำ</string>
+    <string name="message_form_resubmission">คุณต้องการส่งข้อมูลที่ส่งไปแล้วอีกครั้งหรือไม่</string>
+    <string name="message_location">\nต้องการใช้ตำแหน่งที่ตั้งของคุณ</string>
+    <string name="action_allow">อนุญาต</string>
+    <string name="action_dont_allow">ไม่อนุญาต</string>
+    <string name="title_sign_in">ลงชื่อเข้าใช้</string>
+    <string name="hint_username">ชื่อผู้ใช้</string>
+    <string name="hint_password">รหัสผ่าน</string>
+    <string name="search_suggestions">คำแนะนำการค้นหา</string>
+    <string name="shortcut_message_failed_to_add">ขออภัย ตัวเรียกใช้งาน (Launcher) ของคุณไม่รองรับทางลัด</string>
+
+    <string name="ssl_info_issued_by">ออกโดย</string>
+    <string name="ssl_info_issued_to">ออกให้แก่</string>
+    <string name="ssl_info_issued_on">วันที่ออก</string>
+    <string name="ssl_info_expires_on">วันหมดอายุ</string>
+    <string name="ssl_warning_dont_ask_again">ไม่ต้องถามอีกในเซสชันการท่องเว็บนี้</string>
+
+    <string name="dialog_tools_title">เครื่องมือของหน้า</string>
+    <string name="dialog_toggle_desktop">สลับยูสเซอร์เอเจนต์เดสก์ท็อป</string>
+    <string name="dialog_adblock_enable_for_site">เปิดการบล็อกโฆษณาสำหรับเว็บไซต์นี้</string>
+    <string name="dialog_adblock_disable_for_site">ปิดการบล็อกโฆษณาสำหรับเว็บไซต์นี้</string>
+
+    <string name="search_suggestions_off">ไม่มีคำแนะนำการค้นหา</string>
+    <string name="http_proxy">พร็อกซี HTTP</string>
+    <string-array name="proxy_choices_array">
+        <item>ไม่มี</item>
+        <item>Orbot</item>
+        <item>I2P</item>
+        <item>ด้วยตนเอง</item>
+    </string-array>
+    <string-array name="password_set_array">
+        <item>ไม่มี</item>
+        <item>กำหนดเอง</item>
+    </string-array>
+    <string-array name="suggestion_name_array">
+        <item>สาม</item>
+        <item>สี่</item>
+        <item>ห้า</item>
+        <item>หก</item>
+        <item>เจ็ด</item>
+        <item>แปด</item>
+    </string-array>
+    <string name="manual_proxy">พร็อกซีด้วยตนเอง</string>
+    <string name="host">โฮสต์:</string>
+    <string name="port">พอร์ต:</string>
+    <string name="use_tor_prompt">ดูเหมือนว่าคุณติดตั้ง Orbot ไว้ ต้องการใช้ Tor หรือไม่</string>
+    <string name="use_i2p_prompt">ดูเหมือนว่าคุณติดตั้ง I2P ไว้ ต้องการใช้ I2P หรือไม่</string>
+    <string name="install_orbot">ติดตั้ง Orbot เพื่อใช้พร็อกซีผ่าน Tor</string>
+    <string name="i2p_not_running">I2P ไม่ได้ทำงานอยู่</string>
+    <string name="i2p_tunnels_not_ready">อุโมงค์ I2P ยังไม่พร้อม</string>
+    <string name="yes">ใช่</string>
+    <string name="no">ไม่</string>
+    <string name="clear_cookies_exit">ล้างคุกกี้เมื่อออก</string>
+    <string name="clear_history_exit">ล้างประวัติเมื่อออก</string>
+    <string name="folder_default">ค่าเริ่มต้น</string>
+    <string name="folder_custom">กำหนดเอง</string>
+    <string name="untitled">ไม่มีชื่อ</string>
+    <string name="freeware">ฟรีแวร์</string>
+    <string name="deleted_tab">เปิดแท็บเก่าอีกครั้งแล้ว</string>
+    <string name="rendering_mode">โหมดการแสดงผล</string>
+    <string name="name_inverted">กลับสี</string>
+    <string name="name_grayscale">โทนสีเทา</string>
+    <string name="name_inverted_grayscale">โทนสีเทากลับสี</string>
+    <string name="name_increase_contrast">เพิ่มความคมชัด</string>
+    <string name="name_normal">ปกติ</string>
+    <string name="sync_history">ซิงค์ประวัติกับ Google</string>
+    <string name="title_file_chooser">ตัวเลือกไฟล์</string>
+    <string name="export_bookmarks">ส่งออกบุ๊กมาร์กเป็นข้อมูลสำรอง</string>
+    <string name="import_backup">นำเข้าบุ๊กมาร์กจากข้อมูลสำรอง</string>
+    <string name="export_tabs">ส่งออกแท็บเป็นข้อมูลสำรอง</string>
+    <string name="import_tabs">นำเข้าแท็บจากข้อมูลสำรอง</string>
+    <string name="bookmark_export_path">ส่งออกบุ๊กมาร์กไปที่</string>
+    <string name="bookmark_export_failure">ขออภัย ไม่สามารถส่งออกบุ๊กมาร์กได้</string>
+    <string name="tab_export_path">ส่งออกแท็บไปที่</string>
+    <string name="tab_export_failure">ขออภัย ไม่สามารถส่งออกแท็บได้</string>
+    <string name="bookmark_settings">ตั้งค่าบุ๊กมาร์ก</string>
+    <string name="settings_bookmark_explain">การส่งออกและนำเข้า&#8230;</string>
+    <string name="import_bookmark_error">ไม่สามารถนำเข้าบุ๊กมาร์กจากไฟล์ได้</string>
+    <string name="import_tabs_error">ไม่สามารถนำเข้าแท็บจากไฟล์ได้</string>
+    <string name="title_chooser">เลือกไฟล์</string>
+    <string name="settings_general">ตั้งค่าทั่วไป</string>
+    <string name="settings_general_explain">เสิร์ชเอนจิน พร็อกซี โหมดสี&#8230;</string>
+    <string name="settings_display">ตั้งค่าการแสดงผล</string>
+    <string name="settings_display_explain">โหมดเต็มหน้าจอ หน้าแรก ธีม&#8230;</string>
+    <string name="settings_privacy">ตั้งค่าความเป็นส่วนตัวและความปลอดภัย</string>
+    <string name="settings_privacy_explain">แคช คุกกี้ ประวัติ&#8230;</string>
+    <string name="settings_about">เกี่ยวกับ</string>
+    <string name="settings_about_explain">หมายเลขเวอร์ชัน ผู้พัฒนา และสัญญาอนุญาต&#8230;</string>
+    <string name="close_tab">ปิดแท็บปัจจุบัน</string>
+    <string name="close_all_tabs">ปิดแท็บทั้งหมด</string>
+    <string name="close_other_tabs">ปิดแท็บอื่น</string>
+    <string name="third_party">บล็อกคุกกี้จากบุคคลที่สาม</string>
+    <string name="color_mode">เปิดใช้โหมดสี</string>
+    <string name="reading_mode">โหมดอ่านหนังสือ</string>
+    <string name="loading">กำลังโหลด&#8230;</string>
+    <string name="loading_failed">ไม่สามารถโหลดเนื้อหาใดๆ จากหน้านี้ได้</string>
+    <string name="url_contents">เนื้อหาช่อง URL</string>
+    <string name="text_encoding">การเข้ารหัสข้อความ</string>
+    <string-array name="url_content_array">
+        <item>URL</item>
+        <item>โดเมน</item>
+        <item>ชื่อเรื่อง</item>
+    </string-array>
+    <string name="invert_color">กลับสี</string>
+    <string name="dark_theme">ธีมมืด</string>
+    <string name="web_dark_theme">ธีมมืดสำหรับเว็บ</string>
+    <string name="settings_black_status_bar">แถบสถานะสีดำ</string>
+    <string name="tabs">แท็บ</string>
+    <string name="theme">ธีมของแอป</string>
+    <string name="light_theme">ธีมสว่าง</string>
+    <string name="black_theme">ธีม AMOLED</string>
+    <string name="blue_theme">ธีมสีน้ำเงิน</string>
+    <string name="yellow_theme">ธีมสีเหลือง</string>
+    <string name="green_theme">ธีมสีเขียว</string>
+    <string name="folder">ชื่อโฟลเดอร์</string>
+    <string name="action_folder">โฟลเดอร์</string>
+    <string name="action_rename">เปลี่ยนชื่อ</string>
+    <string name="title_rename_folder">เปลี่ยนชื่อโฟลเดอร์</string>
+    <string name="dialog_folder">คุณต้องการทำอะไรกับโฟลเดอร์นี้</string>
+    <string name="clear_web_storage">ล้างที่เก็บข้อมูลเว็บ</string>
+    <string name="clear_web_storage_exit">ล้างที่เก็บข้อมูลเว็บเมื่อออก</string>
+    <string name="message_web_storage_cleared">ล้างที่เก็บข้อมูลเว็บแล้ว</string>
+    <string name="hosts_source">แหล่งไฟล์ hosts สำหรับบล็อกโฆษณา</string>
+    <string name="settings_adblock">ตั้งค่าการบล็อกเนื้อหา</string>
+    <string name="adblock_summary">บล็อกโฆษณา...</string>
+    <string name="adblock_category">บล็อกโฆษณา</string>
+    <string name="cookie_category">บล็อกหน้าต่างคุกกี้</string>
+    <string name="tabs_in_drawer">แสดงแท็บในลิ้นชัก</string>
+    <string name="swap_bookmarks_and_tabs">สลับลิ้นชักบุ๊กมาร์กและแท็บ</string>
+    <string name="do_not_track">ส่งคำขอ \'ห้ามติดตาม\' (Do Not Track)</string>
+    <string name="remove_identifying_headers">ลบส่วนหัว HTTP ที่ระบุตัวตน</string>
+    <string name="action_add_to_homescreen">เพิ่มไปยังหน้าจอหลัก</string>
+    <string name="message_added_to_homescreen">เพิ่มทางลัดไปยังหน้าจอหลักแล้ว</string>
+    <string name="action_delete_all_bookmarks">ลบบุ๊กมาร์กทั้งหมด</string>
+    <string name="flash_not_supported">อุปกรณ์ของคุณไม่รองรับ Flash Player</string>
+    <string name="message_open_download_fail">ไฟล์นี้ไม่มีอยู่แล้ว</string>
+    <string name="this_project">โปรเจกต์นี้</string>
+
+    <string name="scw">ซอร์สโค้ดของ lw Browser</string>
+    <string name="action_home">หน้าแรก</string>
+    <string name="description">เรียนรู้เกี่ยวกับ lw Browser</string>
+
+    <string name="faq">คำถามที่พบบ่อย</string>
+    <string name="faq_description">คำถามที่พบบ่อย...</string>
+
+    <string name="block_source_default">hosts เริ่มต้น</string>
+    <string name="block_source_local">ไฟล์ hosts ในเครื่อง</string>
+    <string name="block_source_local_description">ไฟล์: %1$s</string>
+    <string name="block_source_remote">ไฟล์ hosts ระยะไกล</string>
+    <string name="block_source_remote_description">URL: %1$s</string>
+
+    <string name="ad_block_load_failure">โหลด hosts จากแหล่งบล็อกโฆษณาไม่สำเร็จ</string>
+
+    <string name="reopening_recent_tab">เปิดแท็บเก่าอีกครั้งแล้ว</string>
+
+    <string name="message_bookmark_added">เพิ่มบุ๊กมาร์กแล้ว</string>
+
+    <plurals name="notification_incognito_running_title">
+        <item quantity="one">เปิดแท็บส่วนตัวอยู่ %1$d แท็บ</item>
+        <item quantity="other">เปิดแท็บส่วนตัวอยู่ %1$d แท็บ</item>
+    </plurals>
+    <string name="notification_incognito_running_message">แตะเพื่อเปิด</string>
+    <string name="notification_incognito_running_description">การแจ้งเตือนแท็บส่วนตัวที่กำลังทำงาน</string>
+
+    <string name="action_message_canceled">ยกเลิกการดำเนินการแล้ว</string>
+
+    <string name="title_permission_request">คำขอสิทธิ์</string>
+    <string name="message_permission_request">%1$s ต้องการใช้: %2$s</string>
+
+    <string name="block_ad_source">แหล่งไฟล์ hosts</string>
+    <string name="block_ad_remote_refresh_frequency_description">สำหรับไฟล์ hosts ระยะไกล</string>
+    <string name="block_ad_refresh_now">รีเฟรช hosts ตอนนี้</string>
+
+    <string name="webrtc_support">อนุญาตคำขอสิทธิ์ WebRTC</string>
+    <string name="save_data">ส่งคำขอ \'Save-Data\'</string>
+
+    <string name="debug_title">ตั้งค่าดีบัก</string>
+    <string name="app_restart">กรุณารีสตาร์ทแอปเพื่อให้การเปลี่ยนแปลงมีผล</string>
+
+    <string name="dialog_open_new_tab">เปิดในแท็บใหม่</string>
+    <string name="dialog_open_background_tab">เปิดในแท็บเบื้องหลัง</string>
+    <string name="dialog_open_incognito_tab">เปิดในแท็บส่วนตัว</string>
+    <string name="dialog_remove_bookmark">ลบบุ๊กมาร์ก</string>
+    <string name="dialog_edit_bookmark">แก้ไขบุ๊กมาร์ก</string>
+    <string name="dialog_remove_from_history">ลบออกจากประวัติ</string>
+    <string name="dialog_download_image">ดาวน์โหลดรูปภาพ</string>
+    <string name="dialog_copy_link">คัดลอกลิงก์หน้านี้</string>
+    <string name="dialog_rename_folder">เปลี่ยนชื่อโฟลเดอร์</string>
+    <string name="dialog_remove_folder">ลบโฟลเดอร์</string>
+    <string name="dialog_title_close_browser">ปิดแท็บ</string>
+    <string name="dialog_delete_download">ลบการดาวน์โหลดออกจากประวัติ</string>
+    <string name="dialog_delete_all_downloads">ลบการดาวน์โหลดทั้งหมดออกจากประวัติ</string>
+
+    <string name="search_engine_custom">URL ที่กำหนดเอง</string>
+
+    <string name="privacy">ดูนโยบายความเป็นส่วนตัว</string>
+    <string name="privacy_info">อ่านนโยบายความเป็นส่วนตัวของ lw Browser</string>
+    <string name="block_malware">บล็อกเว็บไซต์อันตราย</string>
+    <string name="block_sites">บล็อกเว็บไซต์ที่กำหนดเอง</string>
+    <string name="block_sites_title">บล็อกเว็บไซต์ที่กำหนดเอง (คั่นแต่ละเว็บไซต์ด้วยเครื่องหมายจุลภาค)</string>
+    <string name="none">ไม่มี</string>
+    <string name="block_info">ป้อนคำที่ต้องการบล็อกใน URL (คั่นด้วยเครื่องหมายจุลภาค)</string>
+    <string name="startpage">ใช้ธีมกับหน้าแรก</string>
+    <string name="allpage">ใช้ธีมกับหน้าเว็บ (เบต้า)</string>
+    <string name="forcehttps">บล็อกเว็บไซต์ที่ไม่ใช่ HTTPS</string>
+    <string name="preferhttps">ใช้เวอร์ชัน HTTPS ของเว็บไซต์เป็นหลัก</string>
+    <string name="forcehttpsdesc">โหลดเฉพาะเว็บไซต์ HTTPS</string>
+    <string name="preferhttpsdesc">ใช้ HTTPS เสมอในเว็บไซต์ที่รองรับ</string>
+
+    <string name="startpagedesc">ตั้งสีของหน้าแรกเริ่มต้นให้ตรงกับสีที่ใช้ในธีม</string>
+    <string name="updatehomepage">เปิดแท็บใหม่เพื่อดูหน้าแรกที่อัปเดตแล้ว</string>
+    <string name="edit_shortcuts">แก้ไขทางลัด</string>
+    <string name="apply">นำไปใช้</string>
+
+    <string name="inspect">แทรก JavaScript</string>
+    <string name="bookmark">เพิ่มบุ๊กมาร์กแล้ว</string>
+
+    <string name="error_title">โอ๊ะโอ! &lt;br&gt; ไม่สามารถโหลดเว็บไซต์นั้นได้</string>
+    <string name="error_reload">โหลดใหม่</string>
+
+    <string name="https_title">โอ๊ะโอ! &lt;br&gt; เว็บไซต์นั้นไม่รองรับ HTTPS และเปิดใช้การบล็อก HTTP อยู่</string>
+
+    <string name="malware_title">โอ๊ะโอ! &lt;br&gt; เว็บไซต์นั้นดูเหมือนจะเป็นมัลแวร์</string>
+    <string name="malware_message">ติดต่อ support@cookiegames.co.uk หากนี่เป็นความผิดพลาด</string>
+
+    <string name="blocked_title">โอ๊ะโอ! &lt;br&gt; เว็บไซต์นั้นถูกบล็อกในการตั้งค่า</string>
+    <string name="close_app">ปิดเบราว์เซอร์</string>
+    <string name="enter_password">ป้อนรหัสผ่าน</string>
+    <string name="wrong_password">รหัสผ่านไม่ถูกต้อง</string>
+    <string name="block_all_sites">บล็อกเว็บไซต์ทั้งหมดในรายการ</string>
+    <string name="only_allow_sites">อนุญาตเฉพาะเว็บไซต์ในรายการ</string>
+    <string name="parental_controls">ตั้งค่าการควบคุมโดยผู้ปกครอง</string>
+    <string name="settings_parents">บล็อกเว็บไซต์ ตั้งรหัสผ่าน...</string>
+    <string name="label_realm">ข้อความจากเซิร์ฟเวอร์: %s</string>
+    <string name="new_tab_foreground">นำแท็บขึ้นมาด้านหน้า</string>
+    <string name="new_tab_foreground_summary">เปิดแท็บใหม่ทันทีที่สร้างขึ้น</string>
+    <string name="site_not_secure">การเชื่อมต่อกับเว็บไซต์นี้ไม่ปลอดภัย</string>
+    <string name="language_not_supported">ไม่รองรับภาษานี้</string>
+    <string name="language_not_supported_text">น่าเสียดายที่ร้านค้าส่วนขยายยังไม่รองรับภาษาของคุณ ใช้ปุ่มด้านล่างเพื่อดำเนินการต่อเป็นภาษาอังกฤษ</string>
+    <string name="extensions">ส่วนขยาย</string>
+    <string name="extensions_enable">เปิดใช้ส่วนขยาย</string>
+
+    <string name="extensions_settings">ตั้งค่าส่วนขยาย</string>
+
+    <string name="extensions_description">ดาวน์โหลดส่วนขยาย...</string>
+    <string name="extensions_store">ร้านค้าส่วนขยาย</string>
+    <string name="extensions_list">รายการส่วนขยาย</string>
+    <string name="uninstall_extension">ถอนการติดตั้งส่วนขยาย</string>
+    <string name="uninstall_more">ป้อนชื่อส่วนขยายที่คุณต้องการถอนการติดตั้ง</string>
+    <string name="show_extra">แสดงปุ่มปิดในเมนู</string>
+    <string name="incognito_cookies_new">โหมดส่วนตัวทำงานในหน้าต่างแยกที่จะถูกรีเซ็ตหลังจบแต่ละเซสชัน การตั้งค่าคุกกี้ของโหมดส่วนตัวจะถูกควบคุมโดยการตั้งค่าคุกกี้ปกติ</string>
+    <string name="quit_private">ออกจากโหมดส่วนตัว</string>
+    <string name="image_url">ตั้งรูปภาพพื้นหลังหน้าแรก</string>
+    <string name="start_incognito">ทำงานเหมือนโหมดส่วนตัวเสมอ</string>
+    <string name="bottom_navbar">ย้ายแถบนำทางไปด้านล่าง</string>
+    <string name="please_restart">กรุณารีสตาร์ทแอปเพื่อดูการเปลี่ยนแปลง</string>
+    <string name="site_ad_blocked">เว็บไซต์นี้เป็นโฆษณา หากต้องการเข้าชมต่อ ให้ใช้ตัวเลือก \"ปิดการบล็อกโฆษณาสำหรับเว็บไซต์นี้\" โดยกดไอคอนรายการในลิ้นชักบุ๊กมาร์ก</string>
+    <string name="onboarding_reshow">แสดงการแนะนำการใช้งานอีกครั้ง</string>
+    <string name="onboarding_reshow_desc">แสดงขั้นตอนการตั้งค่าอีกครั้ง</string>
+
+    <string name="pick_search">เลือกเสิร์ชเอนจิน:</string>
+    <string name="enable_adblock">เปิดใช้การบล็อกโฆษณาและตัวติดตามหรือไม่</string>
+
+    <string name="contributors">ผู้ร่วมพัฒนา</string>
+    <string name="translations">การแปล</string>
+
+    <string name="import_export">นำเข้าและส่งออกการตั้งค่า</string>
+    <string name="export_settings">ส่งออกการตั้งค่าเป็นข้อมูลสำรอง</string>
+    <string name="import_settings">นำเข้าการตั้งค่าจากข้อมูลสำรอง</string>
+    <string name="clear_settings">รีเซ็ตการตั้งค่า</string>
+    <string name="backup_settings">สำรองการตั้งค่า</string>
+    <string name="backup_bookmarks">สำรองบุ๊กมาร์ก</string>
+    <string name="backup_tabs">สำรองแท็บ</string>
+
+    <string name="reset_settings">รีเซ็ตการตั้งค่าแล้ว แอปกำลังปิด... กรุณาเปิดใหม่</string>
+
+    <string name="force_zoom">ข้ามการบล็อกการซูมของเว็บไซต์</string>
+
+    <string name="dark_mode">โหมดมืด</string>
+    <string name="submit">ส่งส่วนขยาย</string>
+
+    <string name="translator">ตัวแปลภาษา (เบต้า)</string>
+    <string name="coming_soon">ยังมีอีกเร็วๆ นี้...</string>
+
+    <string name="navbar_col">ตั้งสีแถบนำทาง</string>
+    <string name="color_filter">ตั้งตัวกรองสี</string>
+    <string name="color">สี</string>
+
+    <string name="looknfeel">ตั้งค่ารูปลักษณ์และการใช้งาน</string>
+    <string name="customize">ตั้งค่าการปรับแต่ง</string>
+
+    <string name="suggest">เลือกจำนวนคำแนะนำการค้นหา</string>
+    <string name="close_on_last_tab">ปิดเบราว์เซอร์เมื่อปิดแท็บสุดท้าย</string>
+
+    <string name="more">ข้อมูลเพิ่มเติม</string>
+    <string name="no_search_suggestions">ไม่มีคำแนะนำการค้นหา</string>
+    <string name="search_suggestions_4">น่าเสียดายที่คำแนะนำการค้นหาไม่สามารถใช้ได้บนอุปกรณ์ที่ต่ำกว่า Android 5.0 แล้ว กดปุ่มด้านล่างเพื่อดูข้อมูลเพิ่มเติม</string>
+
+    <string name="block_intent">จัดการลิงก์ที่คลิกทั้งหมดภายในเบราว์เซอร์นี้</string>
+    <string name="block_intent_summary">บล็อกข้อความถามให้เปิดลิงก์ในแอปภายนอก</string>
+
+    <string name="block_javascript">บล็อก JavaScript สำหรับเว็บไซต์นี้</string>
+    <string name="allow_javascript">อนุญาต JavaScript สำหรับเว็บไซต์นี้</string>
+    <string name="unlisted_javascript">บล็อก JavaScript สำหรับเว็บไซต์ในรายการ</string>
+    <string name="listed_javascript">อนุญาต JavaScript เฉพาะเว็บไซต์ในรายการ</string>
+
+    <string name="confirm">ยืนยันการรีเซ็ต</string>
+    <string name="clear">การดำเนินการนี้จะล้างข้อมูลทั้งหมดที่ lw Browser เก็บไว้ในอุปกรณ์ของคุณ</string>
+
+    <string name="only_clear">ล้างเมื่อจบเซสชันเบราว์เซอร์เท่านั้น</string>
+    <string name="only_clear_summary">ล้างตัวเลือกข้างต้นเฉพาะเมื่อปิดแท็บเบราว์เซอร์ทั้งหมดแล้ว แทนที่จะล้างทุกครั้งที่ออกจากแอป</string>
+
+    <string name="enable_in_settings">ต้องตั้งค่าการป้อนอัตโนมัติ (AutoFill) ในการตั้งค่า Android เพื่อให้ตัวเลือกนี้ทำงาน</string>
+
+    <string name="webrtc_description">อนุญาตให้เว็บไซต์ขอเข้าถึงไมโครโฟนและกล้อง</string>
+
+    <string name="drawer_lines">จำนวนบรรทัดข้อความสูงสุดในลิ้นชัก</string>
+    <string name="drawer_size">ขนาดตัวอักษรในลิ้นชัก</string>
+
+    <string name="privacy_set">ตั้งค่าความเป็นส่วนตัว</string>
+    <string name="security_set">ตั้งค่าความปลอดภัย</string>
+
+    <string name="page_source">ดูซอร์สของหน้า</string>
+    <string name="pagespeed_error">เว็บไซต์นี้ใช้ PageSpeed การแก้ไขซอร์สอาจทำงานไม่ถูกต้อง</string>
+
+    <string name="app_lock">ตั้งรหัสผ่านแอป</string>
+
+    <string name="show_ssl">แสดงกล่องคำเตือน SSL</string>
+    <string name="warn">เปลี่ยนค่านี้เมื่อคุณเข้าใจสิ่งที่กำลังทำเท่านั้น!</string>
+
+    <string name="download_channel">ดาวน์โหลด</string>
+    <string name="download_description">ข้อมูลความคืบหน้าการดาวน์โหลด</string>
+
+    <string name="download_to_sd">ดาวน์โหลดไปยัง SD การ์ด</string>
+
+    <string name="legacy_download_manager">ใช้ตัวจัดการดาวน์โหลดในตัว</string>
+    <string name="legacy_download_manager_desc">ดาวน์โหลดไฟล์ด้วยตัวจัดการดาวน์โหลดของ lw Browser แทนของระบบ</string>
+
+    <string name="onboarding_one">เข้าถึงการตั้งค่า บุ๊กมาร์ก (หรือปัดจากขอบขวา) และอื่นๆ ได้ในเมนูแบบเลื่อน</string>
+    <string name="onboarding_two">แตะที่ตัวเลขแท็บหรือปัดจากขอบซ้ายเพื่อเปิดลิ้นชักแท็บ</string>
+    <string name="onboarding_three">ใช้เครื่องมือของหน้าในลิ้นชักบุ๊กมาร์กเพื่อปิดการบล็อกโฆษณาชั่วคราว เปิดเว็บไซต์เวอร์ชันเดสก์ท็อป และอื่นๆ</string>
+    <string name="load_tabs">โหลดแท็บทั้งหมดเมื่อเปิดเบราว์เซอร์</string>
+
+    <string name="navbar">แถบนำทาง</string>
+
+    <string name="search_homepage">ค้นหา...</string>
+    <string name="start">เริ่มต้นใช้งาน!</string>
+
+    <string name="show_shortcuts">แสดงทางลัดในหน้าแรก</string>
+
+    <string name="reading_mode_image_copyright">รูปภาพโดย</string>
+    <string name="reading_mode_image_caption">รูปภาพพร้อมคำบรรยาย</string>
+
+    <string name="show_second_bar">แสดงแถบนำทางรอง</string>
+
+    <string name="edit_cookies">แก้ไขคุกกี้ของเว็บไซต์</string>
+
+    <string name="ssl_size">ขนาดคีย์</string>
+    <string name="algorithm">อัลกอริทึม</string>
+
+    <string name="crash_warning">การเปิดใช้การตั้งค่านี้ร่วมกับ \'อนุญาตให้เว็บไซต์เปิดหน้าต่างใหม่\' อาจทำให้แอปขัดข้อง</string>
+
+    <string name="amp_to_html">AMP เป็น HTML (เบต้า)</string>
+
+    <string name="private_title">โหมดส่วนตัว</string>
+    <string name="private_desc">แท็บในโหมดส่วนตัวทำงานเหมือนแท็บปกติ แต่เมื่อปิดแท็บ ข้อมูลทั้งหมดของแท็บนั้นจะถูกลบ การท่องเว็บแบบส่วนตัว ไม่ได้ทำให้คุณไม่เปิดเผยตัวตน แต่ช่วยปกปิดสิ่งที่คุณทำออนไลน์จากผู้อื่นที่ใช้อุปกรณ์เครื่องนี้</string>
+
+    <string name="file_is">ไฟล์คือ:</string>
+    <string name="translate_to">แปลเป็น:</string>
+
+    <string name="new_drag">ตอนนี้เมนูตัวเลือกของแท็บและบุ๊กมาร์กเปิดได้โดยกดที่ไอคอน การกดค้างที่ข้อความจะช่วยให้คุณจัดลำดับใหม่ได้</string>
+
+    <string name="last_loaded">โหลดล่าสุด</string>
+
+    <string name="continue_download">ดำเนินการต่อ</string>
+    <string name="start_download">เริ่ม</string>
+    <string name="pausing_download">กำลังหยุดชั่วคราว</string>
+    <string name="waiting_download">กำลังรอ</string>
+    <string name="pause_download">หยุดชั่วคราว</string>
+    <string name="confirm_delete">ยืนยันการลบหรือไม่</string>
+
+    <string name="grant_permissions">ให้สิทธิ์</string>
+    <string name="grant_permissions_desc">ต้องใช้สิทธิ์อ่าน/เขียนที่เก็บข้อมูลภายนอกสำหรับการดาวน์โหลดและการสำรองบุ๊กมาร์ก/การตั้งค่า</string>
+
+    <string name="open_in_app">เปิดในแอป</string>
+
+    <string name="bookmark_delete">คุณแน่ใจหรือไม่ว่าต้องการลบบุ๊กมาร์กนี้</string>
+
+    <string name="install_userscript">ติดตั้ง UserScript</string>
+    <string name="install_userscript_description">คุณต้องการติดตั้ง UserScript นี้หรือไม่</string>
+
+    <string name="remove_userscript">ลบ UserScript</string>
+    <string name="remove_userscript_description">คุณต้องการลบ UserScript นี้หรือไม่</string>
+
+    <string name="scripts">UserScripts</string>
+    <string name="scripts_store">ร้านค้า UserScripts</string>
+
+    <string name="new_tab_opened">เปิดแท็บใหม่แล้ว</string>
+    <string name="switch_button">สลับ</string>
+
+    <string name="dont_ask_again">ไม่ต้องถามอีก</string>
+
+    <string name="tts">อ่านหน้านี้</string>
+    <string name="stop_tts">หยุดอ่าน</string>
+
+    <string name="translation_endpoint">เอ็นด์พอยต์การแปล</string>
+    <string name="news_endpoint">เอ็นด์พอยต์ข่าว</string>
+
+    <string name="select_translate_text">กรุณาเลือกข้อความที่คุณต้องการแปล</string>
+    <string name="select_tts_text">กรุณาเลือกข้อความที่คุณต้องการให้อ่าน</string>
+
+    <string name="homepage_type">ประเภทหน้าแรก</string>
+    <string name="focused">แบบเน้นการค้นหา</string>
+    <string name="informational">แบบแสดงข้อมูล</string>
+
+    <string name="export_to_file">ส่งออกเป็นไฟล์</string>
+    <string name="export_as_html">ส่งออกเป็น HTML</string>
+    <string name="export_as_list">ส่งออกเป็นรายการ</string>
+
+    <string name="page_blocked">หน้าถูกบล็อก</string>
+    <string name="go_back">ย้อนกลับ</string>
+    <string name="proceed">ดำเนินการต่อ</string>
+
+    <string name="webview_version">เวอร์ชัน WebView</string>
+    <string name="unknown">ไม่ทราบ</string>
+
+    <string name="rotate_site_popup">คุณต้องการให้หมุนหน้าจอตามระบบหรือไม่</string>
+    <string name="rotate_site">หมุนหน้าจอตามระบบหรือไม่</string>
+
+    <string name="app_elements">องค์ประกอบของแอป</string>
+    <string name="theme_settings">ตั้งค่าธีม</string>
+    <string name="homepage_settings">ตั้งค่าหน้าแรก</string>
+    <string name="navbar_settings">ตั้งค่าแถบนำทาง</string>
+    <string name="drawer_settings">ตั้งค่าลิ้นชัก</string>
+
+    <string name="drawer_item_offset">ระยะเยื้องของรายการในลิ้นชัก</string>
+    <string name="example_item">รายการตัวอย่าง</string>
+    <string name="stack_items_reverse">เรียงรายการจากด้านล่างของลิ้นชัก</string>
+
+    <string name="forgot_password">ลืมรหัสผ่าน</string>
+    <string name="recover_app_lock">กรุณาเข้าชม <a href="https://github.com/xxnonxxp11/lwBrowser/recover.php">github.com/xxnonxxp11/lwBrowser/recover.php</a> ในเบราว์เซอร์อื่นเพื่อกู้คืนรหัสผ่านล็อกแอปของคุณ</string>
+    <string name="error">ข้อผิดพลาด</string>
+    <string name="save_file_success">บันทึกไฟล์สำเร็จ</string>
+    <string name="tabs_behavior">พฤติกรรมของแท็บ</string>
+    <string name="tabs_startup">การเริ่มต้นและการกู้คืน</string>
+    <string name="search_engine_category">เสิร์ชเอนจิน</string>
+    <string name="downloads_category">ดาวน์โหลด</string>
+    <string name="identity_category">การระบุตัวตน</string>
+    <string name="web_content_category">เนื้อหาเว็บ</string>
+    <string name="bars_category">แถบเครื่องมือและการนำทาง</string>
+    <string name="screen_category">หน้าจอและการแสดงผล</string>
+    <string name="network_category">เครือข่ายและพร็อกซี</string>
+    <string name="adblock_trackers_category">การบล็อกโฆษณาและตัวติดตาม</string>
+    <string name="clear_on_exit">ล้างเมื่อออก</string>
+
+    <string name="language">ภาษา</string>
+    <string name="language_category">ภาษา</string>
+</resources>

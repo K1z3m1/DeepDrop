@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>${TITLE}</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 22vh;
+            user-select: none;
+            overflow-x: hidden;
+        }
+        .main-container {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0 18px;
+        }
+        .logo-wrap {
+            margin-bottom: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .logo-img {
+            width: 58px;
+            height: 58px;
+            object-fit: contain;
+            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
+            transition: transform 0.2s ease;
+        }
+        .logo-img:active {
+            transform: scale(0.95);
+        }
+        .search_bar {
+            width: 100%;
+            height: 46px;
+            background: #18191E;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+            transition: all 0.2s ease;
+        }
+        .search_bar:focus-within {
+            border-color: #5C87F7;
+            background: #1F2026;
+            box-shadow: 0 4px 14px rgba(92, 135, 247, 0.2);
+        }
+        .search-engine-img {
+            width: 22px;
+            height: 22px;
+            object-fit: contain;
+            margin-right: 12px;
+            flex-shrink: 0;
+            display: block;
+        }
+        #search_input {
+            flex: 1;
+            height: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #FFFFFF;
+            font-size: 15px;
+            padding: 0;
+        }
+        #search_input::placeholder {
+            color: #727682;
+        }
+        #search_submit {
+            background: transparent;
+            border: none;
+            outline: none;
+            padding: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .shortcuts {
+            margin-top: 36px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            position: relative;
+        }
+        .shortcut-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: inherit;
+        }
+        .link {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: #16171B;
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            object-fit: contain;
+            image-rendering: -webkit-optimize-contrast;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+            transition: transform 0.15s ease, background-color 0.15s ease;
+        }
+        .shortcut-item:active .link {
+            transform: scale(0.92);
+            background: #22242B;
+        }
+        .edit {
+            margin-left: 10px;
+            width: 18px;
+            height: 18px;
+            fill: #5A5D66;
+            cursor: pointer;
+            transition: fill 0.2s ease;
+        }
+        .edit:hover {
+            fill: #5C87F7;
+        }
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: #1E1F24;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            padding: 24px;
+            width: 88%;
+            max-width: 380px;
+            color: #FFFFFF;
+            margin: auto;
+            position: relative;
+            top: 15vh;
+        }
+        .modal-content h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        .modal-content label {
+            font-size: 12px;
+            color: #9EA2A8;
+            margin-top: 10px;
+            display: block;
+        }
+        .modal-content input {
+            width: 100%;
+            height: 38px;
+            background: #121316;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 0 12px;
+            color: #FFFFFF;
+            font-size: 14px;
+            outline: none;
+            margin-top: 4px;
+        }
+        .modal-content input:focus {
+            border-color: #5C87F7;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .button-material {
+            padding: 8px 18px;
+            border-radius: 8px;
+            border: none;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .button-material.close {
+            background: transparent;
+            color: #9EA2A8;
+        }
+        .button-material.save {
+            background: #5C87F7;
+            color: #FFFFFF;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="logo-wrap">
+            <img id="image_url" class="logo-img" src="data:image/png;base64,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" alt="lw" />
+        </div>
+
+        <div class="search_bar" id="search_bar">
+            <img id="search_engine_icon" class="search-engine-img" src="file:///android_asset/google.webp" alt="Buscar" />
+            <input class="search" type="text" value="" id="search_input" placeholder="Buscar o ingresar URL" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+            <button id="search_submit" aria-label="Buscar">
+                <svg style="width: 18px; height: 18px; fill: #8E929C;" viewBox="0 0 24 24">
+                    <path d="M5 12h14M12 5l7 7-7 7" stroke="#8E929C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="shortcuts" id="shortcuts">
+            <a id="link1click" href="https://google.com" class="shortcut-item">
+                <img class="link" id="link1" alt="Google" />
+            </a>
+            <a id="link2click" href="https://youtube.com" class="shortcut-item">
+                <img class="link" id="link2" alt="YouTube" />
+            </a>
+            <a id="link3click" href="https://github.com" class="shortcut-item">
+                <img class="link" id="link3" alt="GitHub" />
+            </a>
+            <a id="link4click" href="https://speedtest.net" class="shortcut-item">
+                <img class="link" id="link4" alt="Speedtest" />
+            </a>
+            <svg class="edit" id="edit_btn" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+            </svg>
+        </div>
+    </div>
+
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <h2 id="edit_shortcuts">Editar atajos</h2>
+            <label for="link1inp">Atajo 1:</label>
+            <input type="url" id="link1inp" value="https://google.com">
+            <label for="link2inp">Atajo 2:</label>
+            <input type="url" id="link2inp" value="https://youtube.com">
+            <label for="link3inp">Atajo 3:</label>
+            <input type="url" id="link3inp" value="https://github.com">
+            <label for="link4inp">Atajo 4:</label>
+            <input type="url" id="link4inp" value="https://speedtest.net">
+
+            <div class="modal-actions">
+                <button class="close button-material" id="close">Cancelar</button>
+                <button class="save button-material" id="apply">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        function search() {
+            var input = document.getElementById("search_input");
+            var query = input.value.trim();
+            if (query !== "") {
+                window.location.href = "lw://search?q=" + encodeURIComponent(query);
+                input.value = "";
+            }
+            return false;
+        }
+
+        document.getElementById("search_submit").addEventListener("click", search);
+        document.getElementById("search_input").addEventListener("keydown", function(e) {
+            if (e.keyCode === 13) search();
+        });
+
+        var modal = document.getElementById("editModal");
+        var editBtn = document.getElementById("edit_btn");
+        var closeBtn = document.getElementById("close");
+        var saveBtn = document.getElementById("apply");
+
+        if (editBtn) {
+            editBtn.onclick = function() {
+                modal.style.display = "block";
+            };
+        }
+        if (closeBtn) {
+            closeBtn.onclick = function() {
+                modal.style.display = "none";
+            };
+        }
+        window.onclick = function(e) {
+            if (e.target === modal) {
+                modal.style.display = "none";
+            }
+        };
+        if (saveBtn) {
+            saveBtn.onclick = function() {
+                var l1 = encodeURIComponent(document.getElementById("link1inp").value.trim());
+                var l2 = encodeURIComponent(document.getElementById("link2inp").value.trim());
+                var l3 = encodeURIComponent(document.getElementById("link3inp").value.trim());
+                var l4 = encodeURIComponent(document.getElementById("link4inp").value.trim());
+                modal.style.display = "none";
+                window.location.href = "lw://save_shortcuts?link1=" + l1 + "&link2=" + l2 + "&link3=" + l3 + "&link4=" + l4;
+            };
+        }
+    </script>
+</body>
+</html>

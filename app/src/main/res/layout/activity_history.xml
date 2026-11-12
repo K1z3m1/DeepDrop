@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:fitsSystemWindows="true">
+
+    <!-- Top Navigation Tabs Bar (Via Browser Style) -->
+    <LinearLayout
+        android:id="@+id/history_header_layout"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingEnd="12dp">
+
+        <ImageButton
+            android:id="@+id/history_back_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/action_back"
+            android:padding="9dp"
+            android:scaleType="fitCenter"
+            app:srcCompat="@drawable/ic_action_back"
+            app:tint="?android:attr/textColorPrimary" />
+
+        <HorizontalScrollView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:overScrollMode="never"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tab_bookmarks"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="center"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="Marcadores"
+                    android:textColor="#7C808E"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:id="@+id/tab_history"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:background="?attr/selectableItemBackground"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="Historial"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:textSize="15.5sp" />
+
+                <TextView
+                    android:id="@+id/tab_saved_pages"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="center"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="Páginas guardadas"
+                    android:textColor="#7C808E"
+                    android:textSize="15sp" />
+
+            </LinearLayout>
+
+        </HorizontalScrollView>
+
+    </LinearLayout>
+
+    <!-- Search Capsule (Pill) Bar -->
+    <LinearLayout
+        android:id="@+id/history_search_container"
+        android:layout_width="match_parent"
+        android:layout_height="38dp"
+        android:layout_marginStart="14dp"
+        android:layout_marginEnd="14dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="6dp"
+        android:background="@drawable/bg_search_capsule"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingEnd="10dp">
+
+        <ImageView
+            android:layout_width="15dp"
+            android:layout_height="15dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_search"
+            app:tint="#7C808E" />
+
+        <EditText
+            android:id="@+id/history_search_input"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="4dp"
+            android:layout_weight="1"
+            android:background="@null"
+            android:hint="Buscar"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:maxLines="1"
+            android:singleLine="true"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="#7C808E"
+            android:textSize="13.5sp" />
+
+        <ImageView
+            android:id="@+id/history_search_clear"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Limpiar"
+            android:padding="3dp"
+            android:src="@drawable/ic_clear"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+    <!-- Main List & Empty State Container -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/history"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingTop="2dp"
+            android:paddingBottom="8dp"
+            android:scrollbars="vertical" />
+
+        <LinearLayout
+            android:id="@+id/empty_history_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:alpha="0.30"
+                android:src="@drawable/ic_history"
+                app:tint="?android:attr/textColorSecondary" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="Sin historial"
+                android:textColor="?android:attr/textColorSecondary"
+                android:textSize="13.5sp" />
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+    <!-- Bottom Action Bar (Divider + Actions) -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.6dp"
+        android:background="#1AFFFFFF" />
+
+    <FrameLayout
+        android:id="@+id/history_bottom_bar"
+        android:layout_width="match_parent"
+        android:layout_height="50dp">
+
+        <!-- Normal State: Pestañas | Eliminar todo | Editar -->
+        <LinearLayout
+            android:id="@+id/bottom_bar_normal"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/btn_tabs"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackground"
+                android:gravity="center"
+                android:text="Pestañas"
+                android:textColor="#C5C7D0"
+                android:textSize="13.5sp" />
+
+            <TextView
+                android:id="@+id/btn_clear_all"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackground"
+                android:gravity="center"
+                android:text="Eliminar todo"
+                android:textColor="#C5C7D0"
+                android:textSize="13.5sp" />
+
+            <TextView
+                android:id="@+id/btn_edit"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackground"
+                android:gravity="center"
+                android:text="Editar"
+                android:textColor="#C5C7D0"
+                android:textSize="13.5sp" />
+
+        </LinearLayout>
+
+        <!-- Edit / Selection State: Seleccionar todo | Eliminar | Hecho -->
+        <LinearLayout
+            android:id="@+id/bottom_bar_edit"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/btn_select_all"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackground"
+                android:gravity="center"
+                android:text="Seleccionar todo"
+                android:textColor="#C5C7D0"
+                android:textSize="13.5sp" />
+
+            <TextView
+                android:id="@+id/btn_delete_selected"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackground"
+                android:gravity="center"
+                android:text="Eliminar"
+                android:textColor="#FF5252"
+                android:textSize="13.5sp" />
+
+            <TextView
+                android:id="@+id/btn_done"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackground"
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center"
+                android:text="Hecho"
+                android:textColor="#5C87F7"
+                android:textSize="13.5sp" />
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+</LinearLayout>

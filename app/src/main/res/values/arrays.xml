@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="user_agent">
+        <item>@string/agent_default</item>
+        <item>@string/agent_android_phone</item>
+        <item>@string/agent_android_tablet</item>
+        <item>@string/agent_desktop</item>
+        <item>@string/agent_ie11</item>
+        <item>@string/agent_macos</item>
+        <item>@string/agent_iphone</item>
+        <item>@string/agent_ipad</item>
+        <item>@string/agent_symbian</item>
+        <item>@string/agent_custom</item>
+    </string-array>
+
+    <string-array name="blocked_sites">
+        <item>@string/none</item>
+        <item>@string/block_all_sites</item>
+        <item>@string/only_allow_sites</item>
+    </string-array>
+
+    <string-array name="block_javascript">
+        <item>@string/none</item>
+        <item>@string/unlisted_javascript</item>
+        <item>@string/listed_javascript</item>
+    </string-array>
+
+    <string-array name="homepage_type">
+        <item>@string/agent_default</item>
+        <item>@string/focused</item>
+        <item>@string/informational</item>
+    </string-array>
+
+    <string-array name="navbar_col">
+        <item>@string/agent_default</item>
+        <item>@string/color</item>
+    </string-array>
+
+    <string-array name="password">
+        <item>@string/none</item>
+        <item>@string/enter_password</item>
+    </string-array>
+
+
+    <string-array name="drawer_size">
+        <item>@string/action_auto</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
+
+    <string-array name="drawer_lines">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
+
+    <string-array name="download_folder">
+        <item>@string/folder_default</item>
+        <item>@string/folder_custom</item>
+    </string-array>
+
+    <string-array name="homepage">
+        <item>@string/action_homepage</item>
+        <item>@string/action_blank</item>
+        <item>@string/action_bookmarks</item>
+        <item>@string/action_webpage</item>
+    </string-array>
+
+    <string-array name="suggestions">
+        <item>@string/powered_by_google</item>
+        <item>@string/powered_by_duck</item>
+        <item>@string/powered_by_baidu</item>
+        <item>@string/powered_by_naver</item>
+        <item>@string/app_name</item>
+        <item>@string/search_suggestions_off</item>
+    </string-array>
+
+    <string-array name="themes">
+        <item>@string/light_theme</item>
+        <item>@string/dark_theme</item>
+        <item>@string/black_theme</item>
+        <!--<item>@string/blue_theme</item>
+        <item>@string/yellow_theme</item>
+        <item>@string/green_theme</item>-->
+    </string-array>
+</resources>

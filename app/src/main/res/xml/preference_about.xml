@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--suppress AndroidElementNotAllowed -->
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="@string/settings_about">
+        <Preference
+            android:summary="@string/url_project"
+            android:title="@string/more">
+            <intent
+                android:action="android.intent.action.VIEW"
+                android:data="https://github.com/xxnonxxp11/lwBrowser">
+                <extra
+                    android:name="SOURCE"
+                    android:value="SELF" />
+            </intent>
+        </Preference>
+        <Preference
+            android:key="pref_version"
+            android:title="@string/version" />
+        <Preference
+            android:key="pref_webview"
+            android:title="@string/webview_version" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="8dp"
+    android:gravity="center_horizontal"
+    android:orientation="vertical">
+
+    <androidx.appcompat.widget.AppCompatEditText
+        android:id="@+id/dialog_multi_line"
+        android:layout_width="match_parent"
+        android:layout_height="320dp"
+        android:gravity="top|start"
+        android:fontFamily="monospace"
+        android:textSize="12sp"
+        android:scrollbars="vertical"
+        android:overScrollMode="always"
+        android:background="@null"
+        android:inputType="textMultiLine|textNoSuggestions" />
+
+</LinearLayout>

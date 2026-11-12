@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto" >
+
+    <item
+        android:id="@+id/action_back"
+        android:checkable="false"
+        android:enabled="true"
+        android:icon="@drawable/ic_action_back"
+        android:title="@string/action_back"
+        android:visible="true"
+        app:showAsAction="ifRoom"/>
+    <item
+        android:id="@+id/action_forward"
+        android:checkable="false"
+        android:enabled="true"
+        android:icon="@drawable/ic_action_forward"
+        android:title="@string/action_forward"
+        android:visible="true"
+        app:showAsAction="ifRoom"/>
+    <item
+        android:id="@+id/action_new_tab"
+        android:icon="@drawable/ic_action_plus"
+        android:title="@string/action_new_tab"/>
+    <item
+        android:id="@+id/action_share"
+        android:icon="@drawable/ic_share_black"
+        android:title="@string/action_share"/>
+    <item
+        android:id="@+id/action_find"
+        android:icon="@drawable/ic_search"
+        android:title="@string/action_find"/>
+    <item
+        android:id="@+id/action_copy"
+        android:title="@string/action_copy"
+        android:icon="@drawable/ic_content_copy_black"/>
+    <item
+        android:id="@+id/action_history"
+        android:icon="@drawable/ic_history"
+        android:title="@string/action_history"/>
+    <item
+        android:id="@+id/action_bookmarks"
+        android:icon="@drawable/ic_bookmark"
+        android:title="@string/action_bookmarks"/>
+
+    
+    <item
+        android:icon="@drawable/ic_action_back"
+        android:id="@+id/quit_private"
+        android:title="@string/quit_private"/>
+    <item
+        android:icon="@drawable/ic_action_delete"
+        android:id="@+id/quit_app"
+        android:title="@string/dialog_title_close_browser"/>
+</menu>

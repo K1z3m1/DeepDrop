@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="@string/theme_settings">
+        <Preference
+            android:key="app_theme"
+            android:singleLineTitle="false"
+            android:title="@string/theme" />
+        <Preference
+            android:key="navbar_col"
+            android:singleLineTitle="false"
+            android:title="@string/navbar_col" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="dark_mode"
+            android:singleLineTitle="false"
+            android:title="@string/web_dark_theme" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="black_status_bar"
+            android:singleLineTitle="false"
+            android:title="@string/settings_black_status_bar" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="cb_colormode"
+            android:singleLineTitle="false"
+            android:title="@string/color_mode" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/bars_category">
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="bottom_bar"
+            android:singleLineTitle="false"
+            android:title="@string/bottom_navbar" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="fullScreenOption"
+            android:singleLineTitle="false"
+            android:title="@string/fullScreenOption" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="fullscreen"
+            android:singleLineTitle="false"
+            android:title="@string/fullscreen" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/screen_category">
+        <Preference
+            android:key="text_size"
+            android:singleLineTitle="false"
+            android:title="@string/title_text_size" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="wideViewPort"
+            android:singleLineTitle="false"
+            android:summary="@string/recommended"
+            android:title="@string/wideViewPort" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="overViewMode"
+            android:singleLineTitle="false"
+            android:summary="@string/recommended"
+            android:title="@string/overViewMode" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="force_zoom"
+            android:singleLineTitle="false"
+            android:title="@string/force_zoom" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

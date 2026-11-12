@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>lw Browser - El navegador más ligero, rápido y limpio para Android</title>
+  
+  <!-- SEO & Social Meta Tags -->
+  <meta name="description" content="lw Browser es un navegador web ultra ligero para Android de solo ~3 MB. Extremadamente rápido, con interfaz ergonómica inspirada en Via Browser y un bloqueador de anuncios uBlock integrado.">
+  <meta name="keywords" content="lw Browser, navegador android, adblocker android, navegador ligero, via browser alternative, ublock android, navegador rapido, open source browser">
+  <meta name="author" content="uamo11">
+  <meta name="theme-color" content="#080a10">
+  <link rel="canonical" href="https://uamo11.github.io/lwBrowser/">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://uamo11.github.io/lwBrowser/">
+  <meta property="og:title" content="lw Browser - Navegador Android Ultra Ligero & Rápido">
+  <meta property="og:description" content="Navega a la velocidad de la luz en Android. Solo ~3 MB, bloqueo de anuncios y rastreadores integrado y diseño ergonómico para una sola mano.">
+  <meta property="og:image" content="https://raw.githubusercontent.com/uamo11/lwBrowser/refs/heads/main/assets/logo.png">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://uamo11.github.io/lwBrowser/">
+  <meta property="twitter:title" content="lw Browser - Navegador Android Ultra Ligero & Rápido">
+  <meta property="twitter:description" content="Solo ~3 MB, uBlock integrado, navegación ergonómica y cero telemetría.">
+  <meta property="twitter:image" content="https://raw.githubusercontent.com/uamo11/lwBrowser/refs/heads/main/assets/logo.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="assets/logo.png">
+  <link rel="apple-touch-icon" href="assets/logo.png">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Background Orbs -->
+  <div class="ambient-glow-1"></div>
+  <div class="ambient-glow-2"></div>
+
+  <!-- Header & Navigation -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <a href="#hero" class="brand-link" aria-label="lw Browser Inicio">
+        <img src="assets/logo.png" alt="lw Browser Logo" class="brand-logo-img" width="36" height="36">
+        <span class="brand-name">
+          lw Browser
+          <span class="brand-version">v1.7.5</span>
+        </span>
+      </a>
+
+      <nav>
+        <ul class="nav-menu" id="navMenu">
+          <li><a href="#hero" class="nav-item-link">Inicio</a></li>
+          <li><a href="#capturas" class="nav-item-link">Capturas</a></li>
+          <li><a href="#caracteristicas" class="nav-item-link">Características</a></li>
+          <li><a href="#comparativa" class="nav-item-link">¿Por qué lw?</a></li>
+          <li><a href="#descarga" class="nav-item-link">Descargar</a></li>
+          <li><a href="#faq" class="nav-item-link">Preguntas</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions">
+        <a href="https://github.com/uamo11/lwBrowser" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" aria-label="GitHub Repository">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          <span>GitHub</span>
+        </a>
+
+        <a href="https://github.com/uamo11/lwBrowser/releases/latest" class="btn btn-primary btn-sm btn-download-nav">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          <span>Descargar APK</span>
+        </a>
+
+        <button class="mobile-toggle" id="mobileToggleBtn" aria-label="Abrir Menú" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section" id="hero">
+    <div class="container hero-grid">
+      <div class="hero-content">
+        <div class="hero-badge-wrap">
+          <span class="badge">
+            <span class="badge-dot"></span>
+            Versión 1.7.5 • ~3 MB • Open Source
+          </span>
+        </div>
+
+        <h1 class="hero-title">
+          lw Browser
+        </h1>
+
+        <p class="hero-subtitle">
+          El navegador más ligero, rápido y limpio para Android
+        </p>
+
+        <p class="hero-desc">
+          Diseñado para quienes buscan la máxima velocidad sin renunciar al control. Con apenas <strong>~3 MB</strong>, arranque instantáneo, interfaz ergonómica inspirada en Via Browser y un bloqueador uBlock integrado que defiende tu privacidad sin consumir batería.
+        </p>
+
+        <div class="hero-cta-group">
+          <a href="https://github.com/uamo11/lwBrowser/releases/latest" class="btn btn-primary btn-lg">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            <span>Descargar APK (~3 MB)</span>
+          </a>
+
+          <a href="https://github.com/uamo11/lwBrowser" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-lg">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+            </svg>
+            <span>Ver en GitHub</span>
+          </a>
+        </div>
+
+        <div class="hero-highlights-strip">
+          <div class="stat-chip">
+            <div class="stat-value"><span class="icon">🪶</span> ~3 MB</div>
+            <div class="stat-label">Tamaño mínimo</div>
+          </div>
+          <div class="stat-chip">
+            <div class="stat-value"><span class="icon">⚡</span> &lt; 0.1s</div>
+            <div class="stat-label">Arranque en frío</div>
+          </div>
+          <div class="stat-chip">
+            <div class="stat-value"><span class="icon">🛡️</span> uBlock</div>
+            <div class="stat-label">Filtro nativo</div>
+          </div>
+          <div class="stat-chip">
+            <div class="stat-value"><span class="icon">🔒</span> 0 Telemetría</div>
+            <div class="stat-label">Privacidad pura</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Phone Showcase -->
+      <div class="hero-phone-showcase">
+        <div class="phone-glow-bg"></div>
+
+        <div class="floating-badge floating-badge-1">
+          <span>🛡️</span> 100% Libre de anuncios intrusivos
+        </div>
+
+        <div class="floating-badge floating-badge-2">
+          <span>⚡</span> Cero lag en memoria
+        </div>
+
+        <div class="phone-mockup-frame">
+          <div class="phone-notch">
+            <div class="phone-camera-dot"></div>
+          </div>
+          <div class="phone-screen">
+            <img id="heroPhoneImage" src="assets/screenshots/screenshot-home.jpg" alt="lw Browser Pantalla de Inicio" loading="eager">
+          </div>
+        </div>
+
+        <!-- Phone interactive preview controls -->
+        <div class="hero-phone-selector">
+          <button class="hero-pill-btn active" data-img="assets/screenshots/screenshot-home.jpg" data-alt="lw Browser Pantalla de Inicio">
+            <span>🏠</span> Inicio
+          </button>
+          <button class="hero-pill-btn" data-img="assets/screenshots/screenshot-menu.jpg" data-alt="lw Browser Menú Ergonómico">
+            <span>⚙️</span> Menú Via
+          </button>
+          <button class="hero-pill-btn" data-img="assets/screenshots/screenshot-adblock.jpg" data-alt="lw Browser Navegación Sin Anuncios">
+            <span>🛡️</span> Sin Anuncios
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Screenshots Gallery Section -->
+  <section class="section" id="capturas">
+    <div class="container">
+      <div class="section-header">
+        <span class="badge section-badge">Experiencia de Usuario</span>
+        <h2 class="section-title">Interfaz limpia y cómoda</h2>
+        <p class="section-subtitle">
+          Diseñada para el uso natural con una sola mano. Sin noticias molestas, sin barras abarrotadas: solo tú y la web.
+        </p>
+      </div>
+
+      <div class="screenshots-grid">
+        <!-- Screenshot 1 -->
+        <div class="screenshot-card">
+          <div class="device-wrapper" data-lightbox-trigger data-lightbox-src="assets/screenshots/screenshot-home.jpg">
+            <img src="assets/screenshots/screenshot-home.jpg" alt="lw Browser - Pantalla de Inicio Minimalista" loading="lazy">
+            <div class="device-zoom-overlay">
+              <div class="zoom-icon-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="screenshot-info">
+            <div class="screenshot-tag">01 • Minimalismo</div>
+            <h3 class="screenshot-title">Inicio Minimalista</h3>
+            <p class="screenshot-desc">
+              Buscador integrado con autocompletado rápido, accesos directos configurables y navegación inferior al alcance de tu pulgar.
+            </p>
+            <div class="screenshot-tags-list">
+              <span class="tag-pill">Acceso rápido</span>
+              <span class="tag-pill">Sin distracciones</span>
+              <span class="tag-pill">Limpio</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Screenshot 2 -->
+        <div class="screenshot-card">
+          <div class="device-wrapper" data-lightbox-trigger data-lightbox-src="assets/screenshots/screenshot-menu.jpg">
+            <img src="assets/screenshots/screenshot-menu.jpg" alt="lw Browser - Menú de Control Ergonómico" loading="lazy">
+            <div class="device-zoom-overlay">
+              <div class="zoom-icon-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="screenshot-info">
+            <div class="screenshot-tag">02 • Ergonomía Via</div>
+            <h3 class="screenshot-title">Menú de Acceso Rápido</h3>
+            <p class="screenshot-desc">
+              Todas las herramientas esenciales en una sola hoja deslizable: Modo nocturno, Marcadores, Incógnito, Modo escritorio y Descargas.
+            </p>
+            <div class="screenshot-tags-list">
+              <span class="tag-pill">Uso a una mano</span>
+              <span class="tag-pill">Modo noche</span>
+              <span class="tag-pill">Herramientas</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Screenshot 3 -->
+        <div class="screenshot-card">
+          <div class="device-wrapper" data-lightbox-trigger data-lightbox-src="assets/screenshots/screenshot-adblock.jpg">
+            <img src="assets/screenshots/screenshot-adblock.jpg" alt="lw Browser - Navegación Sin Anuncios" loading="lazy">
+            <div class="device-zoom-overlay">
+              <div class="zoom-icon-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="screenshot-info">
+            <div class="screenshot-tag">03 • Potencia & Fluidez</div>
+            <h3 class="screenshot-title">Navegación Sin Anuncios</h3>
+            <p class="screenshot-desc">
+              Reproduce contenido en YouTube y navega sitios complejos sin interrupciones publicitarias, banners ni rastreadores de fondo.
+            </p>
+            <div class="screenshot-tags-list">
+              <span class="tag-pill">uBlock integrado</span>
+              <span class="tag-pill">Ahorro de datos</span>
+              <span class="tag-pill">Ultra rápido</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Key Features Section -->
+  <section class="section" id="caracteristicas">
+    <div class="container">
+      <div class="section-header">
+        <span class="badge section-badge">Rendimiento Extremo</span>
+        <h2 class="section-title">Características clave</h2>
+        <p class="section-subtitle">
+          Cada detalle ha sido optimizado meticulosamente para ofrecer una navegación ágil, privada y confortable.
+        </p>
+      </div>
+
+      <div class="features-grid">
+        <!-- Feature 1 -->
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">🪶</div>
+          <h3 class="feature-title">Ultra ligero (~3 MB)</h3>
+          <p class="feature-description">
+            Ocupa una fracción minúscula de almacenamiento comparado con navegadores monstruosos de 150 MB+. Ideal para cualquier dispositivo.
+          </p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">⚡</div>
+          <h3 class="feature-title">Extremadamente rápido</h3>
+          <p class="feature-description">
+            Arranque instantáneo en frío y consumo de memoria RAM reducido a su mínima expresión. Cero servicios fantasma drenando batería.
+          </p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">🛡️</div>
+          <h3 class="feature-title">Bloqueador uBlock potente</h3>
+          <p class="feature-description">
+            Filtra en memoria con listas avanzadas anti-anuncios, popups y scripts de seguimiento. Ahorra hasta un 60% de tus datos móviles.
+          </p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">📱</div>
+          <h3 class="feature-title">UI ergonómica inspirada en Via</h3>
+          <p class="feature-description">
+            Barra inferior inteligente y menú contextual adaptado al uso natural con una sola mano, sin tener que estirar el dedo a la parte superior.
+          </p>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">🔒</div>
+          <h3 class="feature-title">Privacidad real por defecto</h3>
+          <p class="feature-description">
+            Cero telemetría, cero registros analíticos y cero rastreo comercial. Tus consultas e historial te pertenecen exclusivamente a ti.
+          </p>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">🌙</div>
+          <h3 class="feature-title">Modo oscuro inteligente</h3>
+          <p class="feature-description">
+            Sincronización automática con el modo oscuro del sistema Android o conmutación manual rápida para proteger tus ojos de noche.
+          </p>
+        </div>
+
+        <!-- Feature 7 -->
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">📖</div>
+          <h3 class="feature-title">Modo lectura y escritorio</h3>
+          <p class="feature-description">
+            Limpia páginas y artículos para una lectura fluida sin distracciones, o solicita versiones de ordenador con un solo toque.
+          </p>
+        </div>
+
+        <!-- Feature 8 -->
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">👆</div>
+          <h3 class="feature-title">Gestos fluidos y pestañas</h3>
+          <p class="feature-description">
+            Transiciones suaves, gestor de descargas integrado y administración rápida de pestañas múltiples sin ralentizaciones.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Comparison Section -->
+  <section class="section" id="comparativa">
+    <div class="container">
+      <div class="section-header">
+        <span class="badge section-badge">Comparativa Directa</span>
+        <h2 class="section-title">¿Por qué elegir lw Browser?</h2>
+        <p class="section-subtitle">
+          Los navegadores tradicionales se han vuelto lentos y cargados de funciones innecesarias. Compara y nota la diferencia:
+        </p>
+      </div>
+
+      <div class="comparison-wrapper">
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Característica</th>
+              <th class="highlight-col">lw Browser</th>
+              <th>Google Chrome</th>
+              <th>Otros Navegadores</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="row-feature-title">📦 Tamaño de la aplicación</td>
+              <td class="highlight-col"><span class="comp-badge good">✓ ~3 MB</span></td>
+              <td><span class="comp-badge bad">✕ 180 MB - 300 MB</span></td>
+              <td><span class="comp-badge neutral">~ 80 MB - 150 MB</span></td>
+            </tr>
+            <tr>
+              <td class="row-feature-title">🛡️ Bloqueo de anuncios nativo</td>
+              <td class="highlight-col"><span class="comp-badge good">✓ Integrado (uBlock)</span></td>
+              <td><span class="comp-badge bad">✕ Sin bloqueo (Sin extensiones)</span></td>
+              <td><span class="comp-badge neutral">Básico / Limitado</span></td>
+            </tr>
+            <tr>
+              <td class="row-feature-title">🔒 Telemetría y Rastreo</td>
+              <td class="highlight-col"><span class="comp-badge good">✓ Cero telemetría</span></td>
+              <td><span class="comp-badge bad">✕ Perfilado intensivo</span></td>
+              <td><span class="comp-badge neutral">Analíticas de uso</span></td>
+            </tr>
+            <tr>
+              <td class="row-feature-title">⚡ Consumo de Memoria RAM</td>
+              <td class="highlight-col"><span class="comp-badge good">✓ Mínimo (~35-60 MB)</span></td>
+              <td><span class="comp-badge bad">✕ Muy alto (400-800 MB)</span></td>
+              <td><span class="comp-badge neutral">Moderado (250-500 MB)</span></td>
+            </tr>
+            <tr>
+              <td class="row-feature-title">📱 Ergonomía a una mano (Barra inferior)</td>
+              <td class="highlight-col"><span class="comp-badge good">✓ Inspirado en Via</span></td>
+              <td><span class="comp-badge bad">✕ Barra superior forzada</span></td>
+              <td><span class="comp-badge neutral">Variable / No optimizado</span></td>
+            </tr>
+            <tr>
+              <td class="row-feature-title">🔋 Impacto en la batería</td>
+              <td class="highlight-col"><span class="comp-badge good">✓ Casi imperceptible</span></td>
+              <td><span class="comp-badge bad">✕ Alto consumo de fondo</span></td>
+              <td><span class="comp-badge neutral">Moderado</span></td>
+            </tr>
+            <tr>
+              <td class="row-feature-title">📜 Licencia de Software</td>
+              <td class="highlight-col"><span class="comp-badge good">✓ MPL-2.0 Open Source</span></td>
+              <td><span class="comp-badge bad">✕ Propietario cerrado</span></td>
+              <td><span class="comp-badge neutral">Mayormente cerrado</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="comparison-callout">
+          <div class="callout-text">
+            <h4>💡 Diseñado para devolverle la libertad a tu móvil</h4>
+            <p>Disfruta de páginas web que cargan hasta 3 veces más rápido gracias al bloqueo de rastreadores y al motor ultraligero.</p>
+          </div>
+          <a href="https://github.com/uamo11/lwBrowser/releases/latest" class="btn btn-primary btn-sm">
+            Probar lw Browser ahora
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Download Section -->
+  <section class="section" id="descarga">
+    <div class="container">
+      <div class="download-card-wrapper">
+        <div class="download-glow"></div>
+
+        <img src="assets/logo.png" alt="lw Browser Logo" class="download-app-icon" width="86" height="86">
+
+        <h2 class="download-title">Descarga lw Browser</h2>
+        <p class="download-subtitle">
+          Instala el navegador en tu teléfono Android en menos de 10 segundos y experimenta la web como siempre debió ser: ligera, veloz y sin interrupciones.
+        </p>
+
+        <div class="download-action-row">
+          <a href="https://github.com/uamo11/lwBrowser/releases/latest" class="btn btn-primary btn-lg">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            <span>Descargar APK Oficial (v1.7.5)</span>
+          </a>
+
+          <a href="https://github.com/uamo11/lwBrowser/releases" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-lg">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+            </svg>
+            <span>Ver todas las versiones</span>
+          </a>
+        </div>
+
+        <!-- Technical specifications -->
+        <div class="specs-grid">
+          <div class="spec-item">
+            <span class="spec-title">Versión Actual</span>
+            <span class="spec-value">1.7.5 (Estable)</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-title">Tamaño de Descarga</span>
+            <span class="spec-value">~3.2 MB APK</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-title">Compatibilidad</span>
+            <span class="spec-value">Android 4.4+ (API 19+)</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-title">Licencia</span>
+            <span class="spec-value">MPL-2.0 Open Source</span>
+          </div>
+        </div>
+
+        <!-- 3-step installation guide -->
+        <div class="install-steps">
+          <div class="step-card">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h5>Descarga el APK</h5>
+              <p>Pulsa el botón de descarga para obtener el archivo de instalación oficial directamente de GitHub Releases.</p>
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h5>Confirma la instalación</h5>
+              <p>Abre el archivo descargado. Si tu sistema lo solicita, autoriza la instalación de apps desde el navegador o gestor de archivos.</p>
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h5>¡Navega al instante!</h5>
+              <p>Abre lw Browser y disfruta de inmediato de tu navegación protegida y sin publicidad molesta.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section class="section" id="faq">
+    <div class="container">
+      <div class="section-header">
+        <span class="badge section-badge">Dudas y Respuestas</span>
+        <h2 class="section-title">Preguntas Frecuentes</h2>
+        <p class="section-subtitle">
+          Todo lo que necesitas saber sobre lw Browser, su funcionamiento y seguridad.
+        </p>
+      </div>
+
+      <div class="faq-accordion">
+        <div class="faq-item">
+          <div class="faq-header">
+            <span class="faq-question">¿Por qué lw Browser pesa tan solo ~3 MB?</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </div>
+          <div class="faq-content">
+            <p>
+              lw Browser está optimizado en Android nativo y aprovecha el motor del sistema sin cargar librerías innecesarias, telemetría ni código pesado de publicidad. Cada componente ha sido pulido para garantizar el menor consumo posible de almacenamiento y memoria.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-header">
+            <span class="faq-question">¿Cómo funciona el bloqueador de anuncios y trackers?</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </div>
+          <div class="faq-content">
+            <p>
+              Incorpora un defusor host de alto rendimiento inspirado en uBlock Origin que evalúa y neutraliza las peticiones a servidores de anuncios y rastreadores en memoria antes de que se descarguen. Esto elimina la publicidad y acelera de forma notable la carga de las páginas web.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-header">
+            <span class="faq-question">¿Es completamente seguro y privado?</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </div>
+          <div class="faq-content">
+            <p>
+              Absolutamente. Es 100% código abierto bajo la licencia Mozilla Public License 2.0 (MPL-2.0). El código fuente completo está disponible públicamente en GitHub para ser auditado por cualquier persona. No incluye analíticas, rastreo de comportamiento ni servicios en la nube propietarios.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-header">
+            <span class="faq-question">¿Qué permisos solicita en mi teléfono Android?</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </div>
+          <div class="faq-content">
+            <p>
+              Solo los permisos estrictamente imprescindibles. No solicita acceso a tu cámara, contactos, micrófono ni ubicación geográfica para navegar. El permiso de almacenamiento solo se solicita de forma puntual si descargas un archivo a tu memoria local.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-header">
+            <span class="faq-question">¿Puedo personalizar el motor de búsqueda y los accesos rápidos?</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </div>
+          <div class="faq-content">
+            <p>
+              Sí. Puedes seleccionar tu motor favorito (Google, DuckDuckGo, Bing, Brave, Startpage o un motor personalizado) y añadir, modificar u ordenar tus accesos directos preferidos en la pantalla principal.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-header">
+            <span class="faq-question">¿Cómo se actualiza la aplicación?</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </div>
+          <div class="faq-content">
+            <p>
+              Puedes descargar la versión más reciente en cualquier momento desde los Releases de GitHub. Simplemente instala el nuevo APK encima de tu versión actual; tus marcadores, historial y configuración se mantendrán intactos.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="footer-brand-header">
+            <img src="assets/logo.png" alt="lw Browser Logo" class="footer-logo" width="32" height="32">
+            <h3>lw Browser</h3>
+          </div>
+          <p class="footer-desc">
+            Navegador web ultra ligero, rápido y limpio para dispositivos Android. Diseñado para ofrecer la mejor ergonomía y respeto incondicional por la privacidad del usuario.
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Navegación</h4>
+          <ul class="footer-links">
+            <li><a href="#hero">Inicio</a></li>
+            <li><a href="#capturas">Capturas de pantalla</a></li>
+            <li><a href="#caracteristicas">Características clave</a></li>
+            <li><a href="#comparativa">Comparativa</a></li>
+            <li><a href="#descarga">Descargar APK</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Proyecto & Código</h4>
+          <ul class="footer-links">
+            <li><a href="https://github.com/uamo11/lwBrowser" target="_blank" rel="noopener noreferrer">Repositorio en GitHub</a></li>
+            <li><a href="https://github.com/uamo11/lwBrowser/releases" target="_blank" rel="noopener noreferrer">Releases y Versiones</a></li>
+            <li><a href="https://github.com/uamo11/lwBrowser/issues" target="_blank" rel="noopener noreferrer">Reportar un problema / Issue</a></li>
+            <li><a href="https://github.com/uamo11/lwBrowser/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">Licencia MPL-2.0</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div class="footer-copy">
+          Hecho con ❤️ para la comunidad de Android &bull; Licenciado bajo Mozilla Public License 2.0 (MPL-2.0)
+        </div>
+        <div class="footer-socials">
+          <a href="https://github.com/uamo11/lwBrowser" target="_blank" rel="noopener noreferrer" class="footer-icon-link" aria-label="GitHub">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Lightbox Modal for Screenshots -->
+  <div class="lightbox-modal" id="lightboxModal" role="dialog" aria-modal="true" aria-label="Vista ampliada de captura">
+    <div class="lightbox-dialog">
+      <button class="lightbox-close-btn" id="lightboxCloseBtn" aria-label="Cerrar vista previa">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+      <div class="lightbox-img-wrapper">
+        <img src="" alt="" class="lightbox-img" id="lightboxImg">
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Script -->
+  <script src="app.js"></script>
+</body>
+</html>

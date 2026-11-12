@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="80dp"
+    android:paddingTop="15dp"
+    android:paddingLeft="15dp"
+    android:paddingRight="8dp"
+    android:paddingBottom="15dp">
+
+    <ImageView
+        android:id="@+id/dl_icon"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:padding="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/ic_file_download_black" />
+
+    <ProgressBar
+        android:id="@+id/dl_progress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="15dp"
+        android:layout_marginRight="5dp"
+        android:max="100"
+        android:progress="50"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toRightOf="@id/dl_icon"
+        app:layout_constraintRight_toLeftOf="@id/dl_status"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- android:ellipsize="marquee"
+    android:marqueeRepeatLimit="marquee_forever" -->
+
+    <TextView
+        android:id="@+id/dl_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="15dp"
+        android:layout_marginRight="8dp"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:scrollHorizontally="true"
+        android:text="Name"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textSize="14sp"
+        app:layout_constraintBottom_toTopOf="@id/dl_progress"
+        app:layout_constraintLeft_toRightOf="@id/dl_icon"
+        app:layout_constraintRight_toLeftOf="@id/dl_speed" />
+
+    <TextView
+        android:id="@+id/dl_speed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Speed"
+        android:textColor="?android:attr/textColorSecondary"
+        android:textSize="13sp"
+        app:layout_constraintBottom_toTopOf="@id/dl_progress"
+        app:layout_constraintRight_toRightOf="@id/dl_progress" />
+
+    <TextView
+        android:id="@+id/dl_download"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Progress"
+        android:textColor="?android:attr/textColorSecondary"
+        android:textSize="13sp"
+        app:layout_constraintRight_toRightOf="@id/dl_progress"
+        app:layout_constraintTop_toBottomOf="@id/dl_progress" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/dl_status"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="wrap_content"
+        android:minWidth="72dp"
+        android:layout_height="34dp"
+        android:gravity="center"
+        android:paddingLeft="12dp"
+        android:paddingRight="12dp"
+        android:paddingTop="0dp"
+        android:paddingBottom="0dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:text="@string/action_open"
+        android:textColor="?attr/colorAccent"
+        app:strokeColor="?attr/colorAccent"
+        app:cornerRadius="17dp"
+        android:textSize="12sp"
+        android:singleLine="true"
+        android:maxLines="1"
+        android:ellipsize="none"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

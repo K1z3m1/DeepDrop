@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- Row 1 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="72dp"
+        android:orientation="horizontal"
+        android:baselineAligned="false"
+        android:weightSum="4">
+        <LinearLayout
+            android:id="@+id/btn_via_clear_data"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/icon_via_clear_data"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_action_delete" />
+            <TextView
+                android:id="@+id/text_via_clear_data"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Limpiar datos"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:ellipsize="end" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/btn_via_translate"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/icon_via_translate"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/translate" />
+            <TextView
+                android:id="@+id/text_via_translate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Traducir"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:ellipsize="end" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/btn_via_view_source"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/icon_via_view_source"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_baseline_code" />
+            <TextView
+                android:id="@+id/text_via_view_source"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Ver código fuente"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:ellipsize="end" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/btn_via_fullscreen"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/icon_via_fullscreen"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_via_fullscreen" />
+            <TextView
+                android:id="@+id/text_via_fullscreen"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Pantalla completa"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:ellipsize="end" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Row 2 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="72dp"
+        android:layout_marginTop="6dp"
+        android:orientation="horizontal"
+        android:baselineAligned="false"
+        android:weightSum="5">
+        <LinearLayout
+            android:id="@+id/btn_via_images"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/icon_via_images"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_action_block_images" />
+            <TextView
+                android:id="@+id/text_via_images"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Sin imágenes"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:ellipsize="end" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/btn_via_inspect"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/icon_via_inspect"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_page_tools" />
+            <TextView
+                android:id="@+id/text_via_inspect"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Inyectar script"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:ellipsize="end" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/btn_via_user_agent"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/icon_via_user_agent"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_round_smartphone" />
+            <TextView
+                android:id="@+id/text_via_user_agent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Useragent"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:ellipsize="end" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/btn_via_cookies"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/icon_via_cookies"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_round_storage" />
+            <TextView
+                android:id="@+id/text_via_cookies"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Cookies"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:ellipsize="end" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/btn_via_share"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/icon_via_share"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_share_black" />
+            <TextView
+                android:id="@+id/text_via_share"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Compartir"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:ellipsize="end" />
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>

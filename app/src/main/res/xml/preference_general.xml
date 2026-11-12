@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="@string/language_category">
+        <Preference
+            android:key="language"
+            android:singleLineTitle="false"
+            android:title="@string/language" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/search_engine_category">
+        <Preference
+            android:key="search"
+            android:singleLineTitle="false"
+            android:title="@string/search" />
+        <Preference
+            android:key="suggestions_choice"
+            android:singleLineTitle="false"
+            android:title="@string/search_suggestions" />
+        <Preference
+            android:key="suggestions_number"
+            android:singleLineTitle="false"
+            android:title="@string/suggest" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/homepage_settings">
+        <Preference
+            android:key="home"
+            android:singleLineTitle="false"
+            android:title="@string/home" />
+        <Preference
+            android:key="homepage_type"
+            android:singleLineTitle="false"
+            android:title="@string/homepage_type" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="show_shortcuts"
+            android:singleLineTitle="false"
+            android:title="@string/show_shortcuts" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/downloads_category">
+        <Preference
+            android:key="download"
+            android:singleLineTitle="false"
+            android:title="@string/download" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="downloader"
+            android:singleLineTitle="false"
+            android:title="@string/legacy_download_manager"
+            android:summary="@string/legacy_download_manager_desc" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/identity_category">
+        <Preference
+            android:key="agent"
+            android:singleLineTitle="false"
+            android:title="@string/agent" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

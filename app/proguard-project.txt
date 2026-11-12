@@ -1,0 +1,135 @@
+-optimizationpasses 5
+-dontusemixedcaseclassnames
+-dontskipnonpubliclibraryclasses
+-dontpreverify
+-verbose
+
+-keep public class * extends android.app.Activity
+-keep public class * extends android.app.Application
+-keep public class * extends android.app.Service
+-keep public class * extends android.content.BroadcastReceiver
+-keep public class * extends android.content.ContentProvider
+-keep public class * extends android.app.backup.BackupAgentHelper
+-keep public class * extends androidx.preference.Preference
+-keep public class * extends androidx.preference.PreferenceFragmentCompat {
+    public <init>();
+}
+-keep public class com.cookiegames.smartcookie.settings.fragment.* extends androidx.fragment.app.Fragment {
+    public <init>();
+}
+-keep public class com.cookiegames.smartcookie.reading.** { *; }
+
+-assumenosideeffects class android.util.Log {
+    public static *** d(...);
+    public static *** v(...);
+    public static *** w(...);
+    public static *** i(...);
+}
+
+# this will fix a force close in ReadingActivity
+-keep public class org.jsoup.** {
+    public *;
+}
+
+# Without this rule, openFileChooser does not get called on KitKat
+-keep class com.cookiegames.smartcookie.view.SmartCookieChromeClient {
+    void openFileChooser(android.webkit.ValueCallback);
+    void openFileChooser(android.webkit.ValueCallback, java.lang.String);
+    void openFileChooser(android.webkit.ValueCallback, java.lang.String, java.lang.String);
+}
+
+-keepclasseswithmembernames class * {
+    native <methods>;
+}
+
+-keepclasseswithmembers class * {
+    public <init>(android.content.Context, android.util.AttributeSet);
+}
+
+-keepclasseswithmembers class * {
+    public <init>(android.content.Context, android.util.AttributeSet, int);
+}
+
+-keepclassmembers class * extends android.app.Activity {
+   public void *(android.view.View);
+}
+
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
+-keep class * implements android.os.Parcelable {
+  public static final android.os.Parcelable$Creator *;
+}
+
+# ADBLOCKER (CRITICAL: Preserved 100%)
+-keep class com.cookiegames.smartcookie.adblock.** { *; }
+-keepclassmembers class com.cookiegames.smartcookie.adblock.** { *; }
+
+# Dagger 2
+-dontwarn dagger.**
+-dontwarn javax.inject.**
+-dontwarn javax.annotation.**
+-keep class dagger.** { *; }
+-keep class javax.inject.** { *; }
+-keep class * extends dagger.internal.Binding
+-keep class * extends dagger.internal.ModuleAdapter
+-keep class **$$Factory { *; }
+-keep class **$$MembersInjector { *; }
+-keep class **_Factory { *; }
+-keep class **_MembersInjector { *; }
+-keep class * {
+    @javax.inject.Inject *;
+    @javax.inject.Named *;
+    @javax.inject.Singleton *;
+}
+-keep class com.cookiegames.smartcookie.di.** { *; }
+
+# ButterKnife
+-dontwarn butterknife.internal.**
+-keep class butterknife.** { *; }
+-keep class **_ViewBinding { *; }
+-keepclasseswithmembernames class * {
+    @butterknife.* <fields>;
+}
+-keepclasseswithmembernames class * {
+    @butterknife.* <methods>;
+}
+
+# Mezzanine
+-dontwarn com.anthonycr.mezzanine.**
+-keep class com.anthonycr.mezzanine.** { *; }
+-keep class **MezzanineGenerator** { *; }
+
+# DataBinding
+-dontwarn androidx.databinding.**
+-keep class androidx.databinding.** { *; }
+-keep class **.databinding.** { *; }
+-keepclassmembers class **.databinding.** { *; }
+
+# ColorPicker
+-dontwarn com.flask.colorpicker.**
+-keep class com.flask.colorpicker.** { *; }
+
+# OkHttp & Okio
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-dontwarn org.conscrypt.**
+-keepnames class okhttp3.internal.publicsuffix.PublicSuffixDatabase
+
+# RxJava & RxAndroid
+-dontwarn io.reactivex.**
+-dontwarn java.util.concurrent.Flow*
+
+# Kotlin & Coroutines
+-dontwarn kotlin.**
+-dontwarn kotlinx.**
+
+# I2P Helper
+-dontwarn net.i2p.crypto.CertUtil
+-dontwarn net.i2p.android.**
+
+# General warnings suppression for missing optional references
+-dontwarn android.support.**
+-dontwarn androidx.**
