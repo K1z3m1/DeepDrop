@@ -1,0 +1,31 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:tint="?attr/iconColor"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Modern Brave-style faceted angular shield -->
+    <path
+        android:strokeWidth="1.8"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M12,2.5 L4.5,5.2 V11.2 C4.5,16.4 7.8,20.2 12,21.5 C16.2,20.2 19.5,16.4 19.5,11.2 V5.2 Z" />
+    <!-- Angular upper crest facet -->
+    <path
+        android:strokeWidth="1.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M8,6.5 L12,9.2 L16,6.5" />
+    <!-- Geometric checkmark inside -->
+    <path
+        android:strokeWidth="1.8"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M8.8,13.2 L11.2,15.5 L15.5,10.8" />
+</vector>

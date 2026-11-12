@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="@string/web_content_category">
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="new_window"
+            android:singleLineTitle="false"
+            android:title="@string/window" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="cb_javascript"
+            android:singleLineTitle="false"
+            android:title="@string/java" />
+        <Preference
+            android:key="block_javascript"
+            android:singleLineTitle="false"
+            android:title="@string/block_javascript" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="block_intent"
+            android:singleLineTitle="false"
+            android:title="@string/block_intent" />
+        <Preference
+            android:key="rendering_mode"
+            android:singleLineTitle="false"
+            android:title="@string/rendering_mode" />
+        <Preference
+            android:key="text_encoding"
+            android:singleLineTitle="false"
+            android:title="@string/text_encoding" />
+        <Preference
+            android:key="url_contents"
+            android:singleLineTitle="false"
+            android:title="@string/url_contents" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/network_category">
+        <Preference
+            android:key="proxy"
+            android:singleLineTitle="false"
+            android:title="@string/http_proxy" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/translator">
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="translate"
+            android:singleLineTitle="false"
+            android:title="@string/translator" />
+        <Preference
+            android:key="translation_endpoint"
+            android:singleLineTitle="false"
+            android:title="@string/translation_endpoint" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/show_ssl">
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="show_ssl"
+            android:singleLineTitle="false"
+            android:summary="@string/warn"
+            android:title="@string/show_ssl" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

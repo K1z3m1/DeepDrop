@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- Row 1 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="72dp"
+        android:orientation="horizontal"
+        android:baselineAligned="false"
+        android:weightSum="5">
+        <LinearLayout
+            android:id="@+id/btn_via_night_mode"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/icon_via_night_mode"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_via_moon" />
+            <TextView
+                android:id="@+id/text_via_night_mode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Modo nocturno"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:ellipsize="end" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/btn_via_bookmarks"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/icon_via_bookmarks"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_action_star" />
+            <TextView
+                android:id="@+id/text_via_bookmarks"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Marcadores"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:ellipsize="end" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/btn_via_history"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/icon_via_history"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_history" />
+            <TextView
+                android:id="@+id/text_via_history"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Historial"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:ellipsize="end" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/btn_via_downloads"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/icon_via_downloads"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_file_download_black" />
+            <TextView
+                android:id="@+id/text_via_downloads"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Descargas"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:ellipsize="end" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/btn_via_incognito"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/icon_via_incognito"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/incognito_mode" />
+            <TextView
+                android:id="@+id/text_via_incognito"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Modo incógnito"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:ellipsize="end" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Row 2 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="72dp"
+        android:layout_marginTop="6dp"
+        android:orientation="horizontal"
+        android:baselineAligned="false"
+        android:weightSum="5">
+        <LinearLayout
+            android:id="@+id/btn_via_add_bookmark"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/icon_via_add_bookmark"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_via_star_plus" />
+            <TextView
+                android:id="@+id/text_via_add_bookmark"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Añadir marcador"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:ellipsize="end" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/btn_via_desktop"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/icon_via_desktop"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_action_desktop" />
+            <TextView
+                android:id="@+id/text_via_desktop"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Sitio de escritorio"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:ellipsize="end" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/btn_via_tools"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/icon_via_tools"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_via_toolbox" />
+            <TextView
+                android:id="@+id/text_via_tools"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Herramientas"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:ellipsize="end" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/btn_via_settings"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/icon_via_settings"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_via_settings" />
+            <TextView
+                android:id="@+id/text_via_settings"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Ajustes"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:ellipsize="end" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/btn_via_find"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true">
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/icon_via_find"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_via_find_page" />
+            <TextView
+                android:id="@+id/text_via_find"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Buscar en la página"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:ellipsize="end" />
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>

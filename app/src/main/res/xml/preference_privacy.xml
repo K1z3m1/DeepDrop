@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="@string/adblock_category">
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="cb_block_ads"
+            android:singleLineTitle="false"
+            android:title="@string/block_ads" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="block_malicious_sites"
+            android:singleLineTitle="false"
+            android:title="@string/block_malware" />
+        <Preference
+            android:key="preference_hosts_source"
+            android:singleLineTitle="false"
+            android:summary="@string/block_source_default"
+            android:title="@string/block_ad_source" />
+        <Preference
+            android:key="preference_hosts_refresh_force"
+            android:singleLineTitle="false"
+            android:summary="@string/block_ad_remote_refresh_frequency_description"
+            android:title="@string/block_ad_refresh_now" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/cookie_category">
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="cookies"
+            android:singleLineTitle="false"
+            android:summary="@string/recommended"
+            android:title="@string/cookies" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="third_party"
+            android:singleLineTitle="false"
+            android:title="@string/third_party" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="incognito_cookies"
+            android:singleLineTitle="false"
+            android:title="@string/incognito_cookies" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/privacy_set">
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="do_not_track"
+            android:singleLineTitle="false"
+            android:title="@string/do_not_track" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="remove_identifying_headers"
+            android:singleLineTitle="false"
+            android:title="@string/remove_identifying_headers" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="webrtc_support"
+            android:singleLineTitle="false"
+            android:summary="@string/webrtc_description"
+            android:title="@string/webrtc_support" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="location"
+            android:singleLineTitle="false"
+            android:title="@string/location" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="start_incognito"
+            android:singleLineTitle="false"
+            android:title="@string/start_incognito" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="prefer_https"
+            android:singleLineTitle="false"
+            android:summary="@string/preferhttpsdesc"
+            android:title="@string/preferhttps" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="force_https"
+            android:singleLineTitle="false"
+            android:summary="@string/forcehttpsdesc"
+            android:title="@string/forcehttps" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/security_set">
+        <Preference
+            android:key="app_lock"
+            android:singleLineTitle="false"
+            android:title="@string/app_lock" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="password"
+            android:singleLineTitle="false"
+            android:summary="@string/enable_in_settings"
+            android:title="@string/password" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/clear_on_exit">
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="clear_cache_exit"
+            android:singleLineTitle="false"
+            android:title="@string/cache" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="clear_history_exit"
+            android:singleLineTitle="false"
+            android:title="@string/clear_history_exit" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="clear_cookies_exit"
+            android:singleLineTitle="false"
+            android:title="@string/clear_cookies_exit" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="clear_webstorage_exit"
+            android:singleLineTitle="false"
+            android:title="@string/clear_web_storage_exit" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="only_clear"
+            android:singleLineTitle="false"
+            android:summary="@string/only_clear_summary"
+            android:title="@string/only_clear" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/clear">
+        <Preference
+            android:key="clear_cache"
+            android:singleLineTitle="false"
+            android:title="@string/clear_cache" />
+        <Preference
+            android:key="clear_history"
+            android:singleLineTitle="false"
+            android:title="@string/clear_history" />
+        <Preference
+            android:key="clear_cookies"
+            android:singleLineTitle="false"
+            android:title="@string/clear_cookies" />
+        <Preference
+            android:key="clear_webstorage"
+            android:singleLineTitle="false"
+            android:title="@string/clear_web_storage" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

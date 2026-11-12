@@ -1,0 +1,11 @@
+yLoad is an ultra-fast, lightweight Android browser featuring a minimalist Via Browser-inspired interface, built-in uBlock Origin adblocker, automatic dark mode, and complete privacy by default.
+
+Features:
+- Minimalist & lightweight (<11 MB)
+- Built-in uBlock Origin ad & tracker blocking
+- Ergonomic Via-style bottom sheet navigation
+- Automatic Dark Mode matching system theme
+- No telemetry, no background tracking
+- Fully customizable search engines & shortcuts
+
+https://github.com/xxnonxxp11/yLoad

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory android:title="@string/block_malware">
+        <SwitchPreference
+                android:defaultValue="false"
+                android:key="block_malicious_sites"
+                android:singleLineTitle="false"
+                android:title="@string/block_malware"/>
+    </PreferenceCategory>
+    <PreferenceCategory android:title="@string/cookie_category">
+        <SwitchPreference
+                android:defaultValue="false"
+                android:key="block_cookies"
+                android:singleLineTitle="false"
+                android:title="@string/cookie_category"/>
+    </PreferenceCategory>
+    <PreferenceCategory android:title="@string/adblock_category">
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="cb_block_ads"
+            android:singleLineTitle="false"
+            android:title="@string/block_ads"/>
+        <androidx.preference.Preference
+            android:key="preference_hosts_source"
+            android:summary="@string/block_source_default"
+            android:singleLineTitle="false"
+            android:title="@string/block_ad_source"/>
+        <androidx.preference.Preference
+            android:key="preference_hosts_refresh_force"
+            android:summary="@string/block_ad_remote_refresh_frequency_description"
+            android:singleLineTitle="false"
+            android:title="@string/block_ad_refresh_now"/>
+    </PreferenceCategory>
+</PreferenceScreen>

@@ -1,0 +1,68 @@
+/*
+ * Copyright 2014 A.C.R. Development
+ */
+package com.cookiegames.smartcookie.settings.fragment
+
+import android.os.Build
+import android.os.Bundle
+import android.webkit.WebView
+import androidx.appcompat.app.AlertDialog
+import androidx.webkit.WebViewCompat
+import com.cookiegames.smartcookie.BuildConfig
+import com.cookiegames.smartcookie.R
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+
+
+class AboutSettingsFragment : AbstractSettingsFragment() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        var webview = resources.getString(R.string.unknown)
+
+        context?.let {
+            WebViewCompat.getCurrentWebViewPackage(it)?.versionName?.let {
+                webview = it
+           }
+        }
+
+
+        clickablePreference(
+                preference = SETTINGS_VERSION,
+                summary = BuildConfig.VERSION_NAME,
+                onClick = { }
+        )
+
+        clickablePreference(
+                preference = WEBVIEW_VERSION,
+                summary = webview,
+                onClick = { }
+        )
+
+        val aboutPref: androidx.preference.Preference? = findPreference(SETTINGS_VERSION)
+        aboutPref?.setOnPreferenceClickListener {
+            val builder = MaterialAlertDialogBuilder(requireContext())
+            builder.setTitle("lw v" + BuildConfig.VERSION_NAME)
+            builder.setMessage("lw Browser - Ultraligero, rápido y seguro")
+
+            builder.setPositiveButton(resources.getString(R.string.action_ok)) { dialogInterface, _ ->
+                dialogInterface.dismiss()
+            }
+            val alertDialog: AlertDialog = builder.create()
+            alertDialog.setCancelable(true)
+            alertDialog.setCanceledOnTouchOutside(true)
+            alertDialog.show()
+            true
+        }
+
+    }
+
+    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+        addPreferencesFromResource(R.xml.preference_about)
+    }
+
+    companion object {
+        private const val SETTINGS_VERSION = "pref_version"
+        private const val WEBVIEW_VERSION = "pref_webview"
+    }
+}

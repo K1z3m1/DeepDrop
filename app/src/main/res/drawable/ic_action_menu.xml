@@ -1,0 +1,13 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:tint="?attr/iconColor"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Distinctive progressive asymmetric 3-line menu -->
+    <path
+        android:strokeWidth="1.8"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:pathData="M4.5,7 H19.5 M4.5,12 H14.5 M4.5,17 H9.5" />
+</vector>

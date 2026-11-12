@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="@string/tabs_behavior">
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="new_tabs_foreground"
+            android:singleLineTitle="false"
+            android:title="@string/new_tab_foreground"
+            android:summary="@string/new_tab_foreground_summary" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="last_tab"
+            android:singleLineTitle="false"
+            android:title="@string/close_on_last_tab" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/tabs_startup">
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="restore_tabs"
+            android:singleLineTitle="false"
+            android:title="@string/restore" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="load_tabs"
+            android:singleLineTitle="false"
+            android:title="@string/load_tabs" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/web_content_category">
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="cb_images"
+            android:singleLineTitle="false"
+            android:title="@string/block" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="text_reflow"
+            android:singleLineTitle="false"
+            android:title="@string/reflow" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

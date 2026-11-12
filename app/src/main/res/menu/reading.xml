@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto" >
+
+    <item
+        android:id="@+id/invert_item"
+        android:icon="@drawable/ic_action_invert"
+        android:title="@string/invert_color"
+        app:showAsAction="ifRoom">
+    </item>
+    <item
+        android:id="@+id/text_size_item"
+        android:icon="@drawable/ic_action_text_size"
+        android:title="@string/size"
+        app:showAsAction="ifRoom">
+    </item>
+    <item
+        android:id="@+id/translate_item"
+        android:icon="@drawable/translate"
+        android:title="@string/translator"
+        app:showAsAction="ifRoom">
+    </item>
+    <item
+        android:id="@+id/tts"
+        android:icon="@drawable/ic_round_tts"
+        android:title="@string/tts"
+        app:showAsAction="ifRoom">
+    </item>
+    <item
+        android:id="@+id/download"
+        android:icon="@drawable/ic_file_download_black"
+        android:title="@string/action_download"
+        app:showAsAction="ifRoom">
+    </item>
+    <item
+        android:id="@+id/open"
+        android:icon="@drawable/ic_round_open_in_new"
+        android:title="@string/action_open"
+        app:showAsAction="ifRoom">
+    </item>
+
+</menu>
