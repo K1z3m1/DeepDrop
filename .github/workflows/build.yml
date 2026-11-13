@@ -33,6 +33,10 @@ jobs:
 
       - name: Set up Android SDK (accepts licenses)
         uses: android-actions/setup-android@v3
+        with:
+          # The default is "tools platform-tools"; the legacy "tools" package
+          # no longer exists in the SDK repo and makes sdkmanager exit 1.
+          packages: platform-tools
 
       - name: Set up Gradle (with cache)
         uses: gradle/actions/setup-gradle@v4
