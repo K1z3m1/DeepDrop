@@ -235,22 +235,13 @@ fun HomeScreen(
 
             // Show shortcuts, bookmarks, and recents only for default VIEW mode and in normal mode
             if (!isPrivateMode && homepageType == HomepageChoice.VIEW.ordinal) {
-                // Jump Back In section
-                if (jumpBackInItems.isNotEmpty()) {
-                    item(key = "jump") {
-                        JumpBackInSection(
-                            items = jumpBackInItems,
-                            onClick = onJumpBackInClick
-                        )
-                    }
-                }
-
-                // Recently Closed section
-                if (recentlyClosedItems.isNotEmpty()) {
-                    item(key = "closed") {
-                        RecentlyClosedSection(
-                            items = recentlyClosedItems,
-                            onClick = onRecentlyClosedClick
+                if (jumpBackInItems.isNotEmpty() || recentlyClosedItems.isNotEmpty()) {
+                    item(key = "recent_activity") {
+                        RecentActivitySection(
+                            jumpBackInItems = jumpBackInItems,
+                            recentlyClosedItems = recentlyClosedItems,
+                            onJumpBackInClick = onJumpBackInClick,
+                            onRecentlyClosedClick = onRecentlyClosedClick,
                         )
                     }
                 }
@@ -675,30 +666,43 @@ private fun SiteListCard(
 }
 
 @Composable
-fun JumpBackInSection(
-    items: List<JumpBackInItem>,
-    onClick: (JumpBackInItem) -> Unit,
+fun RecentActivitySection(
+    jumpBackInItems: List<JumpBackInItem>,
+    recentlyClosedItems: List<RecentlyClosedItem>,
+    onJumpBackInClick: (JumpBackInItem) -> Unit,
+    onRecentlyClosedClick: (RecentlyClosedItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
         HomeSectionHeader(stringResource(R.string.jump_back_in))
-        val entries = remember(items, onClick) {
-            items.take(4).map { item -> Triple(item.url, item.title) { onClick(item) } }
-        }
-        SiteListCard(entries = entries)
-    }
-}
+        val entries = remember(
+            jumpBackInItems,
+            recentlyClosedItems,
+            onJumpBackInClick,
+            onRecentlyClosedClick,
+        ) {
+            buildList {
+                jumpBackInItems.take(2).forEach { item ->
+                    add(Triple(item.url, item.title) { onJumpBackInClick(item) })
+                }
+                recentlyClosedItems.take(2).forEach { item ->
+                    add(Triple(item.url, item.title) { onRecentlyClosedClick(item) })
+                }
 
-@Composable
-fun RecentlyClosedSection(
-    items: List<RecentlyClosedItem>,
-    onClick: (RecentlyClosedItem) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier) {
-        HomeSectionHeader(stringResource(R.string.recently_closed))
-        val entries = remember(items, onClick) {
-            items.take(4).map { item -> Triple(item.url, item.title) { onClick(item) } }
+                val remaining = 4 - size
+                if (remaining > 0) {
+                    jumpBackInItems.drop(2).take(remaining).forEach { item ->
+                        add(Triple(item.url, item.title) { onJumpBackInClick(item) })
+                    }
+                }
+
+                val remainingAfterJumpBack = 4 - size
+                if (remainingAfterJumpBack > 0) {
+                    recentlyClosedItems.drop(2).take(remainingAfterJumpBack).forEach { item ->
+                        add(Triple(item.url, item.title) { onRecentlyClosedClick(item) })
+                    }
+                }
+            }
         }
         SiteListCard(entries = entries)
     }

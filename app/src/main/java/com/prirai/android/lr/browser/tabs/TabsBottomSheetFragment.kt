@@ -20,11 +20,11 @@ import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.ViewList
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.DialogFragment
@@ -601,35 +601,44 @@ class TabsBottomSheetFragment : DialogFragment() {
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                // Header: big tab count, search, list/grid toggle
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 24.dp, end = 12.dp, top = 20.dp, bottom = 8.dp),
-                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = if (selectedPage == 0) {
-                            pluralStringResource(R.plurals.tab_count, tabs.size, tabs.size)
-                        } else {
-                            stringResource(R.string.profiles)
-                        },
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
                 // Page tabs: swap between the tab cards and the profile cards
                 TabRow(
                     selectedTabIndex = selectedPage,
                     containerColor = androidx.compose.ui.graphics.Color.Transparent,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 20.dp)
                 ) {
                     Tab(
                         selected = selectedPage == 0,
                         onClick = { selectedPageState.value = 0 },
-                        text = { Text(stringResource(R.string.tabs)) }
+                        text = {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                            ) {
+                                Text(stringResource(R.string.tabs))
+                                Surface(
+                                    shape = CircleShape,
+                                    color = if (selectedPage == 0) {
+                                        MaterialTheme.colorScheme.primaryContainer
+                                    } else {
+                                        MaterialTheme.colorScheme.surfaceContainerHighest
+                                    },
+                                    contentColor = if (selectedPage == 0) {
+                                        MaterialTheme.colorScheme.onPrimaryContainer
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    }
+                                ) {
+                                    Text(
+                                        text = tabs.size.toString(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                        }
                     )
                     Tab(
                         selected = selectedPage == 1,

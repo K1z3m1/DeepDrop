@@ -901,20 +901,6 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
 
         menuItems.add(com.prirai.android.lr.components.menu.Material3BrowserMenu.MenuItem.Divider)
 
-        // Image reader (web pages only)
-        if (selectedTab?.content?.url?.startsWith("http") == true) {
-            menuItems.add(
-                com.prirai.android.lr.components.menu.Material3BrowserMenu.MenuItem.Action(
-                    id = "image_reader",
-                    title = getString(R.string.image_reader),
-                    iconRes = R.drawable.ic_image_reader_24,
-                    onClick = {
-                        browserInteractor.onBrowserToolbarMenuItemTapped(ToolbarMenu.Item.ImageReader)
-                    }
-                )
-            )
-        }
-
         // Add to Homescreen (conditional)
         if (androidx.core.content.pm.ShortcutManagerCompat.isRequestPinShortcutSupported(requireContext())) {
             menuItems.add(

@@ -68,8 +68,9 @@ object UserJsPreferences {
     )
 
     private val networkPrefs = mapOf<String, Any>(
-        // Send Referer only for same-origin requests
-        "network.http.referer.XOriginPolicy" to 2,
+        // Respect the page's referrer policy for cross-origin subresources.
+        // Restricting this to same-origin breaks hotlink-protected images on CDNs.
+        "network.http.referer.XOriginPolicy" to 0,
         // Trim cross-origin Referer to origin only
         "network.http.referer.XOriginTrimmingPolicy" to 2,
         "network.http.sendRefererHeader" to 1,

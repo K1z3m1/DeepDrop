@@ -135,7 +135,6 @@ class BrowserMenu(
             externalAppItem,
             desktopMode,
             translateItem,
-            imageReaderItem,
             BrowserMenuDivider(),
             newPrivateTabItem,
             newTabItem,
@@ -177,15 +176,6 @@ class BrowserMenu(
             UserPreferences(context).translationsEnabled &&
                 selectedSession?.content?.url?.startsWith("http") == true
         }
-    }
-
-    private val imageReaderItem = ThemedBrowserMenuImageText(
-        label = context.getString(R.string.image_reader),
-        imageResource = R.drawable.ic_image_reader_24
-    ) {
-        onItemTapped.invoke(ToolbarMenu.Item.ImageReader)
-    }.apply {
-        visible = { selectedSession?.content?.url?.startsWith("http") == true }
     }
 
     private val addToHomescreen = ThemedBrowserMenuImageText(
