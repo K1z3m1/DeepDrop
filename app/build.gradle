@@ -1,0 +1,250 @@
+plugins {
+    alias(libs.plugins.android.application)
+    id 'kotlin-parcelize'
+    alias(libs.plugins.google.devtools.ksp)
+    alias(libs.plugins.jetbrains.kotlin.plugin.compose)
+    alias(libs.plugins.jetbrains.kotlin.plugin.serialization)
+}
+
+
+android {
+    // AC 156 requires compileSdk 37 with minor API level 1 (Android 15.1).
+    // AGP 9 exposes the minor level via this DSL block; the old scalar
+    // `compileSdkVersion = 37` is equivalent to major-only.
+    compileSdk { version = release(37) { minorApiLevel = 1 } }
+    buildFeatures {
+        buildConfig = true
+        viewBinding = true
+        compose = true
+    }
+
+    namespace = 'com.prirai.android.nira'
+
+    defaultConfig {
+        applicationId = "com.prirai.android.nira"
+        minSdkVersion 27
+        targetSdkVersion 37
+        // Increment by 4 with each update, by 1 with each fix
+        versionCode = 85
+        versionName = "0.6.1"
+        ndk {
+            // arm64 only: native libs of other ABIs are skipped entirely
+            abiFilters 'arm64-v8a'
+        }
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlin {
+        jvmToolchain(17)
+        compilerOptions {
+            // Lower compiler memory use / bytecode size (helps on-device
+            // builds with a small kotlinc heap)
+            freeCompilerArgs.addAll([
+                '-Xno-optimize',
+                '-Xno-param-assertions',
+                '-Xno-call-assertions',
+                '-Xno-receiver-assertions'
+            ])
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled = true
+            shrinkResources = true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            minifyEnabled = false
+            shrinkResources = false
+            resValue "string", "app_name", "Nira (Debug)"
+            applicationIdSuffix = '.debug'
+        }
+    }
+
+    androidResources {
+        noCompress += 'ja'
+        // Only keep the languages the app itself ships (drops hundreds of
+        // library locale files -> faster resource merge / smaller APK)
+        localeFilters += ['en', 'ar', 'fr', 'it', 'ja', 'pl', 'pt', 'pt-rBR', 'ru', 'tr', 'vi', 'zh-rCN']
+    }
+
+    lint {
+        abortOnError = false
+        checkReleaseBuilds = false
+        checkDependencies = false
+        disable += ['MissingTranslation', 'ExtraTranslation']
+    }
+    packaging {
+        jniLibs {
+            useLegacyPackaging true
+        }
+    }
+}
+
+def abiBaseMap = ["arm64-v8a"  : 1,
+                  "armeabi-v7a": 2
+]
+
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.outputs.each { output ->
+            def abi = output.filters.find { it.filterType.toString() == 'ABI' }?.identifier
+
+            if (abi != null) {
+                def base = abiBaseMap[abi] ?: 0
+                def orig = output.versionCode.get()
+                output.versionCode.set(base * 1000 + orig)
+            }
+        }
+    }
+}
+
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation libs.material
+
+    // Support libraries
+    implementation libs.androidx.recyclerview
+    // VerticalSwipeRefreshLayout (ui-widgets) extends SwipeRefreshLayout; the
+    // class must be on the app's compile classpath to use it from Kotlin.
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+    implementation libs.androidx.core.ktx
+    implementation libs.androidx.constraintlayout
+    implementation libs.androidx.preference.ktx
+    implementation libs.androidx.annotation
+    implementation libs.androidx.appcompat
+    implementation libs.androidx.navigation.fragment.ktx
+    implementation libs.androidx.navigation.ui.ktx
+
+    // Room
+    implementation libs.androidx.room.runtime
+    ksp libs.androidx.room.compiler
+
+    // WorkManager - periodic site-cookie-sweeper (see
+    // CookiePolicyWorker + CookiePolicyScheduler). Also used by any
+    // future long-lived background work.
+    implementation libs.androidx.work.runtime.ktx
+
+    // Mozilla Components version is defined in gradle/libs.versions.toml (components, remotesettings).
+    // See https://maven.mozilla.org/maven2/?prefix=maven2/org/mozilla/geckoview/ for available versions.
+
+    // Mozilla compose components
+
+    // Mozilla concept components
+    implementation libs.concept.storage
+    implementation libs.concept.engine
+    implementation libs.concept.menu
+    // Kept: required by browser-menu
+    implementation libs.concept.toolbar
+    implementation libs.concept.base
+    implementation libs.concept.fetch
+    implementation libs.concept.awesomebar
+
+    // Mozilla browser components
+    implementation libs.browser.engine.gecko
+    implementation libs.browser.icons
+    implementation libs.browser.thumbnails
+    implementation libs.browser.state
+    implementation libs.browser.toolbar
+    implementation libs.browser.session.storage
+    implementation libs.browser.tabstray
+    implementation libs.browser.menu
+    implementation libs.browser.storage.sync
+    implementation libs.browser.errorpages
+
+    // Mozilla feature components
+    implementation libs.feature.awesomebar
+    implementation libs.feature.media
+    implementation libs.feature.search
+
+    implementation libs.feature.tabs
+    implementation libs.feature.session
+    implementation libs.feature.toolbar
+    implementation libs.feature.intent
+    implementation libs.feature.contextmenu
+    implementation libs.feature.app.links
+    implementation libs.feature.downloads
+    // Kept: adds screenshot protection & privacy features
+    implementation libs.feature.customtabs
+    implementation libs.feature.pwa
+    implementation libs.feature.prompts
+    implementation libs.feature.sitepermissions
+    // Removed: feature-webauthn - replaced with androidx.credentials Credential Manager API
+    implementation libs.feature.webcompat
+    implementation libs.feature.webnotifications
+    implementation libs.feature.addons
+    implementation libs.feature.findinpage
+    implementation libs.feature.recentlyclosed
+
+    // Mozilla service components
+    implementation libs.service.location
+
+    // Mozilla support components
+    implementation libs.support.base
+    implementation libs.support.utils
+    implementation libs.support.webextensions
+    implementation libs.support.ktx
+    implementation libs.support.locale
+    implementation libs.support.remotesettings
+    implementation libs.remotesettings
+
+    // Mozilla UI components
+    implementation libs.ui.autocomplete
+    implementation libs.ui.icons
+    implementation libs.ui.widgets
+
+    // Mozilla lib components
+    implementation libs.lib.state
+    implementation libs.lib.publicsuffixlist
+    implementation libs.lib.fetch.httpurlconnection
+    implementation libs.support.appservices
+
+
+    testImplementation libs.junit
+    androidTestImplementation libs.androidx.junit
+    androidTestImplementation libs.androidx.espresso.core
+
+    // JSON parsing
+    implementation libs.moshi
+    implementation libs.moshi.kotlin
+
+    // OkHTTP
+
+    implementation libs.androidx.ui
+    implementation libs.androidx.foundation
+    implementation platform(libs.androidx.compose.bom)
+    // material-icons-extended removed: needed icons live in ui/icons/NiraIconData.kt
+    implementation "androidx.compose.material:material-icons-core"
+    implementation libs.androidx.material3
+    implementation libs.androidx.runtime
+    implementation libs.androidx.activity.compose
+    // lifecycle-process for ProcessLifecycleOwner (used by
+    // BackgroundPlaybackGuard to intercept ON_STOP and pause tabs
+    // whose origin isn't on the bg-playback allow-list).
+    implementation libs.androidx.lifecycle.process
+    implementation libs.coil.compose
+
+    // DataStore for preferences
+    implementation libs.androidx.datastore.preferences
+
+    // Kotlinx Serialization
+    implementation libs.kotlinx.serialization.json
+
+}
+
+project.configurations.configureEach {
+    resolutionStrategy.capabilitiesResolution.withCapability("org.mozilla.telemetry:glean-native") {
+        def toBeSelected = candidates.find { it.id.module.contains('geckoview') }
+        if (toBeSelected != null) {
+            select(toBeSelected)
+        }
+        because 'use GeckoView Glean instead of standalone Glean'
+    }
+}

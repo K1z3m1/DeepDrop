@@ -1,0 +1,122 @@
+package com.prirai.android.nira.customtabs
+
+import android.os.Bundle
+import androidx.annotation.VisibleForTesting
+import androidx.browser.customtabs.CustomTabsIntent
+import androidx.navigation.fragment.NavHostFragment
+import com.prirai.android.nira.BrowserActivity
+import com.prirai.android.nira.R
+import com.prirai.android.nira.ext.components
+import com.prirai.android.nira.ext.enableEdgeToEdgeMode
+import mozilla.components.browser.state.action.CustomTabListAction
+import mozilla.components.browser.state.selector.findCustomTab
+import mozilla.components.feature.customtabs.CustomTabIntentProcessor
+import mozilla.components.feature.intent.ext.EXTRA_SESSION_ID
+import mozilla.components.support.utils.SafeIntent
+
+/**
+ * Activity that holds the [ExternalAppBrowserFragment] that is launched within an external app,
+ * such as custom tabs. Uses Mozilla's CustomTabIntentProcessor for standardized intent handling.
+ */
+open class ExternalAppBrowserActivity : BrowserActivity() {
+
+    override fun navigateToBrowserOnColdStart() {
+        // Do nothing - custom tabs handle their own navigation
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        hasCalledOnCreate = true
+        
+        // Extract toolbar color from intent for status bar theming
+        val toolbarColor = intent.getIntExtra(CustomTabsIntent.EXTRA_TOOLBAR_COLOR, -1)
+        
+        // Enable edge-to-edge display with custom tab color
+        if (toolbarColor != -1) {
+            enableEdgeToEdgeMode(statusBarColor = toolbarColor)
+        } else {
+            enableEdgeToEdgeMode()
+        }
+        
+        if (savedInstanceState == null) {
+            // Use Mozilla's CustomTabIntentProcessor to handle the intent
+            val processor = CustomTabIntentProcessor(
+                addCustomTabUseCase = components.customTabsUseCases.add,
+                resources = resources,
+                isPrivate = false
+            )
+            
+            // Process the intent to create the custom tab session
+            if (processor.process(intent)) {
+                val sessionId = SafeIntent(intent).getStringExtra(EXTRA_SESSION_ID)
+                
+                // After the session is created, update its contextId to match the PWA profile.
+                // EngineDelegateMiddleware.loadUrl() runs in a coroutine, so patching the store
+                // state here (on the main thread) is guaranteed to happen before the engine
+                // session is created - preserving cookie / login state across the PWA and tab.
+                //
+                // Mapping goes through BrowserProfile.contextIdFor so the default profile
+                // resolves to `null` (Gecko's default partition, shared with normal custom
+                // tabs). That is what unifies LinkedIn / etc. logins across the main
+                // browser and external VIEW intents post-v0.5.14.
+                val profileId = SafeIntent(intent).getStringExtra("PROFILE_ID")
+                if (!profileId.isNullOrEmpty() && sessionId != null) {
+                    val contextId = com.prirai.android.nira.browser.profile.BrowserProfile
+                        .contextIdFor(profileId, isPrivate = false)
+                    val customTab = components.store.state.findCustomTab(sessionId)
+                    if (customTab != null && customTab.contextId != contextId) {
+                        components.store.dispatch(CustomTabListAction.RemoveCustomTabAction(sessionId))
+                        components.store.dispatch(
+                            CustomTabListAction.AddCustomTabAction(customTab.copy(contextId = contextId))
+                        )
+                    }
+                }
+                
+                // Navigate to the external app browser fragment
+                val navHostFragment = supportFragmentManager.findFragmentById(R.id.container) as? NavHostFragment
+                navHostFragment?.let { host ->
+                    val bundle = Bundle().apply {
+                        putString("activeSessionId", sessionId)
+                        putString(EXTRA_SESSION_ID, sessionId)
+                        // Pass intent extras to fragment
+                        intent.extras?.let { extras ->
+                            putAll(extras)
+                        }
+                    }
+                    host.navController.navigate(R.id.externalAppBrowserFragment, bundle)
+                }
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        
+        // For custom tabs, the session is created by the fragment when it processes the intent
+        // So we don't check for hasExternalTab() here - let the fragment handle it
+    }
+    
+    private var hasCalledOnCreate = false
+
+    override fun onDestroy() {
+        if (isFinishing) {
+            val tabId = getExternalTabId()
+            val customTab = tabId?.let { components.store.state.findCustomTab(it) }
+            if (tabId != null && customTab != null) {
+                customTab.mediaSessionState?.controller?.pause()
+                components.customTabsUseCases.remove(tabId)
+            }
+            finishAndRemoveTask()
+        }
+        super.onDestroy()
+    }
+
+    override fun getIntentSessionId(intent: SafeIntent): String? {
+        return com.prirai.android.nira.ext.getIntentSessionId(intent)
+    }
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal fun getExternalTabId(): String? {
+        return getIntentSessionId(SafeIntent(intent))
+    }
+}
