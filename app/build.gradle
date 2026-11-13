@@ -112,6 +112,9 @@ dependencies {
 
     // Support libraries
     implementation libs.androidx.recyclerview
+    // VerticalSwipeRefreshLayout (ui-widgets) extends SwipeRefreshLayout; the
+    // class must be on the app's compile classpath to use it from Kotlin.
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
     implementation libs.androidx.core.ktx
     implementation libs.androidx.constraintlayout
     implementation libs.androidx.preference.ktx

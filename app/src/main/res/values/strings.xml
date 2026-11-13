@@ -1037,4 +1037,6 @@
     <string name="key_sync_history" translatable="false">sync_history_enabled</string>
     <string name="key_sync_bookmarks" translatable="false">sync_bookmarks_enabled</string>
     <string name="key_sync_tabs" translatable="false">sync_tabs_enabled</string>
+  <string name="mozac_browser_menu_new_tab">New tab</string>
+  <string name="mozac_browser_menu_new_private_tab">New private tab</string>
 </resources>
