@@ -121,7 +121,7 @@ fun OnboardingScreen(
     userPreferences: UserPreferences,
     onComplete: () -> Unit
 ) {
-    val pageCount = 8
+    val pageCount = 7
     val pagerState = rememberPagerState(pageCount = { pageCount })
     val scope = rememberCoroutineScope()
 
@@ -130,8 +130,6 @@ fun OnboardingScreen(
     var searchEngineChoice by remember { mutableStateOf(userPreferences.searchEngineChoice) }
     var toolbarPosition by remember { mutableStateOf(userPreferences.toolbarPosition) }
     var showTabGroupBar by remember { mutableStateOf(userPreferences.showTabGroupBar) }
-    var showContextualToolbar by remember { mutableStateOf(userPreferences.showContextualToolbar) }
-    var toolbarIconSize by remember { mutableStateOf(userPreferences.toolbarIconSize) }
     var trackingProtection by remember { mutableStateOf(userPreferences.trackingProtection) }
     var safeBrowsing by remember { mutableStateOf(userPreferences.safeBrowsing) }
     var searchSuggestions by remember { mutableStateOf(userPreferences.searchSuggestionsEnabled) }
@@ -193,19 +191,7 @@ fun OnboardingScreen(
                         userPreferences.showTabGroupBar = visible
                     }
                 )
-                5 -> ContextualToolbarPage(
-                    showContextualToolbar = showContextualToolbar,
-                    toolbarIconSize = toolbarIconSize,
-                    onContextualToolbarChanged = { show ->
-                        showContextualToolbar = show
-                        userPreferences.showContextualToolbar = show
-                    },
-                    onIconSizeChanged = { size ->
-                        toolbarIconSize = size
-                        userPreferences.toolbarIconSize = size
-                    }
-                )
-                6 -> PrivacyPage(
+                5 -> PrivacyPage(
                     trackingProtection = trackingProtection,
                     safeBrowsing = safeBrowsing,
                     searchSuggestions = searchSuggestions,
@@ -222,7 +208,7 @@ fun OnboardingScreen(
                         userPreferences.searchSuggestionsEnabled = v
                     }
                 )
-                7 -> GetStartedPage(
+                6 -> GetStartedPage(
                     appThemeChoice = appThemeChoice,
                     searchEngineIndex = searchEngineChoice,
                     trackingProtection = trackingProtection,
@@ -881,7 +867,7 @@ private fun SummaryRow(
     }
 }
 
-// ─── Pages: Toolbar, Tab Bar, Contextual Toolbar ─────────────────────────────
+// ─── Pages: Toolbar, Tab Group Bar ───────────────────────────────────────────
 
 @Composable
 private fun ToolbarPositionPage(
@@ -1008,172 +994,33 @@ private fun TabBarPreview(visible: Boolean) {
         Column(modifier = Modifier.fillMaxSize().padding(4.dp)) {
             Spacer(modifier = Modifier.weight(1f))
             if (visible) {
+                // Mirrors the redesigned bar: a selected tab chip, a resting
+                // tab chip and a coloured tab group chip.
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    repeat(3) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp))
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.7f))
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ContextualToolbarPage(
-    showContextualToolbar: Boolean,
-    toolbarIconSize: Float,
-    onContextualToolbarChanged: (Boolean) -> Unit,
-    onIconSizeChanged: (Float) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(modifier = Modifier.height(32.dp))
-
-        OnboardingPageHeader(
-            icon = Icons.Rounded.Shield,
-            title = stringResource(R.string.contextual_toolbar_title),
-            subtitle = stringResource(R.string.contextual_toolbar_subtitle)
-        )
-
-        Spacer(modifier = Modifier.height(28.dp))
-
-        OnboardingOptionGroup {
-            listOf(
-                Triple(true, stringResource(R.string.show_contextual_toolbar), stringResource(R.string.show_contextual_toolbar_desc)),
-                Triple(false, stringResource(R.string.hide_contextual_toolbar), stringResource(R.string.hide_contextual_toolbar_desc))
-            ).forEachIndexed { index, (value, label, description) ->
-                OnboardingOptionItem(
-                    icon = { ContextualToolbarPreview(visible = value) },
-                    title = label,
-                    subtitle = description,
-                    selected = showContextualToolbar == value,
-                    onClick = { onContextualToolbarChanged(value) }
-                )
-                if (index == 0) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 72.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                    )
-                }
-            }
-        }
-
-        AnimatedVisibility(
-            visible = showContextualToolbar,
-            enter = fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()) +
-                expandVertically(MaterialTheme.motionScheme.fastSpatialSpec()),
-            exit = fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()) +
-                shrinkVertically(MaterialTheme.motionScheme.fastSpatialSpec())
-        ) {
-            Column(modifier = Modifier.padding(top = 20.dp)) {
-                Text(
-                    text = stringResource(R.string.icon_size),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 4.dp, bottom = 8.dp)
-                )
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    tonalElevation = 1.dp
-                ) {
-                    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(36.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(MaterialTheme.colorScheme.surfaceContainer),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 12.dp),
-                                horizontalArrangement = Arrangement.SpaceEvenly,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                val dotSize = (12 * toolbarIconSize).dp
-                                repeat(4) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(dotSize)
-                                            .clip(CircleShape)
-                                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.7f))
-                                    )
-                                }
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Slider(
-                            value = toolbarIconSize,
-                            onValueChange = onIconSizeChanged,
-                            valueRange = 0.8f..1.5f,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = stringResource(R.string.small),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = stringResource(R.string.large),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-    }
-}
-
-@Composable
-private fun ContextualToolbarPreview(visible: Boolean) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-    ) {
-        if (visible) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.Center)
-                    .padding(horizontal = 4.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                repeat(3) {
                     Box(
                         modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.7f))
+                            .weight(1.4f)
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.8f))
                     )
                 }
             }

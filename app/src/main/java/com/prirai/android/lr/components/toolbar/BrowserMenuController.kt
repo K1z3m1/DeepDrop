@@ -240,6 +240,12 @@ class DefaultBrowserToolbarMenuController(
             is ToolbarMenu.Item.Security -> {
                 activity.showSslDialog()
             }
+
+            is ToolbarMenu.Item.ImageReader -> {
+                currentSession?.let {
+                    com.prirai.android.lr.imagereader.ImageReaderController.open(activity, it.id)
+                }
+            }
         }
     }
 }

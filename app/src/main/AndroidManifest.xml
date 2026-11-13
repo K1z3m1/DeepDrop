@@ -89,6 +89,14 @@
             android:theme="@style/AppThemeAddons"
         />
 
+    <!-- Full-screen image reader (collects every image of a page) -->
+    <activity
+            android:name=".imagereader.ImageReaderActivity"
+            android:theme="@style/AppThemeNotActionBar"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|keyboard|layoutDirection"
+            android:exported="false"
+        />
+
     <activity
             android:name=".settings.activity.SettingsActivity"
             android:label="@string/settings"

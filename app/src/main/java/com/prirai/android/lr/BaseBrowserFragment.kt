@@ -1142,12 +1142,9 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
         val isTopToolbar = prefs.toolbarPosition != ToolbarPosition.BOTTOM.ordinal
         
         return if (isTopToolbar) {
-            // In TOP mode: only bottom components (tab bar + contextual toolbar) are at bottom
+            // In TOP mode: only bottom components (tab group bar) are at bottom
             var height = 0
             unifiedToolbar?.getTabGroupBar()?.takeIf { it.isVisible }?.let {
-                height += it.height
-            }
-            unifiedToolbar?.getContextualToolbar()?.takeIf { it.isVisible }?.let {
                 height += it.height
             }
             
@@ -1158,20 +1155,16 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
                 height
             }
         } else {
-            // In BOTTOM mode: address bar + tab bar + contextual toolbar all at bottom
+            // In BOTTOM mode: address bar + tab group bar all at bottom
             var height = 0
             unifiedToolbar?.getToolbarView()?.let { height += it.height }
             unifiedToolbar?.getTabGroupBar()?.takeIf { it.isVisible }?.let {
                 height += it.height
             }
-            unifiedToolbar?.getContextualToolbar()?.takeIf { it.isVisible }?.let {
-                height += it.height
-            }
             
             // If not measured yet, estimate
             if (height == 0) {
-                resources.getDimensionPixelSize(R.dimen.browser_toolbar_height) +
-                resources.getDimensionPixelSize(R.dimen.contextual_toolbar_height)
+                resources.getDimensionPixelSize(R.dimen.browser_toolbar_height)
             } else {
                 height
             }

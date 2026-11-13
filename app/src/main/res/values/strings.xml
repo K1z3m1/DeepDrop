@@ -299,16 +299,12 @@
 <string name="toolbar_bottom">Bottom</string>
 <string name="address_bar_top_desc">Address bar at the top of the screen</string>
 <string name="address_bar_bottom_desc">Address bar at the bottom of the screen</string>
-<string name="tab_bar_title">Tab Bar</string>
-<string name="tab_bar_subtitle">Quick-access bar for switching tab groups</string>
-<string name="show_tab_bar">Show Tab Bar</string>
+<string name="tab_bar_title">Tab Group Bar</string>
+<string name="tab_bar_subtitle">Switch tabs and tab groups in one tap. Show or hide it anytime with the + button in the ••• menu</string>
+<string name="show_tab_bar">Show Tab Group Bar</string>
 <string name="show_tab_bar_desc">Switch between tab groups at a glance</string>
-<string name="hide_tab_bar">Hide Tab Bar</string>
-<string name="hide_tab_bar_desc">More screen space while browsing</string>
-<string name="contextual_toolbar_title">Contextual Toolbar</string>
-<string name="contextual_toolbar_subtitle">Toolbar shown while browsing pages</string>
-<string name="hide_contextual_toolbar">Hide Contextual Toolbar</string>
-<string name="hide_contextual_toolbar_desc">More vertical space for page content</string>
+<string name="hide_tab_bar">Hide Tab Group Bar</string>
+<string name="hide_tab_bar_desc">More screen space – bring it back with + in the ••• menu</string>
 <string name="icon_size">Icon Size</string>
 <string name="enabled_section">Enabled (%1$d)</string>
 <string name="recommended_section">Recommended (%1$d)</string>
@@ -837,4 +833,6 @@
     <!-- Firefox Sync settings page -->
   <string name="mozac_browser_menu_new_tab">New tab</string>
   <string name="mozac_browser_menu_new_private_tab">New private tab</string>
+    <string name="tab_group_bar_menu_show">Show tab group bar</string>
+    <string name="tab_group_bar_menu_hide">Hide tab group bar</string>
 </resources>

@@ -104,8 +104,10 @@ class Material3BrowserMenu(
             val onForwardClick: () -> Unit,
             val onReloadClick: () -> Unit,
             val onShareClick: () -> Unit,
-            /** Optional "^" button: collapses / restores the toolbar's minimal state. */
+            /** Optional "+" button: shows / hides the tab group bar. */
             val onCollapseClick: (() -> Unit)? = null,
+            /** True while the tab group bar is hidden (button shows "+", otherwise "−"). */
+            val tabBarHidden: Boolean = false,
             val backEnabled: Boolean = true,
             val forwardEnabled: Boolean = true,
             /** Optional long-press affordance: opens the tab-history popup. */
@@ -465,8 +467,10 @@ private fun MenuToolbarRow(item: MenuItem.ToolbarRow, onDismiss: () -> Unit) {
         )
         item.onCollapseClick?.let { collapse ->
             MenuToolbarButton(
-                iconRes = mozilla.components.ui.icons.R.drawable.mozac_ic_chevron_up_24,
-                contentDescription = stringResource(R.string.minimal_state_collapse),
+                iconRes = if (item.tabBarHidden) R.drawable.ic_ios_add else R.drawable.ic_ios_minus,
+                contentDescription = stringResource(
+                    if (item.tabBarHidden) R.string.tab_group_bar_menu_show else R.string.tab_group_bar_menu_hide
+                ),
                 enabled = true,
                 onClick = {
                     collapse()

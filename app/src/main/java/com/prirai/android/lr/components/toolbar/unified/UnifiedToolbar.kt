@@ -18,7 +18,7 @@ import com.prirai.android.lr.components.toolbar.modern.ModernToolbarSystem
 import com.prirai.android.lr.components.toolbar.modern.ComposeTabBarWithProfileSwitcher
 import com.prirai.android.lr.ext.components
 import com.prirai.android.lr.preferences.UserPreferences
-import com.prirai.android.lr.toolbar.ContextualBottomToolbar
+import com.prirai.android.lr.toolbar.ToolbarActionsListener
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import mozilla.components.browser.state.state.CustomTabSessionState
@@ -32,12 +32,11 @@ import mozilla.components.support.ktx.android.content.res.resolveAttribute
 import com.prirai.android.lr.components.toolbar.modern.ModernScrollBehavior
 
 /**
- * UnifiedToolbar - Centralized toolbar component that unifies tab bar, address bar, and contextual toolbar.
+ * UnifiedToolbar - Centralized toolbar component that unifies the tab group bar and the address bar.
  *
  * Uses the proper components:
  * - ComposeTabBarWithProfileSwitcher: Compose-based tab bar with profile pill
  * - BrowserToolbar: Address bar for URL/search
- * - ContextualBottomToolbar: Context-aware action buttons
  * 
  * Wraps ModernToolbarSystem which provides:
  * - Material 3 theming with elevation overlay
@@ -62,7 +61,6 @@ class UnifiedToolbar @JvmOverloads constructor(
     private var addressBarContainer: ViewGroup? = null
     private var browserToolbar: BrowserToolbar? = null
     private var browserToolbarView: BrowserToolbarView? = null
-    private var contextualToolbar: ContextualBottomToolbar? = null
     
     // EngineView reference for toolbar behavior
     private var engineView: EngineView? = null
@@ -114,12 +112,11 @@ class UnifiedToolbar @JvmOverloads constructor(
     private var reloadStopIntegration: com.prirai.android.lr.integration.ReloadStopButtonIntegration? = null
 
     
-    // Contextual toolbar listener reference (used when contextual toolbar is disabled)
-    private var contextualToolbarListener: ContextualBottomToolbar.ContextualToolbarListener? = null
+    // Listener for address-bar actions (menu button, tab counter)
+    private var contextualToolbarListener: ToolbarActionsListener? = null
 
     // Configuration
     private var showTabGroupBar: Boolean = prefs.showTabGroupBar
-    private var showContextualToolbar: Boolean = prefs.showContextualToolbar
     
     // Bottom components container reference (for TOP toolbar mode)
     private var bottomComponentsContainer: ViewGroup? = null
@@ -277,8 +274,7 @@ class UnifiedToolbar @JvmOverloads constructor(
                 addBrowserActionsToAddressBar()
             }
             ModernToolbarSystem.ToolbarPosition.BOTTOM -> {
-                // BOTTOM: Contextual Toolbar -> Address Bar -> Tab Bar (all together)
-                addContextualToolbar()
+                // BOTTOM: Address Bar -> Tab Bar (all together)
                 addAddressBar(parent, lifecycleOwner, interactor, customTabSession, store)
                 addTabGroupBar(store, lifecycleOwner)
                 // Menu button always lives on the address bar
@@ -551,62 +547,6 @@ class UnifiedToolbar @JvmOverloads constructor(
             createTabGroupBar(store, lifecycleOwner)
         }
         
-        // Always create contextual toolbar (it might be hidden)
-        contextualToolbar = ContextualBottomToolbar(context).apply {
-            visibility = if (showContextualToolbar) VISIBLE else GONE
-        }
-    }
-
-    /**
-     * Add contextual toolbar component (ContextualBottomToolbar)
-     */
-    private fun addContextualToolbar() {
-        if (!showContextualToolbar) {
-            // When contextual toolbar is disabled, don't create it
-            // Buttons will be added to address bar in setup()
-            return
-        }
-
-        contextualToolbar = ContextualBottomToolbar(context).apply {
-            // No need to set background - it already applies Material 3 theming
-        }
-
-        toolbarSystem.addComponent(contextualToolbar!!, ModernToolbarSystem.ComponentType.CONTEXTUAL)
-    }
-    
-    // Store tab count view reference to update the count
-    private var tabCountBadgeView: android.widget.TextView? = null
-    private var tabCountBadgeContainer: android.widget.FrameLayout? = null
-    
-    /**
-     * Get the toolbar view for anchoring popups
-     */
-    fun getToolbarView(): View? = browserToolbar?.asView()
-    
-    /**
-     * Add the menu ("...") button to the right end of the address bar.
-     * It replaces the old minimal-state chevron and is the only menu
-     * entry point (the contextual toolbar no longer carries it).
-     */
-    private fun addBrowserActionsToAddressBar() {
-        val toolbar = browserToolbar ?: return
-
-        val menuAction = BrowserToolbar.Button(
-            imageDrawable = ContextCompat.getDrawable(context, com.prirai.android.lr.R.drawable.ic_ios_menu)!!.mutate().apply {
-                setTint(
-                    com.google.android.material.color.MaterialColors.getColor(
-                        context,
-                        com.google.android.material.R.attr.colorOnSurface,
-                        android.graphics.Color.BLACK
-                    )
-                )
-            },
-            contentDescription = context.getString(com.prirai.android.lr.R.string.menu),
-            listener = {
-                contextualToolbarListener?.onMenuClicked()
-            }
-        )
-        toolbar.addBrowserAction(menuAction)
     }
 
     /**
@@ -760,29 +700,10 @@ class UnifiedToolbar @JvmOverloads constructor(
     }
 
     /**
-     * Update the contextual toolbar based on browsing context
-     */
-    fun updateContextualToolbar(
-        tab: TabSessionState?,
-        canGoBack: Boolean,
-        canGoForward: Boolean,
-        isHomepage: Boolean = false
-    ) {
-        contextualToolbar?.updateForContext(
-            tab = tab,
-            canGoBack = canGoBack,
-            canGoForward = canGoForward,
-            isHomepage = isHomepage
-        )
-    }
-
-    /**
      * Set listener for contextual toolbar interactions
      */
-    fun setContextualToolbarListener(listener: ContextualBottomToolbar.ContextualToolbarListener) {
-        // Store listener for use when contextual toolbar is disabled
+    fun setContextualToolbarListener(listener: ToolbarActionsListener) {
         contextualToolbarListener = listener
-        contextualToolbar?.listener = listener
     }
     
     /**
@@ -820,11 +741,6 @@ class UnifiedToolbar @JvmOverloads constructor(
     fun getBrowserToolbarView(): BrowserToolbarView? = browserToolbarView
 
     /**
-     * Get the contextual toolbar component
-     */
-    fun getContextualToolbar(): ContextualBottomToolbar? = contextualToolbar
-
-    /**
      * Get the tab group bar component
      */
     fun getTabGroupBar(): ComposeTabBarWithProfileSwitcher? = tabGroupBar
@@ -859,9 +775,6 @@ class UnifiedToolbar @JvmOverloads constructor(
             
             // Add tab bar if it exists
             tabGroupBar?.let { container.addView(it) }
-
-            // Add contextual toolbar if it exists
-            contextualToolbar?.let { container.addView(it) }
             
             bottomComponentsContainer = container
         }
@@ -872,22 +785,16 @@ class UnifiedToolbar @JvmOverloads constructor(
     /**
      * Update component visibility based on settings
      */
-    fun updateComponentVisibility(
-        showTabBar: Boolean = showTabGroupBar,
-        showContextual: Boolean = showContextualToolbar
-    ) {
+    fun updateComponentVisibility(showTabBar: Boolean = showTabGroupBar) {
         showTabGroupBar = showTabBar
-        showContextualToolbar = showContextual
-
         tabGroupBar?.visibility = if (showTabBar) VISIBLE else GONE
-        contextualToolbar?.visibility = if (showContextual) VISIBLE else GONE
     }
 
     /** True while the toolbar is in the minimal (address-bar-only) state. */
     fun isMinimal(): Boolean = minimalState
 
     /**
-     * Enter the minimal state: hide the tab bar and contextual toolbar so only
+     * Enter the minimal state: hide the tab group bar so only
      * the address bar remains visible. Idempotent.
      */
     fun enterMinimalState() {
@@ -909,7 +816,7 @@ class UnifiedToolbar @JvmOverloads constructor(
     }
 
     /**
-     * Smoothly animate the tab bar and contextual toolbar in/out so the
+     * Smoothly animate the tab group bar in/out so the
      * engine view's reserved layout space (`swipeRefresh.bottomMargin` in
      * `BrowserFragment`) grows or shrinks **in step** with the aux bars'
      * translation.
@@ -949,7 +856,6 @@ class UnifiedToolbar @JvmOverloads constructor(
     private fun animateAuxiliaryComponents(show: Boolean) {
         val auxiliaries = listOfNotNull(
             tabGroupBar?.takeIf { showTabGroupBar },
-            contextualToolbar?.takeIf { showContextualToolbar },
         )
         if (auxiliaries.isEmpty()) return
 

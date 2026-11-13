@@ -51,24 +51,11 @@
 
 
         <com.prirai.android.lr.settings.MaterialSwitchPreference
-            app:key="@string/key_show_contextual_toolbar"
-            app:title="@string/show_contextual_toolbar"
-            app:summary="@string/show_contextual_toolbar_desc"
-            app:singleLineTitle="false"
-            app:defaultValue="true" />
-
-        <com.prirai.android.lr.settings.MaterialSwitchPreference
             app:key="@string/key_show_tab_group_bar"
             app:title="@string/show_tab_group_bar"
             app:summary="@string/show_tab_group_bar_desc"
             app:singleLineTitle="false"
             app:defaultValue="true" />
-
-        <Preference
-            app:key="toolbar_icon_size"
-            app:title="@string/toolbar_icon_size"
-            app:summary="@string/toolbar_icon_size_desc"
-            app:singleLineTitle="false" />
 
     </PreferenceCategory>
 

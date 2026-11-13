@@ -32,7 +32,6 @@ class ModernToolbarSystem @JvmOverloads constructor(
     // Components
     private var tabGroupComponent: View? = null
     private var addressBarComponent: View? = null
-    private var contextualComponent: View? = null
     
     // Toolbar offset callback for smooth margin adjustment
     private var onOffsetChangedListener: ((Int, Int) -> Unit)? = null
@@ -74,11 +73,6 @@ class ModernToolbarSystem @JvmOverloads constructor(
                 val index = if (tabGroupComponent != null) 1 else 0
                 addView(component, index, layoutParams)
             }
-
-            ComponentType.CONTEXTUAL -> {
-                contextualComponent = component
-                addView(component, layoutParams) // Bottom position
-            }
         }
 
         // Update engine view clipping after adding component
@@ -89,7 +83,6 @@ class ModernToolbarSystem @JvmOverloads constructor(
         val component = when (type) {
             ComponentType.TAB_GROUP -> tabGroupComponent
             ComponentType.ADDRESS_BAR -> addressBarComponent
-            ComponentType.CONTEXTUAL -> contextualComponent
         }
 
         component?.let {
@@ -97,7 +90,6 @@ class ModernToolbarSystem @JvmOverloads constructor(
             when (type) {
                 ComponentType.TAB_GROUP -> tabGroupComponent = null
                 ComponentType.ADDRESS_BAR -> addressBarComponent = null
-                ComponentType.CONTEXTUAL -> contextualComponent = null
             }
         }
 
@@ -234,7 +226,7 @@ class ModernToolbarSystem @JvmOverloads constructor(
     /**
      * Formerly updated GeckoView's dynamic-toolbar reservation as the
      * toolbar translated during scroll. The toolbar is now pinned; only
-     * the aux bars (tab bar + contextual bar) toggle via UnifiedToolbar's
+     * the aux bar (tab group bar) toggle via UnifiedToolbar's
      * minimal state. Scroll-DOWN enters minimal (ModernScrollBehavior);
      * the chevron button on the address bar toggles both directions and
      * is the sole exit path. Chrome reservation is a static
@@ -262,6 +254,5 @@ class ModernToolbarSystem @JvmOverloads constructor(
     enum class ComponentType {
         TAB_GROUP,
         ADDRESS_BAR,
-        CONTEXTUAL,
     }
 }

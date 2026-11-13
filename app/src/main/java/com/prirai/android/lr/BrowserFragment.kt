@@ -457,7 +457,7 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
             }
 
             // Set contextual toolbar listener
-            val contextualListener = object : com.prirai.android.lr.toolbar.ContextualBottomToolbar.ContextualToolbarListener {
+            val contextualListener = object : com.prirai.android.lr.toolbar.ToolbarActionsListener {
                 override fun onBackClicked() {
                     requireContext().components.sessionUseCases.goBack()
                 }
@@ -630,38 +630,12 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
                     val currentTabIds = state.tabs.map { it.id }.toSet()
                     currentTabIds - lastTabIds
                     
-                    // Update toolbar with current context
-                    val currentSelectedTab = state.tabs.find { it.id == state.selectedTabId }
-                    val currentUrl = currentSelectedTab?.content?.url ?: ""
-                    // Properly detect homepage - both empty URL and about:homepage
-                    val currentIsHomepage = currentUrl.isEmpty() || currentUrl == "about:homepage"
-
-                    unifiedToolbar?.updateContextualToolbar(
-                        tab = currentSelectedTab,
-                        canGoBack = currentSelectedTab?.content?.canGoBack ?: false,
-                        canGoForward = currentSelectedTab?.content?.canGoForward ?: false,
-                        isHomepage = currentIsHomepage
-                    )
                 }
             }
         }
     }
 
     private fun initializeModernToolbarWithCurrentState() {
-        // Initialize the modern toolbar with the current tab state immediately
-        val state = requireContext().components.store.state
-
-        val selectedTab = state.tabs.find { it.id == state.selectedTabId }
-        val currentUrl = selectedTab?.content?.url ?: ""
-        // Properly detect homepage - both empty URL and about:homepage
-        val isHomepage = currentUrl.isEmpty() || currentUrl == "about:homepage"
-
-        unifiedToolbar?.updateContextualToolbar(
-            tab = selectedTab,
-            canGoBack = selectedTab?.content?.canGoBack ?: false,
-            canGoForward = selectedTab?.content?.canGoForward ?: false,
-            isHomepage = isHomepage
-        )
 
     }
 
@@ -927,6 +901,20 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
 
         menuItems.add(com.prirai.android.lr.components.menu.Material3BrowserMenu.MenuItem.Divider)
 
+        // Image reader (web pages only)
+        if (selectedTab?.content?.url?.startsWith("http") == true) {
+            menuItems.add(
+                com.prirai.android.lr.components.menu.Material3BrowserMenu.MenuItem.Action(
+                    id = "image_reader",
+                    title = getString(R.string.image_reader),
+                    iconRes = R.drawable.ic_image_reader_24,
+                    onClick = {
+                        browserInteractor.onBrowserToolbarMenuItemTapped(ToolbarMenu.Item.ImageReader)
+                    }
+                )
+            )
+        }
+
         // Add to Homescreen (conditional)
         if (androidx.core.content.pm.ShortcutManagerCompat.isRequestPinShortcutSupported(requireContext())) {
             menuItems.add(
@@ -1033,12 +1021,15 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
                         ToolbarMenu.Item.Share
                     )
                 },
-                // "^": hide / restore the tab bar + bottom bar (minimal state)
-                onCollapseClick = {
-                    unifiedToolbar?.let { tb ->
-                        if (tb.isMinimal()) tb.exitMinimalState() else tb.enterMinimalState()
-                    }
-                },
+                // "+": show / hide the tab group bar
+                onCollapseClick = unifiedToolbar
+                    ?.takeIf { it.getTabGroupBar() != null }
+                    ?.let { tb ->
+                        {
+                            if (tb.isMinimal()) tb.exitMinimalState() else tb.enterMinimalState()
+                        }
+                    },
+                tabBarHidden = unifiedToolbar?.isMinimal() == true,
                 backEnabled = selectedTab?.content?.canGoBack ?: false,
                 forwardEnabled = selectedTab?.content?.canGoForward ?: false,
                 // Long-press back/forward opens the tab-history popup,

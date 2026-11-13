@@ -5,6 +5,7 @@ package com.prirai.android.lr.browser.tabs.compose
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -53,7 +54,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.res.stringResource
@@ -198,13 +203,18 @@ fun TabBarCompose(
         // Static layer - main tab bar
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surfaceContainer,
-            tonalElevation = 2.dp
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            tonalElevation = 0.dp
         ) {
+          androidx.compose.foundation.layout.Column {
+            HorizontalDivider(
+                thickness = 0.5.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
+            )
             LazyRow(
                 state = listState,
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 7.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -412,6 +422,7 @@ fun TabBarCompose(
                     }
                 }
             }
+          }
         }
 
         // Drag layer - floating item that follows pointer
@@ -552,6 +563,9 @@ private fun TabPill(
     isDragging: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    // Redesigned pill: resting tabs are soft tonal chips (clear tap target),
+    // the focused tab is a primaryContainer chip with a primary outline and an
+    // inline close button.
     Surface(
         modifier = modifier
             .height(36.dp)
@@ -560,21 +574,26 @@ private fun TabPill(
         color = if (isSelected) {
             MaterialTheme.colorScheme.primaryContainer
         } else {
-            Color.Transparent
+            MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.7f)
+        },
+        border = if (isSelected) {
+            BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.55f))
+        } else {
+            null
         }
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
                 .clickable { onTabClick(tab.id) }
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+                .padding(start = 10.dp, end = if (isSelected && !isDragging) 4.dp else 10.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             // Favicon
             FaviconImage(
                 tab = tab,
-                size = 14.dp,
+                size = 16.dp,
                 modifier = Modifier
             )
 
@@ -583,15 +602,36 @@ private fun TabPill(
                 text = getTabDisplayTitle(tab, stringResource(R.string.tab_history_new_tab)),
                 style =
                     if (isSelected) {
-                        MaterialTheme.typography.labelSmallEmphasized
+                        MaterialTheme.typography.labelMediumEmphasized
                     } else {
-                        MaterialTheme.typography.labelSmall
+                        MaterialTheme.typography.labelMedium
                     },
-                color = MaterialTheme.colorScheme.onSurface,
+                color = if (isSelected) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
             )
+
+            if (isSelected && !isDragging) {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .clickable { onTabClose(tab.id) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = stringResource(R.string.delete),
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -691,6 +731,13 @@ private fun GroupPill(
     var menuTab by remember { mutableStateOf<TabSessionState?>(null) }
     var showTabMenu by remember { mutableStateOf(false) }
 
+    val groupColor = Color(group.color)
+    val onGroupColor = if (groupColor.luminance() > 0.5f) Color.Black else Color.White
+    // Group container: neutral surface lightly washed with the group's color
+    // and outlined with it, so a group reads as one coloured "folder" shape.
+    val groupContainer = groupColor.copy(alpha = 0.12f)
+        .compositeOver(MaterialTheme.colorScheme.surfaceContainerHighest)
+
     Surface(
         modifier = modifier
             .then(
@@ -702,11 +749,8 @@ private fun GroupPill(
                 if (isDragging) Modifier else Modifier
             ),
         shape = RoundedCornerShape(22.dp),
-        // Neutral M3 container (anti-slop: containers are theme tokens,
-        // never tinted with the group's accent); the group color remains
-        // on the name, badge, expand icon and dividers - its identity.
-        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-        tonalElevation = 1.dp
+        color = groupContainer,
+        border = BorderStroke(1.dp, groupColor.copy(alpha = 0.5f))
     ) {
         Row(
             modifier = Modifier
@@ -719,41 +763,37 @@ private fun GroupPill(
                         onGroupClick?.invoke(group.groupId)
                     }
                 )
-                .padding(horizontal = 10.dp, vertical = 4.dp),
+                .padding(start = 6.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            // Collapse/Expand icon
-            Icon(
-                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                contentDescription = stringResource(if (expanded) R.string.collapse else R.string.expand),
-                tint = Color(group.color),
-                modifier = Modifier.size(20.dp)
-            )
-
-            // Group name - use onSurface color when dragging, no ellipsis
-            Text(
-                text = group.groupName,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 1,
-                color = if (isDragging) MaterialTheme.colorScheme.onSurface else Color(group.color)
-            )
-
-            // Tab count badge
+            // Header chip: solid group colour with collapse/expand arrow,
+            // name and tab count
             Surface(
-                shape = CircleShape,
-                color = Color(group.color).copy(alpha = 0.3f)
+                shape = RoundedCornerShape(16.dp),
+                color = groupColor
             ) {
-                Box(
-                    modifier = Modifier
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                        .defaultMinSize(minWidth = 20.dp),
-                    contentAlignment = Alignment.Center
+                Row(
+                    modifier = Modifier.padding(start = 4.dp, end = 10.dp, top = 5.dp, bottom = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = stringResource(if (expanded) R.string.collapse else R.string.expand),
+                        tint = onGroupColor,
+                        modifier = Modifier.size(18.dp)
+                    )
                     Text(
-                        text = "${group.tabs.size}",
-                        style = MaterialTheme.typography.labelSmallEmphasized,
-                        color = Color(group.color)
+                        text = group.groupName,
+                        style = MaterialTheme.typography.labelLargeEmphasized,
+                        maxLines = 1,
+                        color = onGroupColor
+                    )
+                    Text(
+                        text = "\u00B7 ${group.tabs.size}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = onGroupColor.copy(alpha = 0.8f)
                     )
                 }
             }
@@ -839,12 +879,15 @@ private fun GroupPill(
                             // custom tabs' Gecko partition).
                             viewModel.createNewTabInGroup(group.groupId, group.contextId)
                         },
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier
+                            .size(30.dp)
+                            .clip(CircleShape)
+                            .background(groupColor.copy(alpha = 0.18f))
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = stringResource(R.string.add_tab_to_group),
-                            tint = Color(group.color),
+                            tint = groupColor,
                             modifier = Modifier.size(18.dp)
                         )
                     }

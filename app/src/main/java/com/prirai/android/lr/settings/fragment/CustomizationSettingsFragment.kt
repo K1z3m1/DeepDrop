@@ -235,26 +235,8 @@ class CustomizationSettingsFragment : BaseSettingsFragment() {
         )
 
         clickablePreference(
-            preference = "toolbar_icon_size",
-            onClick = { showIconSizeDialog() }
-        )
-
-        clickablePreference(
             preference = "interface_font_scale",
             onClick = { showFontScaleDialog() }
-        )
-
-        switchPreference(
-            preference = requireContext().resources.getString(R.string.key_show_contextual_toolbar),
-            isChecked = UserPreferences(requireContext()).showContextualToolbar,
-            onCheckChange = {
-                UserPreferences(requireContext()).showContextualToolbar = it
-                Toast.makeText(
-                    context,
-                    requireContext().resources.getText(R.string.app_restart),
-                    Toast.LENGTH_LONG
-                ).show()
-            }
         )
 
         switchPreference(
@@ -367,29 +349,6 @@ class CustomizationSettingsFragment : BaseSettingsFragment() {
                     UserPreferences(requireContext()).appThemeChoice = choice
                     applyAppTheme(choice)
                     requireActivity().recreate()
-                },
-                onDismiss = onDismiss,
-            )
-        }
-    }
-
-    private fun showIconSizeDialog() {
-        val userPreferences = UserPreferences(requireContext())
-        showLRDialog { onDismiss ->
-            SizePickerDialog(
-                title = getString(R.string.toolbar_icon_size),
-                previewLabel = getString(R.string.toolbar_icon_size),
-                initialValue = userPreferences.toolbarIconSize,
-                valueRange = 0.8f..1.5f,
-                steps = 6,
-                showIconPreview = true,
-                onConfirm = { value ->
-                    userPreferences.toolbarIconSize = value
-                    Toast.makeText(
-                        context,
-                        requireContext().resources.getText(R.string.app_restart),
-                        Toast.LENGTH_LONG
-                    ).show()
                 },
                 onDismiss = onDismiss,
             )

@@ -380,7 +380,7 @@ class ComposeHomeFragment : Fragment() {
 
         // Setup contextual toolbar listener
         unifiedToolbar?.setContextualToolbarListener(object :
-            com.prirai.android.lr.toolbar.ContextualBottomToolbar.ContextualToolbarListener {
+            com.prirai.android.lr.toolbar.ToolbarActionsListener {
             override fun onBackClicked() {
                 handleTabSwipe(false, components.store.state.selectedTab?.content?.private ?: false)
             }
@@ -451,13 +451,6 @@ class ComposeHomeFragment : Fragment() {
             }
         })
 
-        // Update toolbar for homepage context
-        unifiedToolbar?.updateContextualToolbar(
-            tab = null,
-            canGoBack = false,
-            canGoForward = false,
-            isHomepage = true
-        )
 
         // Apply private mode if needed
         val isPrivate = components.store.state.selectedTab?.content?.private ?: browsingModeManager.mode.isPrivate
@@ -523,13 +516,6 @@ class ComposeHomeFragment : Fragment() {
                     // Check if fragment is still attached before accessing context
                     if (!isAdded || context == null) return@collect
                     
-                    // Update toolbar tab count when selected tab changes
-                    unifiedToolbar?.updateContextualToolbar(
-                        tab = null,
-                        canGoBack = false,
-                        canGoForward = false,
-                        isHomepage = true
-                    )
                     
                     // Also update private mode state
                     val isPrivate = store.state.selectedTab?.content?.private ?: browsingModeManager.mode.isPrivate
@@ -636,12 +622,6 @@ class ComposeHomeFragment : Fragment() {
         // Update the unified toolbar's tab count and private mode state
         val isPrivate = components.store.state.selectedTab?.content?.private ?: browsingModeManager.mode.isPrivate
         unifiedToolbar?.applyPrivateMode(isPrivate)
-        unifiedToolbar?.updateContextualToolbar(
-            tab = null,
-            canGoBack = false,
-            canGoForward = false,
-            isHomepage = true
-        )
     }
 
     private fun restoreLastMode() {
