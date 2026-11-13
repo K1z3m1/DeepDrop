@@ -1,0 +1,992 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
+package com.prirai.android.lr.browser.tabs
+
+import androidx.compose.runtime.getValue
+import android.graphics.Color
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.rounded.GridView
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.ViewList
+import androidx.compose.material3.*
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.fragment.app.DialogFragment
+import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.NavHostFragment
+import android.widget.LinearLayout
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.prirai.android.lr.BrowserActivity
+import com.prirai.android.lr.R
+import com.prirai.android.lr.browser.BrowsingMode
+import com.prirai.android.lr.browser.BrowsingModeManager
+import com.prirai.android.lr.browser.tabgroups.UnifiedTabGroupManager
+import com.prirai.android.lr.browser.tabs.compose.ProfileCardsPage
+import com.prirai.android.lr.browser.tabs.compose.TabViewModel
+import com.prirai.android.lr.browser.tabs.compose.TabSheetListView
+import com.prirai.android.lr.browser.tabs.compose.TabSheetGridView
+import com.prirai.android.lr.databinding.FragmentTabsBottomSheetBinding
+import com.prirai.android.lr.ext.components
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import mozilla.components.browser.state.state.TabSessionState
+import mozilla.components.lib.state.ext.flowScoped
+import androidx.core.content.edit
+
+/**
+ * Modern Compose-based tab switcher displayed as a fullscreen bottom sheet.
+ *
+ * Features:
+ * - List and grid view modes
+ * - Tab groups with drag-and-drop
+ * - Multi-profile support
+ * - Private browsing mode
+ * - Tab search
+ * - Context menus for tab operations
+ *
+ * Architecture:
+ * - UI: Jetpack Compose (TabSheetListView / TabSheetGridView)
+ * - State: TabViewModel with StateFlow
+ * - Groups: UnifiedTabGroupManager
+ * - Tabs: Mozilla Components Store
+ *
+ */
+class TabsBottomSheetFragment : DialogFragment() {
+
+    private var _binding: FragmentTabsBottomSheetBinding? = null
+    private val binding get() = _binding!!
+
+    private lateinit var browsingModeManager: BrowsingModeManager
+    private lateinit var unifiedGroupManager: UnifiedTabGroupManager
+
+    private var composeOrderManager: com.prirai.android.lr.browser.tabs.compose.TabOrderManager? = null
+    private var tabViewModel: TabViewModel? = null
+
+    // Compose state management
+    private val profileStateTrigger = mutableStateOf(0) // Triggers recomposition on profile/mode changes
+    private val showMenuState = mutableStateOf(false) // Controls context menu visibility
+    private val menuTabState = mutableStateOf<TabSessionState?>(null) // Currently selected tab for menu
+    private val menuIsInGroupState = mutableStateOf(false) // Whether selected tab is in a group
+
+    private var isInitializing = true
+    private val isGridViewState = mutableStateOf(false)
+    // Sheet page: 0 = tab cards, 1 = profile cards (swapped by the tab row)
+    private val selectedPageState = mutableStateOf(0)
+    private var isGridView: Boolean
+        get() = isGridViewState.value
+        set(value) { isGridViewState.value = value }
+    private val viewPrefs by lazy {
+        requireContext().getSharedPreferences("tabs_view_prefs", android.content.Context.MODE_PRIVATE)
+    }
+
+    /** ActivityResultLauncher registered at fragment creation time for profile ZIP import. */
+    private val importProfileLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri ?: return@registerForActivityResult
+        lifecycleScope.launch {
+            try {
+                val exportManager = com.prirai.android.lr.browser.profile.ProfileExportManager
+                    .getInstance(requireContext())
+                val imported = exportManager.importProfile(uri)
+                profileStateTrigger.value++
+                android.widget.Toast.makeText(
+                    requireContext(),
+                    "Profile \"${imported.name}\" imported",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+            } catch (e: Exception) {
+                android.widget.Toast.makeText(
+                    requireContext(),
+                    "Import failed: ${e.message}",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+    }
+
+    companion object {
+        const val TAG = "TabsBottomSheet"
+        fun newInstance() = TabsBottomSheetFragment()
+    }
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = FragmentTabsBottomSheetBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        val activity = (activity as BrowserActivity)
+        browsingModeManager = activity.browsingModeManager
+        unifiedGroupManager = UnifiedTabGroupManager.getInstance(requireContext())
+
+        // Switch to the correct profile based on the selected tab's context
+        val store = requireContext().components.store
+        val selectedTab = store.state.tabs.find { it.id == store.state.selectedTabId }
+        if (selectedTab != null) {
+            val isPrivate = selectedTab.content.private
+            val tabContextId = selectedTab.contextId
+
+            // Switch to correct browsing mode
+            if (isPrivate && browsingModeManager.mode != BrowsingMode.Private) {
+                browsingModeManager.mode = BrowsingMode.Private
+            } else if (!isPrivate && browsingModeManager.mode != BrowsingMode.Normal) {
+                browsingModeManager.mode = BrowsingMode.Normal
+            }
+
+            // Switch to correct profile for normal mode
+            if (!isPrivate) {
+                val profileManager =
+                    com.prirai.android.lr.browser.profile.ProfileManager.getInstance(requireContext())
+                when {
+                    tabContextId == null || tabContextId == "profile_default" -> {
+                        val defaultProfile = profileManager.getAllProfiles().find { it.id == "default" }
+                        if (defaultProfile != null && browsingModeManager.currentProfile.id != "default") {
+                            profileManager.setActiveProfile(defaultProfile)
+                            browsingModeManager.currentProfile = defaultProfile
+                        }
+                    }
+
+                    tabContextId.startsWith("profile_") -> {
+                        val profileId = tabContextId.removePrefix("profile_")
+                        val targetProfile = profileManager.getAllProfiles().find { it.id == profileId }
+                        if (targetProfile != null && browsingModeManager.currentProfile.id != profileId) {
+                            profileManager.setActiveProfile(targetProfile)
+                            browsingModeManager.currentProfile = targetProfile
+                        }
+                    }
+                }
+            }
+        }
+
+        setupUI()
+
+            composeOrderManager = com.prirai.android.lr.browser.tabs.compose.TabOrderManager.getInstance(
+                requireContext(),
+                unifiedGroupManager
+            )
+            setupComposeTabViews()
+        profileStateTrigger.value++
+
+        isInitializing = false
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // Use fullscreen dialog style
+        setStyle(STYLE_NORMAL, R.style.FullScreenDialogTheme)
+    }
+
+    override fun onStart() {
+        super.onStart()
+
+        // Make dialog fullscreen
+        dialog?.window?.let { window ->
+            window.setLayout(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+
+            // Preserve status bar appearance (don't change icons to black)
+            val isDark = com.prirai.android.lr.theme.ThemeManager.isDarkMode(requireContext())
+            androidx.core.view.WindowInsetsControllerCompat(window, window.decorView).apply {
+                isAppearanceLightStatusBars = !isDark
+            }
+
+            // Apply window insets for edge-to-edge
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { v, insets ->
+                val systemBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+
+                // The Compose profile pill row applies navigationBarsPadding
+                // itself; nothing to inset here anymore.
+                insets
+            }
+        }
+    }
+
+    private fun setupUI() {
+        // Apply Material 3 theming
+        com.prirai.android.lr.theme.ThemeManager.isDarkMode(requireContext())
+        val isAmoled = com.prirai.android.lr.theme.ThemeManager.isAmoledActive(requireContext())
+
+        if (isAmoled) {
+            dialog?.window?.decorView?.setBackgroundColor(Color.BLACK)
+        }
+
+        // Restore saved view preference; Compose header handles the toggle UI
+        isGridViewState.value = viewPrefs.getBoolean("is_grid_view", false)
+    }
+
+    private fun showTabSearch() {
+        val searchFragment = TabSearchFragment.newInstance()
+        searchFragment.show(parentFragmentManager, TabSearchFragment.TAG)
+    }
+
+    private fun switchToProfile(profileId: String, isPrivate: Boolean) {
+        if (isInitializing) return
+
+        // Update browsing mode and tabs; the Compose profile pill row
+        // recomposes via profileStateTrigger and shows the active pill.
+        val profileManager = com.prirai.android.lr.browser.profile.ProfileManager.getInstance(requireContext())
+        if (isPrivate) {
+            if (!browsingModeManager.mode.isPrivate) {
+                browsingModeManager.mode = BrowsingMode.Private
+                profileManager.setPrivateMode(true)
+                profileStateTrigger.value++
+            }
+        } else {
+            val profiles = profileManager.getAllProfiles()
+            val profile = profiles.find { it.id == profileId }
+            if (profile != null && (browsingModeManager.mode.isPrivate || profile.id != browsingModeManager.currentProfile.id)) {
+                browsingModeManager.currentProfile = profile
+                browsingModeManager.mode = BrowsingMode.Normal
+                profileManager.setActiveProfile(profile)
+                profileManager.setPrivateMode(false)
+                profileStateTrigger.value++
+            }
+        }
+    }
+
+    // updateGridDisplay / updateTabsDisplay used to feed a RecyclerView with
+    // a TabGridItem list produced by the now-deleted TabsGridAdapter. The
+    // grid RecyclerView is still in the layout XML but is permanently GONE
+    // (see setupComposeTabViews) - the Compose tab sheet renders everything.
+    // The helper methods are gone with the adapter.
+
+    private fun showMoveToProfileDialog(tabIds: List<String>, isGroup: Boolean = false) {
+        val profileManager = com.prirai.android.lr.browser.profile.ProfileManager.getInstance(requireContext())
+        val profiles = profileManager.getAllProfiles()
+
+        val items = profiles.map { it.name }.toMutableList()
+        items.add(getString(com.prirai.android.lr.R.string.private_mode_short))
+
+        val tabWord = if (isGroup) "group" else if (tabIds.size > 1) "tabs" else "tab"
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Move $tabWord to Profile")
+            .setItems(items.toTypedArray()) { _, which ->
+                val targetProfileId = if (which == items.size - 1) {
+                    "private"
+                } else {
+                    profiles[which].id
+                }
+
+                // Migrate tabs
+                val migratedCount = profileManager.migrateTabsToProfile(tabIds, targetProfileId)
+
+                // Show confirmation
+                android.widget.Toast.makeText(
+                    requireContext(),
+                    "Moved $migratedCount $tabWord to ${items[which]}",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun addNewTab() {
+        lifecycleScope.launch {
+            val isPrivate = browsingModeManager.mode.isPrivate
+            val currentProfile = browsingModeManager.currentProfile
+            val contextId = com.prirai.android.lr.browser.profile.BrowserProfile
+                .contextIdFor(currentProfile, isPrivate)
+
+            requireContext().components.tabsUseCases.addTab(
+                url = "about:homepage",
+                private = isPrivate,
+                contextId = contextId,
+                selectTab = true
+            )
+
+            try {
+                NavHostFragment.findNavController(this@TabsBottomSheetFragment)
+                    .navigate(R.id.homeFragment)
+                // Post dismiss to avoid touch event recycling crash
+                view?.post { dismiss() }
+            } catch (e: Exception) {
+                view?.post { dismiss() }
+            }
+        }
+    }
+
+    private fun showProfileCreateDialog() {
+        val composeView = androidx.compose.ui.platform.ComposeView(requireContext())
+        val userPreferences = com.prirai.android.lr.preferences.UserPreferences(requireContext())
+        val themeChoice =
+            com.prirai.android.lr.settings.ThemeChoice.entries.toTypedArray()[userPreferences.appThemeChoice]
+        val isDark = when (themeChoice) {
+            com.prirai.android.lr.settings.ThemeChoice.DARK -> true
+            com.prirai.android.lr.settings.ThemeChoice.LIGHT -> false
+            com.prirai.android.lr.settings.ThemeChoice.SYSTEM ->
+                requireContext().resources.configuration.uiMode and
+                        android.content.res.Configuration.UI_MODE_NIGHT_MASK ==
+                        android.content.res.Configuration.UI_MODE_NIGHT_YES
+        }
+
+        composeView.setContent {
+            com.prirai.android.lr.ui.theme.LRTheme(
+                darkTheme = isDark,
+                isPrivateMode = browsingModeManager.mode == BrowsingMode.Private,
+                amoledMode = userPreferences.amoledMode,
+                dynamicColor = userPreferences.dynamicColors
+            ) {
+                com.prirai.android.lr.browser.profile.ProfileCreateDialog(
+                    onDismiss = {
+                        (composeView.parent as? ViewGroup)?.removeView(composeView)
+                    },
+                    onConfirm = { name, color, emoji ->
+                        val profileManager =
+                            com.prirai.android.lr.browser.profile.ProfileManager.getInstance(requireContext())
+                        val newProfile = profileManager.createProfile(name, color, emoji)
+
+                        profileStateTrigger.value++
+
+                        browsingModeManager.currentProfile = newProfile
+                        browsingModeManager.mode = BrowsingMode.Normal
+                        (composeView.parent as? ViewGroup)?.removeView(composeView)
+                    },
+                    onImport = {
+                        (composeView.parent as? ViewGroup)?.removeView(composeView)
+                        importProfileLauncher.launch("*/*")
+                    }
+                )
+            }
+        }
+
+        (binding.root as ViewGroup).addView(composeView)
+    }
+
+    private fun showProfileEditDialog(profile: com.prirai.android.lr.browser.profile.BrowserProfile) {
+        val composeView = androidx.compose.ui.platform.ComposeView(requireContext())
+        val userPreferences = com.prirai.android.lr.preferences.UserPreferences(requireContext())
+        val themeChoice =
+            com.prirai.android.lr.settings.ThemeChoice.entries.toTypedArray()[userPreferences.appThemeChoice]
+        val isDark = when (themeChoice) {
+            com.prirai.android.lr.settings.ThemeChoice.DARK -> true
+            com.prirai.android.lr.settings.ThemeChoice.LIGHT -> false
+            com.prirai.android.lr.settings.ThemeChoice.SYSTEM ->
+                requireContext().resources.configuration.uiMode and
+                        android.content.res.Configuration.UI_MODE_NIGHT_MASK ==
+                        android.content.res.Configuration.UI_MODE_NIGHT_YES
+        }
+
+        composeView.setContent {
+            com.prirai.android.lr.ui.theme.LRTheme(
+                darkTheme = isDark,
+                isPrivateMode = browsingModeManager.mode == BrowsingMode.Private,
+                amoledMode = userPreferences.amoledMode,
+                dynamicColor = userPreferences.dynamicColors
+            ) {
+                com.prirai.android.lr.browser.profile.ProfileEditDialog(
+                    profile = profile,
+                    onDismiss = {
+                        (composeView.parent as? ViewGroup)?.removeView(composeView)
+                    },
+                    onConfirm = { name, color, emoji ->
+                        val profileManager =
+                            com.prirai.android.lr.browser.profile.ProfileManager.getInstance(requireContext())
+                        val updatedProfile = profile.copy(name = name, color = color, emoji = emoji)
+                        profileManager.updateProfile(updatedProfile)
+
+                        if (profile.id == browsingModeManager.currentProfile.id) {
+                            browsingModeManager.currentProfile = updatedProfile
+                        }
+
+                        profileStateTrigger.value++
+
+                        (composeView.parent as? ViewGroup)?.removeView(composeView)
+                    },
+                    onDelete = {
+                        val profileManager =
+                            com.prirai.android.lr.browser.profile.ProfileManager.getInstance(requireContext())
+
+                        if (profile.id == browsingModeManager.currentProfile.id) {
+                            browsingModeManager.currentProfile =
+                                com.prirai.android.lr.browser.profile.BrowserProfile.getDefaultProfile()
+                        }
+
+                        profileManager.deleteProfile(profile.id)
+
+                        profileStateTrigger.value++
+                        (composeView.parent as? ViewGroup)?.removeView(composeView)
+                    },
+                    onExport = {
+                        (composeView.parent as? ViewGroup)?.removeView(composeView)
+                        lifecycleScope.launch {
+                            try {
+                                val exportManager = com.prirai.android.lr.browser.profile.ProfileExportManager
+                                    .getInstance(requireContext())
+                                val zipUri = exportManager.exportProfile(profile)
+                                val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                    type = "application/zip"
+                                    putExtra(android.content.Intent.EXTRA_STREAM, zipUri)
+                                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                startActivity(
+                                    android.content.Intent.createChooser(shareIntent, "Share Profile")
+                                )
+                            } catch (e: Exception) {
+                                android.widget.Toast.makeText(
+                                    requireContext(),
+                                    "Export failed: ${e.message}",
+                                    android.widget.Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
+                    }
+                )
+            }
+        }
+
+        (binding.root as ViewGroup).addView(composeView)
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        
+        // Notify that the tab sheet was dismissed to trigger auto-scroll in tab bar
+        com.prirai.android.lr.browser.tabs.compose.TabSheetStateManager.notifyTabSheetDismissed()
+        
+        _binding = null
+    }
+
+    // ============ NEW FLAT ADAPTER SYSTEM ============
+
+    private fun setupComposeTabViews() {
+        // Hide RecyclerView
+        // Hide the RecyclerView anchors - the Compose tab sheet renders
+        // everything; tabsRecyclerView stays as the ComposeView's layout
+        // anchor (parent + LayoutParams).
+        binding.tabsRecyclerView.visibility = View.GONE
+
+        // Find parent container
+        val container = binding.tabsRecyclerView.parent as? ViewGroup ?: return
+
+        // Remove existing compose view if any
+        container.findViewWithTag<androidx.compose.ui.platform.ComposeView>("tabs_compose")?.let {
+            container.removeView(it)
+        }
+
+        // Add ComposeView
+        val composeView = androidx.compose.ui.platform.ComposeView(requireContext()).apply {
+            tag = "tabs_compose"
+            setContent {
+                // Read AMOLED preference
+                val prefs = com.prirai.android.lr.preferences.UserPreferences(requireContext())
+                val isAmoledActive = prefs.amoledMode
+                
+                com.prirai.android.lr.ui.theme.LRTheme(amoledMode = isAmoledActive) {
+                    ComposeTabContent()
+                }
+            }
+        }
+
+        // Add to container with same layout params as RecyclerView
+        val layoutParams = binding.tabsRecyclerView.layoutParams
+        composeView.layoutParams = layoutParams
+        container.addView(composeView)
+    }
+
+    @Composable
+    private fun ComposeTabContent() {
+        // Menu state
+        val showMenu by showMenuState
+        val menuTab by menuTabState
+        val menuIsInGroup by menuIsInGroupState
+
+        // Create ViewModel once and store it. TabViewModel.closeTab() now
+        // performs removal + undo via TabsUseCases + UndoMiddleware directly,
+        // so onTabRemove / onTabRestore glue is no longer needed here.
+        val viewModel = remember {
+            TabViewModel(requireContext(), unifiedGroupManager).also {
+                tabViewModel = it
+            }
+        }
+
+        // Set up global snackbar manager scope
+        val scope = rememberCoroutineScope()
+        LaunchedEffect(Unit) {
+            com.prirai.android.lr.browser.tabs.compose.GlobalSnackbarManager.getInstance().coroutineScope = scope
+        }
+
+        // Get snackbar host state from global manager
+        val snackbarHostState =
+            com.prirai.android.lr.browser.tabs.compose.GlobalSnackbarManager.getInstance().snackbarHostState
+
+        // Load tabs for current profile - trigger recomposition on profile/mode changes
+        val trigger by profileStateTrigger
+        LaunchedEffect(trigger) {
+            val store = requireContext().components.store
+            val browsingMode = browsingModeManager.mode
+            val currentProfile = browsingModeManager.currentProfile
+            val isPrivateMode = browsingMode.isPrivate
+            val profileId = if (isPrivateMode) "private" else currentProfile.id
+
+            // Helper to filter tabs
+            fun filterTabs(tabs: List<TabSessionState>) = tabs.filter { tab ->
+                val tabIsPrivate = tab.content.private
+                if (tabIsPrivate != isPrivateMode) {
+                    false
+                } else if (isPrivateMode) {
+                    tab.contextId == "private"
+                } else {
+                    val expectedContextId = "profile_${currentProfile.id}"
+                    // Default profile shows null contextId tabs, other profiles don't
+                    if (currentProfile.id == "default") {
+                        (tab.contextId == expectedContextId) || (tab.contextId == null)
+                    } else {
+                        tab.contextId == expectedContextId
+                    }
+                }
+            }
+
+            // Collect store updates
+            launch {
+                store.flowScoped(viewLifecycleOwner, Dispatchers.Main) { flow ->
+                    flow.collect { state ->
+                        val filteredTabs = filterTabs(state.tabs)
+                        viewModel.loadTabsForProfile(profileId, filteredTabs, state.selectedTabId)
+                    }
+                }
+            }
+
+            // Listen to group events and trigger refresh
+            launch {
+                unifiedGroupManager.groupEvents.collect { event ->
+                    // When groups change, force a refresh with current store state
+                    val state = store.state
+                    val filteredTabs = filterTabs(state.tabs)
+                    viewModel.loadTabsForProfile(profileId, filteredTabs, state.selectedTabId)
+                }
+            }
+        }
+
+        // Use Scaffold for proper snackbar positioning
+        Scaffold(
+            snackbarHost = {
+                SnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier = Modifier.padding(bottom = 80.dp) // Above bottom buttons
+                )
+            }
+        ) { paddingValues ->
+            val isGridView by isGridViewState
+            val tabs by viewModel.tabs.collectAsState()
+            val selectedPage by selectedPageState
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                // Header: big tab count, search, list/grid toggle
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 24.dp, end = 12.dp, top = 20.dp, bottom = 8.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (selectedPage == 0) {
+                            pluralStringResource(R.plurals.tab_count, tabs.size, tabs.size)
+                        } else {
+                            stringResource(R.string.profiles)
+                        },
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                // Page tabs: swap between the tab cards and the profile cards
+                TabRow(
+                    selectedTabIndex = selectedPage,
+                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Tab(
+                        selected = selectedPage == 0,
+                        onClick = { selectedPageState.value = 0 },
+                        text = { Text(stringResource(R.string.tabs)) }
+                    )
+                    Tab(
+                        selected = selectedPage == 1,
+                        onClick = { selectedPageState.value = 1 },
+                        text = { Text(stringResource(R.string.profiles)) }
+                    )
+                }
+
+                // Wrapper Box to hold tabs and menu overlay
+                if (selectedPage == 1) {
+                    val trigger by profileStateTrigger
+                    val profiles = remember(trigger) {
+                        com.prirai.android.lr.browser.profile.ProfileManager
+                            .getInstance(requireContext())
+                            .getAllProfiles()
+                    }
+                    val tabCounts = remember(trigger, tabs.size) {
+                        val allTabs = requireContext().components.store.state.tabs
+                        val byContext = HashMap<String?, Int>()
+                        var privateCount = 0
+                        allTabs.forEach { tab ->
+                            if (tab.content.private) privateCount++
+                            else byContext[tab.contextId] = (byContext[tab.contextId] ?: 0) + 1
+                        }
+                        byContext to privateCount
+                    }
+                    ProfileCardsPage(
+                        profiles = profiles,
+                        currentProfileId = browsingModeManager.currentProfile.id,
+                        isPrivateMode = browsingModeManager.mode == BrowsingMode.Private,
+                        tabCountFor = { profile ->
+                            val counts = tabCounts.first
+                            if (profile.id == "default") {
+                                (counts[null] ?: 0) + (counts["profile_default"] ?: 0)
+                            } else {
+                                counts["profile_${profile.id}"] ?: 0
+                            }
+                        },
+                        privateTabCount = tabCounts.second,
+                        onProfileClick = { profile ->
+                            switchToProfile(profile.id, false)
+                            selectedPageState.value = 0
+                        },
+                        onProfileLongClick = { profile -> showProfileEditDialog(profile) },
+                        onPrivateClick = {
+                            switchToProfile("private", true)
+                            selectedPageState.value = 0
+                        },
+                        onAddClick = { showProfileCreateDialog() },
+                        modifier = Modifier.weight(1f)
+                    )
+                } else Box(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    // Choose view based on grid mode
+                    if (isGridView) {
+                        TabSheetGridView(
+                            viewModel = viewModel,
+                            orderManager = composeOrderManager!!,
+                            onTabClick = ::handleTabClickCompose,
+                            onTabClose = ::handleTabCloseCompose,
+                            onTabLongPress = ::handleTabLongPressCompose,
+                            onGroupClick = { groupId ->
+                                viewModel.toggleGroupExpanded(groupId)
+                            },
+                            onGroupOptionsClick = { groupId ->
+                                // Show group options menu - could be enhanced
+                            }
+                        )
+                    } else {
+                        TabSheetListView(
+                            viewModel = viewModel,
+                            orderManager = composeOrderManager!!,
+                            onTabClick = ::handleTabClickCompose,
+                            onTabClose = ::handleTabCloseCompose,
+                            onTabLongPress = ::handleTabLongPressCompose,
+                            onGroupClick = { groupId ->
+                                viewModel.toggleGroupExpanded(groupId)
+                            },
+                            onGroupOptionsClick = { groupId ->
+                                // Show group options menu - could be enhanced
+                            }
+                        )
+                    }
+
+                    // Menu overlay - shows at bottom when tab is long-pressed
+                    if (showMenu && menuTab != null) {
+                        // Clickable background to dismiss menu when clicking outside
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clickable(
+                                    indication = null,
+                                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                                ) {
+                                    showMenuState.value = false
+                                    menuTabState.value = null
+                                }
+                        )
+
+                        TabContextMenu(
+                            tab = menuTab!!,
+                            isInGroup = menuIsInGroup,
+                            onDismiss = {
+                                showMenuState.value = false
+                                menuTabState.value = null
+                            },
+                            onMoveToProfile = {
+                                showMoveToProfileDialog(listOf(menuTab!!.id))
+                                showMenuState.value = false
+                                menuTabState.value = null
+                            },
+                            onRemoveFromGroup = {
+                                lifecycleScope.launch {
+                                    tabViewModel?.removeTabFromGroup(menuTab!!.id)
+                                }
+                                showMenuState.value = false
+                                menuTabState.value = null
+                            },
+                            modifier = Modifier
+                                .align(androidx.compose.ui.Alignment.BottomCenter)
+                                .fillMaxWidth()
+                        )
+                    }
+                }
+
+                // Bottom action bar: search, list/grid toggle and + (new tab /
+                // new profile). Hidden while the long-press menu is up.
+                if (!showMenu) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding(),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp, androidx.compose.ui.Alignment.End)
+                        ) {
+                            if (selectedPage == 0) {
+                                FilledTonalIconButton(onClick = { showTabSearch() }) {
+                                    Icon(Icons.Rounded.Search, contentDescription = stringResource(R.string.search_tabs_bookmarks_history))
+                                }
+                                FilledTonalIconButton(
+                                    onClick = {
+                                        val newValue = !isGridView
+                                        isGridViewState.value = newValue
+                                        viewPrefs.edit { putBoolean("is_grid_view", newValue) }
+                                    }
+                                ) {
+                                    if (isGridView) {
+                                        Icon(Icons.Rounded.ViewList, contentDescription = stringResource(R.string.list_view))
+                                    } else {
+                                        Icon(Icons.Rounded.GridView, contentDescription = stringResource(R.string.grid_view))
+                                    }
+                                }
+                                FilledIconButton(
+                                    onClick = {
+                                        addNewTab()
+                                        // Post dismiss to avoid touch event recycling crash
+                                        view?.post { dismiss() }
+                                    }
+                                ) {
+                                    Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.new_tab))
+                                }
+                            } else {
+                                FilledIconButton(onClick = { showProfileCreateDialog() }) {
+                                    Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.create_profile))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun handleTabClickCompose(tabId: String) {
+        lifecycleScope.launch {
+            // Get the tab to check its context
+            val store = requireContext().components.store
+            val tab = store.state.tabs.find { it.id == tabId }
+
+            if (tab != null) {
+                // Switch profile/mode if needed based on tab's context
+                val isPrivate = tab.content.private
+                val tabContextId = tab.contextId
+
+                if (isPrivate) {
+                    // Switch to private mode
+                    if (browsingModeManager.mode != BrowsingMode.Private) {
+                        browsingModeManager.mode = BrowsingMode.Private
+                    }
+                } else {
+                    // Switch to normal mode and determine profile
+                    if (browsingModeManager.mode != BrowsingMode.Normal) {
+                        browsingModeManager.mode = BrowsingMode.Normal
+                    }
+
+                    // Switch profile if needed
+                    val profileManager =
+                        com.prirai.android.lr.browser.profile.ProfileManager.getInstance(requireContext())
+                    when {
+                        tabContextId == null || tabContextId == "profile_default" -> {
+                            // Default profile
+                            val defaultProfile = profileManager.getAllProfiles().find { it.id == "default" }
+                            if (defaultProfile != null && browsingModeManager.currentProfile.id != "default") {
+                                profileManager.setActiveProfile(defaultProfile)
+                                browsingModeManager.currentProfile = defaultProfile
+                            }
+                        }
+
+                        tabContextId.startsWith("profile_") -> {
+                            // Other profile
+                            val profileId = tabContextId.removePrefix("profile_")
+                            val targetProfile = profileManager.getAllProfiles().find { it.id == profileId }
+                            if (targetProfile != null && browsingModeManager.currentProfile.id != profileId) {
+                                profileManager.setActiveProfile(targetProfile)
+                                browsingModeManager.currentProfile = targetProfile
+                            }
+                        }
+                    }
+                }
+            }
+
+            requireContext().components.tabsUseCases.selectTab(tabId)
+            dismiss()
+        }
+    }
+
+    private fun handleTabCloseCompose(tabId: String) {
+        // Use ViewModel's closeTab with undo support
+        // The actual deletion will be handled by the onTabDeleteConfirmed callback
+        tabViewModel?.closeTab(tabId, showUndo = true)
+    }
+
+    private fun handleTabLongPressCompose(tab: TabSessionState, isInGroup: Boolean) {
+        // Show menu in place of profile switcher
+        menuTabState.value = tab
+        menuIsInGroupState.value = isInGroup
+        showMenuState.value = true
+    }
+
+    @Composable
+    private fun TabContextMenu(
+        tab: TabSessionState,
+        isInGroup: Boolean,
+        onDismiss: () -> Unit,
+        onMoveToProfile: () -> Unit,
+        onRemoveFromGroup: () -> Unit,
+        modifier: Modifier = Modifier
+    ) {
+        androidx.compose.animation.AnimatedVisibility(
+            visible = true,
+            enter = androidx.compose.animation.slideInVertically(
+                animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
+            ) { it } + androidx.compose.animation.fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
+            exit = androidx.compose.animation.slideOutVertically(
+                animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
+            ) { it } + androidx.compose.animation.fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
+            modifier = modifier
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                tonalElevation = 0.dp,
+                shadowElevation = 0.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(8.dp)
+                ) {
+                    // Tab title
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = tab.content.title.ifEmpty { stringResource(R.string.tab) },
+                            style = MaterialTheme.typography.titleMediumEmphasized,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        IconButton(onClick = onDismiss) {
+                            Icon(
+                                imageVector = androidx.compose.material.icons.Icons.Default.Close,
+                                contentDescription = stringResource(R.string.close_menu)
+                            )
+                        }
+                    }
+
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+
+                    // Menu options
+                    if (isInGroup) {
+                        MenuOption(
+                            icon = androidx.compose.material.icons.Icons.Default.Clear,
+                            text = stringResource(R.string.remove_from_island),
+                            onClick = onRemoveFromGroup
+                        )
+                    }
+
+                    MenuOption(
+                        icon = androidx.compose.material.icons.Icons.Default.AccountCircle,
+                        text = stringResource(R.string.move_to_profile),
+                        onClick = onMoveToProfile
+                    )
+
+                    MenuOption(
+                        icon = androidx.compose.material.icons.Icons.Default.Close,
+                        text = stringResource(R.string.menu_close_tab),
+                        onClick = {
+                            handleTabCloseCompose(tab.id)
+                            onDismiss()
+                        },
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun MenuOption(
+        icon: androidx.compose.ui.graphics.vector.ImageVector,
+        text: String,
+        onClick: () -> Unit,
+        contentColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface
+    ) {
+        ListItem(
+            headlineContent = {
+                Text(
+                    text = text,
+                    color = contentColor
+                )
+            },
+            leadingContent = {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = contentColor
+                )
+            },
+            modifier = Modifier.clickable(onClick = onClick)
+        )
+    }
+}

@@ -1,0 +1,753 @@
+package com.prirai.android.lr
+
+import android.content.ComponentCallbacks2
+import android.content.Context
+import android.content.Intent
+import android.os.Bundle
+import android.util.AttributeSet
+import android.view.View
+import androidx.activity.OnBackPressedCallback
+import androidx.annotation.IdRes
+import androidx.annotation.VisibleForTesting
+import androidx.appcompat.app.ActionBar
+import androidx.appcompat.widget.Toolbar
+import androidx.core.view.ViewCompat
+import androidx.fragment.app.FragmentManager
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavDirections
+import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.ui.AppBarConfiguration
+import androidx.navigation.ui.NavigationUI
+import com.prirai.android.lr.addons.WebExtensionPopupFragment
+import com.prirai.android.lr.addons.WebExtensionTabletPopupFragment
+import com.prirai.android.lr.browser.BrowsingMode
+import com.prirai.android.lr.browser.BrowsingModeManager
+import com.prirai.android.lr.browser.DefaultBrowsingModeManager
+import com.prirai.android.lr.browser.SearchEngineList
+import com.prirai.android.lr.browser.SearchEnginePreferences
+import com.prirai.android.lr.databinding.ActivityMainBinding
+import com.prirai.android.lr.ext.alreadyOnDestination
+import com.prirai.android.lr.ext.components
+import com.prirai.android.lr.ext.enableEdgeToEdgeMode
+import com.prirai.android.lr.ext.nav
+import com.prirai.android.lr.preferences.UserPreferences
+import com.prirai.android.lr.search.SearchDialogFragmentDirections
+import com.prirai.android.lr.utils.Utils
+import kotlinx.coroutines.launch
+import mozilla.components.browser.state.action.AppLifecycleAction
+import mozilla.components.browser.state.search.SearchEngine
+import mozilla.components.browser.state.state.WebExtensionState
+import mozilla.components.browser.state.state.selectedOrDefaultSearchEngine
+import mozilla.components.concept.engine.EngineSession
+import mozilla.components.concept.engine.EngineView
+import mozilla.components.feature.contextmenu.ext.DefaultSelectionActionDelegate
+import mozilla.components.support.base.feature.ActivityResultHandler
+import mozilla.components.support.base.feature.UserInteractionHandler
+import mozilla.components.support.ktx.kotlin.isUrl
+import mozilla.components.support.ktx.kotlin.toNormalizedUrl
+import mozilla.components.support.locale.LocaleAwareAppCompatActivity
+import mozilla.components.support.utils.SafeIntent
+import mozilla.components.support.webextensions.WebExtensionPopupObserver
+
+
+/**
+ * Activity that holds the [BrowserFragment].
+ */
+open class BrowserActivity : LocaleAwareAppCompatActivity(), ComponentCallbacks2, NavHostActivity {
+
+    lateinit var binding: ActivityMainBinding
+
+    lateinit var browsingModeManager: BrowsingModeManager
+    private lateinit var currentTheme: BrowsingMode
+
+    private var isToolbarInflated = false
+    private lateinit var navigationToolbar: Toolbar
+
+    private val navHost by lazy {
+        supportFragmentManager.findFragmentById(R.id.container) as NavHostFragment
+    }
+
+    private val externalSourceIntentProcessors by lazy {
+        listOf(
+            OpenBrowserIntentProcessor(this, ::getIntentSessionId),
+            OpenSpecificTabIntentProcessor(this)
+        )
+    }
+
+    private val webExtensionPopupFeature by lazy {
+        WebExtensionPopupObserver(components.store, ::openPopup)
+    }
+
+    private var originalContext: Context? = null
+
+    private var lastToolbarPosition: Int = 0
+
+    /**
+     * True while this activity is finishing only to hand the first launch over
+     * to [com.prirai.android.lr.onboarding.OnboardingActivity]. The
+     * task-removal teardown in [onDestroy] must not run in that case: the
+     * onboarding lives in this same process, and `killProcess` here took the
+     * just-displayed onboarding down with it (visible as the app dying
+     * ~100ms after the onboarding appeared on a fresh install).
+     */
+    private var handingOffToOnboarding = false
+
+    protected open fun getIntentSessionId(intent: SafeIntent): String? = null
+
+    @VisibleForTesting
+    internal fun isActivityColdStarted(startingIntent: Intent, activityIcicle: Bundle?): Boolean {
+        return activityIcicle == null && startingIntent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY == 0
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        // Switch from splash theme to regular theme immediately
+        setTheme(R.style.AppThemeNotActionBar)
+
+        // Apply user theme preferences
+        com.prirai.android.lr.theme.ThemeManager.applyTheme(this)
+
+        // Single UserPreferences instance reused for the whole onCreate.
+        // Each `UserPreferences(this)` construction wraps the same cached
+        // SharedPreferences but still allocates property delegates; the
+        // previous code constructed one five times here.
+        val prefs = UserPreferences(this)
+
+        // Apply Material 3 dynamic colors (Material You) on Android 12+ if enabled.
+        // ThemeManager.shouldUseDynamicColors already folds in the SDK gate
+        // and the pref read, so we delegate to it instead of duplicating the
+        // check with a fresh UserPreferences construction.
+        if (com.prirai.android.lr.theme.ThemeManager.shouldUseDynamicColors(this)) {
+            com.google.android.material.color.DynamicColors.applyToActivityIfAvailable(this)
+        }
+
+        super.onCreate(savedInstanceState)
+
+        // Check for first launch and show onboarding
+        if (prefs.firstLaunch) {
+            val intent = Intent(this, com.prirai.android.lr.onboarding.OnboardingActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            handingOffToOnboarding = true
+            startActivity(intent)
+            finish()
+            return
+        }
+
+        // OPTIMIZATION: Don't access components.publicSuffixList here - defer it
+        // This was triggering lazy initialization chain
+
+        val profileManager = com.prirai.android.lr.browser.profile.ProfileManager.getInstance(this)
+        val initialProfile = profileManager.getActiveProfile()
+        val isPrivate = prefs.lastKnownPrivate
+
+        // Sync ProfileManager's private mode state with BrowsingModeManager
+        profileManager.setPrivateMode(isPrivate)
+
+        browsingModeManager = createBrowsingModeManager(
+            if (isPrivate) BrowsingMode.Private else BrowsingMode.Normal,
+            initialProfile
+        )
+        currentTheme = browsingModeManager.mode
+
+        // Tab-group management goes through `context.components.tabGroupManager`
+        // (a UnifiedTabGroupManager singleton). The legacy `TabGroupManager`
+        // that used to live here has been deleted - no callsite ever read it.
+
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        val view = binding.root
+
+        setContentView(view)
+
+        lastToolbarPosition = prefs.toolbarPosition
+
+        // OPTIMIZATION: Defer search engine setup to after first frame
+        // This was accessing components.store.state which triggers heavy initialization
+        view.post {
+            lifecycleScope.launch {
+                SearchEnginePreferences.apply(this@BrowserActivity, private = false)
+                if (UserPreferences(this@BrowserActivity).privateSearchEngineChoice >= 0) {
+                    SearchEnginePreferences.apply(this@BrowserActivity, private = true)
+                }
+            }
+            // publicSuffixList.prefetch() moved to BrowserApp.initializeAfterFirstFrame
+            // so it runs once per process on IO instead of on every Activity start
+            // against the main thread.
+        }
+
+        if (isActivityColdStarted(intent, savedInstanceState) &&
+            !externalSourceIntentProcessors.any { it.process(intent, navHost.navController, this.intent) }
+        ) {
+            navigateToBrowserOnColdStart()
+        }
+
+        // Theme + DynamicColors already applied at the top of onCreate (lines
+        // 101/105-107) before super.onCreate(). The previous duplicate pass
+        // here forced AppCompatDelegate.setDefaultNightMode and another
+        // DynamicColors.applyToActivityIfAvailable call plus a second
+        // UserPreferences construction - all redundant.
+
+        // Register lifecycle observer to capture state on background
+        lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onPause(owner: LifecycleOwner) {
+                // App going to background - trigger state capture
+                components.store.dispatch(AppLifecycleAction.PauseAction)
+                // Aggressive sleeping tabs: suspend everything except the selected tab.
+                components.sleepingTabsManager.onAppBackgrounded(components.store)
+            }
+
+            override fun onResume(owner: LifecycleOwner) {
+                // App coming to foreground
+                components.store.dispatch(AppLifecycleAction.ResumeAction)
+            }
+        })
+
+        // Enable edge-to-edge display with standardized approach
+        enableEdgeToEdgeMode()
+
+        // Root view handles insets without padding - fragments manage their own insets
+        ViewCompat.setOnApplyWindowInsetsListener(view) { _, insets -> insets }
+
+        // Must run BEFORE STARTED/RESUMED: NotificationsDelegate.bindToActivity
+        // calls registerForActivityResult which androidx.activity rejects
+        // after STARTED with
+        //   "LifecycleOwner ... is attempting to register while current state is RESUMED"
+        // An earlier revision deferred this into view.post - that crashed on
+        // launch because view.post runs after STARTED.
+        components.notificationsDelegate.bindToActivity(this)
+
+        // OPTIMIZATION: Defer non-critical component initialization to after first frame.
+        view.post {
+            components.appRequestInterceptor.setNavController(navHost.navController)
+
+            // Clean up orphaned thumbnails on app start
+            lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                cleanupOrphanedThumbnails()
+            }
+
+            // One-time migration popup: DefaultProfileTabMigration flips the pref below
+            // during BrowserStore restore. We poll briefly because restore is launched
+            // asynchronously from BrowserApp.onCreate and may not have dispatched yet.
+            maybeShowDefaultProfileMigrationPopup()
+        }
+
+        // Setup OnBackPressedDispatcher callback to replace deprecated onBackPressed()
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                supportFragmentManager.primaryNavigationFragment?.childFragmentManager?.fragments?.forEach {
+                    if (it is UserInteractionHandler && it.onBackPressed()) {
+                        return
+                    }
+                }
+                // If no fragment handled it, let the system handle it
+                isEnabled = false
+                onBackPressedDispatcher.onBackPressed()
+                isEnabled = true
+            }
+        })
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Register lifecycle observer here - must be done before RESUMED state
+        // This still defers the components initialization but meets lifecycle requirements
+        lifecycle.addObserver(webExtensionPopupFeature)
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        val currentPosition = UserPreferences(this).toolbarPosition
+        if (currentPosition != lastToolbarPosition) {
+            lastToolbarPosition = currentPosition
+            recreate()
+        }
+
+        // Update toolbar and status bar theme immediately
+        updateToolbarAndStatusBarTheme()
+
+    }
+
+    /**
+     * Detect task-removal shutdown and tear everything down so the
+     * process can actually exit.
+     *
+     * `isFinishing && isTaskRoot` triggers in exactly two cases:
+     *   - user swipes LR from recents (whole task is destroyed)
+     *   - user hits the back-key on the root browser activity until
+     *     it finishes
+     *
+     * `isChangingConfigurations` is excluded so a rotation does not
+     * trip the shutdown. In those cases we:
+     *   1. Stop the retained `MediaSessionFeature`. This cancels the
+     *      store-observing scope so no further `showMediaStatus`
+     *      calls can re-bind the service.
+     *   2. Explicitly `stopService(MediaSessionService)` so AC's
+     *      bound-service connection is torn down. Without this the
+     *      service lingers because AC's `handleNoMedia` path only
+     *      triggers when `findActiveMediaTab()` returns null, which
+     *      doesn't happen on task-removal (the tab is still in the
+     *      store, just no longer visible).
+     *   3. `Process.killProcess(myPid())` as a final defensive step.
+     *      Without this the Gecko child services (tab_*, gpu_*,
+     *      utility_*, crashhelper) keep the UID group alive via
+     *      their own bindings. Explicitly killing our pid cascades
+     *      through those children.
+     */
+    override fun onDestroy() {
+        val taskGone =
+            isFinishing && isTaskRoot && !isChangingConfigurations && !handingOffToOnboarding
+        super.onDestroy()
+        if (!taskGone) return
+
+        try {
+            components.mediaSessionFeature.stop()
+        } catch (t: Throwable) {
+            android.util.Log.w(TAG, "mediaSessionFeature.stop() failed", t)
+        }
+        try {
+            stopService(
+                Intent(this, com.prirai.android.lr.media.MediaSessionService::class.java),
+            )
+        } catch (t: Throwable) {
+            android.util.Log.w(TAG, "stopService(MediaSessionService) failed", t)
+        }
+
+        android.util.Log.i(TAG, "Task removed; killing process to force Gecko child-service teardown")
+        android.os.Process.killProcess(android.os.Process.myPid())
+    }
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+
+        // Only touch the heavy singletons when the signal actually matters.
+        // `TRIM_MEMORY_UI_HIDDEN` (20) fires on every HOME press, lock, and
+        // app-switch - 2-3 times per minute during normal use. The previous
+        // implementation called `components.sleepingTabsManager.onTrimMemory`
+        // unconditionally, which:
+        //   - triggered the `by lazy` construction of SleepingTabsManager on
+        //     the very first HOME press, pulling in UserPreferences and
+        //     constructing a singleton for a code path that then early-exits.
+        //   - still ran two pref reads + an int compare inside the function
+        //     body even when the level was non-actionable.
+        // The field logcat showed battery-uevent noise waking the trim path
+        // 2x per 10s on charge; gating here removes that CPU cost.
+        //
+        // The thresholds match SleepingTabsManager.onTrimMemory's internal
+        // gating so we're never shadowing a decision - just moving it
+        // outward.
+        if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW ||
+            level == ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL
+        ) {
+            // Delegate engine-session suspension to SleepingTabsManager, which
+            // dispatches SuspendEngineSessionAction (saves state, unlinks, closes).
+            // The previous implementation called engineSession.close() directly,
+            // which left dangling references in the store and caused tab ghosting
+            // (see fix for tab ghosting bug on release builds).
+            components.sleepingTabsManager.onTrimMemory(components.store, level)
+        }
+
+        when {
+            level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW -> {
+                lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                    cleanupOrphanedThumbnails()
+                }
+            }
+            level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND -> {
+                components.icons.onTrimMemory(level)
+            }
+        }
+    }
+
+    final override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // TODO: temporary fix
+        openToBrowser(BrowserDirection.FromGlobal)
+        intent.let {
+            handleNewIntent(it)
+        }
+    }
+
+    open fun handleNewIntent(intent: Intent) {
+        val intentProcessors = externalSourceIntentProcessors
+        val intentHandled =
+            intentProcessors.any { it.process(intent, navHost.navController, this.intent) }
+
+        // Default mode already set in onCreate
+        if (intentHandled) {
+            supportFragmentManager
+                .primaryNavigationFragment
+                ?.childFragmentManager
+                ?.fragments
+                ?.lastOrNull()
+        }
+    }
+
+    open fun navigateToBrowserOnColdStart() {
+        if (!browsingModeManager.mode.isPrivate) {
+            openToBrowser(BrowserDirection.FromGlobal, null)
+        }
+    }
+
+    protected open fun createBrowsingModeManager(
+        initialMode: BrowsingMode,
+        initialProfile: com.prirai.android.lr.browser.profile.BrowserProfile
+    ): BrowsingModeManager {
+        return DefaultBrowsingModeManager(
+            initialMode,
+            initialProfile,
+            UserPreferences(this),
+            { newMode ->
+                // Update current theme but don't recreate - profile switching handles UI updates
+                currentTheme = newMode
+                // Save the private mode state to both preferences for consistency
+                UserPreferences(this).lastKnownPrivate = newMode.isPrivate
+                com.prirai.android.lr.browser.profile.ProfileManager.getInstance(this)
+                    .setPrivateMode(newMode.isPrivate)
+            },
+            { newProfile ->
+                // Profile changed - save to ProfileManager
+                com.prirai.android.lr.browser.profile.ProfileManager.getInstance(this).setActiveProfile(newProfile)
+            }
+        )
+    }
+
+    override fun onCreateView(parent: View?, name: String, context: Context, attrs: AttributeSet): View? =
+        when (name) {
+            EngineView::class.java.name -> components.engine.createView(context, attrs).apply {
+                selectionActionDelegate = DefaultSelectionActionDelegate(
+                    store = components.store,
+                    context = context
+                )
+            }.asView()
+
+            else -> super.onCreateView(parent, name, context, attrs)
+        }
+
+    override fun getSupportActionBarAndInflateIfNecessary(): ActionBar {
+        // Don't inflate navigation toolbar when using bottom toolbar
+        if (UserPreferences(this).shouldUseBottomToolbar) {
+            // Return a dummy action bar to satisfy the interface
+            // The bottom toolbar doesn't need an ActionBar
+            @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+            return object : ActionBar() {
+                override fun setCustomView(view: View?) {}
+                override fun setCustomView(view: View?, layoutParams: LayoutParams?) {}
+                override fun setCustomView(resId: Int) {}
+                override fun setIcon(resId: Int) {}
+                override fun setIcon(icon: android.graphics.drawable.Drawable?) {}
+                override fun setLogo(resId: Int) {}
+                override fun setLogo(logo: android.graphics.drawable.Drawable?) {}
+                override fun setListNavigationCallbacks(
+                    adapter: android.widget.SpinnerAdapter?,
+                    callback: OnNavigationListener?
+                ) {
+                }
+
+                override fun setSelectedNavigationItem(position: Int) {}
+                override fun getSelectedNavigationIndex(): Int = 0
+                override fun getNavigationItemCount(): Int = 0
+                override fun setTitle(title: CharSequence?) {}
+                override fun setTitle(resId: Int) {}
+                override fun setSubtitle(subtitle: CharSequence?) {}
+                override fun setSubtitle(resId: Int) {}
+                override fun setDisplayOptions(options: Int) {}
+                override fun setDisplayOptions(options: Int, mask: Int) {}
+                override fun setDisplayUseLogoEnabled(useLogo: Boolean) {}
+                override fun setDisplayShowHomeEnabled(showHome: Boolean) {}
+                override fun setDisplayHomeAsUpEnabled(showHomeAsUp: Boolean) {}
+                override fun setDisplayShowTitleEnabled(showTitle: Boolean) {}
+                override fun setDisplayShowCustomEnabled(showCustom: Boolean) {}
+                override fun setBackgroundDrawable(d: android.graphics.drawable.Drawable?) {}
+                override fun getThemedContext(): Context = this@BrowserActivity
+                override fun getCustomView(): View? = null
+                override fun getTitle(): CharSequence? = null
+                override fun getSubtitle(): CharSequence? = null
+                override fun getNavigationMode(): Int = NAVIGATION_MODE_STANDARD
+                override fun setNavigationMode(mode: Int) {}
+                override fun getDisplayOptions(): Int = 0
+                override fun newTab(): Tab? = null
+                override fun addTab(tab: Tab?) {}
+                override fun addTab(tab: Tab?, setSelected: Boolean) {}
+                override fun addTab(tab: Tab?, position: Int) {}
+                override fun addTab(tab: Tab?, position: Int, setSelected: Boolean) {}
+                override fun removeTab(tab: Tab?) {}
+                override fun removeTabAt(position: Int) {}
+                override fun removeAllTabs() {}
+                override fun selectTab(tab: Tab?) {}
+                override fun getSelectedTab(): Tab? = null
+                override fun getTabAt(index: Int): Tab? = null
+                override fun getTabCount(): Int = 0
+                override fun getHeight(): Int = 0
+                override fun show() {}
+                override fun hide() {}
+                override fun isShowing(): Boolean = false
+                override fun addOnMenuVisibilityListener(listener: OnMenuVisibilityListener?) {}
+                override fun removeOnMenuVisibilityListener(listener: OnMenuVisibilityListener?) {}
+                override fun setHomeButtonEnabled(enabled: Boolean) {}
+                override fun setHomeAsUpIndicator(resId: Int) {}
+                override fun setHomeAsUpIndicator(indicator: android.graphics.drawable.Drawable?) {}
+                override fun setHomeActionContentDescription(resId: Int) {}
+                override fun setHomeActionContentDescription(description: CharSequence?) {}
+                override fun setHideOnContentScrollEnabled(hideOnContentScroll: Boolean) {}
+                override fun isHideOnContentScrollEnabled(): Boolean = false
+                override fun getHideOffset(): Int = 0
+                override fun setHideOffset(offset: Int) {}
+                override fun setElevation(elevation: Float) {}
+                override fun getElevation(): Float = 0f
+            }
+        }
+
+        if (!isToolbarInflated) {
+            navigationToolbar = binding.navigationToolbarStub.inflate() as Toolbar
+
+            setSupportActionBar(navigationToolbar)
+            // Add ids to this that we don't want to have a toolbar back button
+            setupNavigationToolbar()
+
+            isToolbarInflated = true
+        }
+
+        navigationToolbar.visibility = View.VISIBLE
+        navigationToolbar.layoutParams?.apply {
+            height = resources.getDimensionPixelSize(R.dimen.browser_toolbar_height)
+            width = android.view.ViewGroup.LayoutParams.MATCH_PARENT
+        }
+
+        return supportActionBar!!
+    }
+
+    final override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        supportFragmentManager.primaryNavigationFragment?.childFragmentManager?.fragments?.forEach {
+            if (it is ActivityResultHandler && it.onActivityResult(requestCode, data, resultCode)) {
+                return
+            }
+        }
+        super.onActivityResult(requestCode, resultCode, data)
+    }
+
+    fun setupNavigationToolbar(vararg topLevelDestinationIds: Int) {
+        NavigationUI.setupWithNavController(
+            navigationToolbar,
+            navHost.navController,
+            AppBarConfiguration.Builder(*topLevelDestinationIds).build()
+        )
+
+        navigationToolbar.setNavigationOnClickListener {
+            onBackPressedDispatcher.onBackPressed()
+        }
+    }
+
+    private fun openPopup(webExtensionState: WebExtensionState) {
+        val fm: FragmentManager = supportFragmentManager
+        val editNameDialogFragment =
+            if (Utils.isTablet(this)) WebExtensionTabletPopupFragment()
+            else WebExtensionPopupFragment()
+
+        val bundle = Bundle()
+        bundle.putString("web_extension_id", webExtensionState.id)
+        intent.putExtra("web_extension_name", webExtensionState.name)
+
+        editNameDialogFragment.arguments = bundle
+
+        editNameDialogFragment.show(fm, "fragment_edit_name")
+    }
+
+    fun openToBrowserAndLoad(
+        searchTermOrURL: String,
+        newTab: Boolean,
+        from: BrowserDirection,
+        customTabSessionId: String? = null,
+        engine: SearchEngine? = null,
+        forceSearch: Boolean = false,
+        flags: EngineSession.LoadUrlFlags = EngineSession.LoadUrlFlags.none()
+    ) {
+        openToBrowser(from, customTabSessionId)
+        load(searchTermOrURL, newTab, engine, forceSearch, flags)
+    }
+
+    fun openToBrowser(from: BrowserDirection, customTabSessionId: String? = null) {
+        if (navHost.navController.alreadyOnDestination(R.id.browserFragment)) return
+        @IdRes val fragmentId = if (from.fragmentId != 0) from.fragmentId else null
+        val directions = getNavDirections(from, customTabSessionId)
+        if (directions != null) {
+            navHost.navController.nav(fragmentId, directions)
+        }
+    }
+
+    protected open fun getNavDirections(
+        from: BrowserDirection,
+        customTabSessionId: String?
+    ): NavDirections? = when (from) {
+        BrowserDirection.FromGlobal ->
+            NavGraphDirections.actionGlobalBrowser(customTabSessionId)
+
+        BrowserDirection.FromHome ->
+            NavGraphDirections.actionGlobalBrowser(customTabSessionId)
+
+        BrowserDirection.FromSearchDialog ->
+            SearchDialogFragmentDirections.actionGlobalBrowser(customTabSessionId)
+    }
+
+    private fun load(
+        searchTermOrURL: String,
+        newTab: Boolean,
+        engine: SearchEngine?,
+        forceSearch: Boolean,
+        flags: EngineSession.LoadUrlFlags = EngineSession.LoadUrlFlags.none()
+    ) {
+        val selectedTab = components.store.state.selectedTabId?.let { id ->
+            components.store.state.tabs.find { it.id == id }
+        }
+        val isPrivateMode = selectedTab?.content?.private ?: browsingModeManager.mode.isPrivate
+        val resolvedEngine = engine ?: resolveSearchEngine(isPrivateMode)
+
+        if (resolvedEngine == null || (!forceSearch && searchTermOrURL.isUrl())) {
+            // Overlap the handshake with new-tab creation / session link-up.
+            components.speculativeConnect(searchTermOrURL.toNormalizedUrl())
+            if (newTab) {
+                // Chrome parity: the new tab starts at the new tab page so
+                // the URL becomes its second history entry (the back popup
+                // then lists "New Tab" as the oldest entry).
+                com.prirai.android.lr.browser.tabs.NewTabCreator.createHomeTabAndLoad(this, isPrivateMode) {
+                    components.sessionUseCases.loadUrl.invoke(searchTermOrURL.toNormalizedUrl(), flags)
+                }
+            } else {
+                components.sessionUseCases.loadUrl.invoke(searchTermOrURL.toNormalizedUrl(), flags)
+            }
+        } else {
+            if (newTab) {
+                com.prirai.android.lr.browser.tabs.NewTabCreator.createHomeTabAndLoad(this, isPrivateMode) {
+                    components.searchUseCases.defaultSearch.invoke(searchTermOrURL, resolvedEngine)
+                }
+            } else {
+                components.searchUseCases.defaultSearch.invoke(searchTermOrURL, resolvedEngine)
+            }
+        }
+    }
+
+    private fun resolveSearchEngine(isPrivateMode: Boolean): SearchEngine? {
+        components.store.state.search.selectedOrDefaultSearchEngine(isPrivateMode)?.let { return it }
+        return try {
+            SearchEngineList(this).getSelectedEngine(UserPreferences(this))
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    override fun attachBaseContext(base: Context) {
+        this.originalContext = base
+        super.attachBaseContext(base)
+    }
+
+    private fun updateToolbarAndStatusBarTheme() {
+        val selectedTab = components.store.state.tabs.find { it.id == components.store.state.selectedTabId }
+        val isPrivate = selectedTab?.content?.private == true
+
+        // Update status bar
+        com.prirai.android.lr.theme.ThemeManager.applySystemBarsTheme(this, isPrivate)
+    }
+
+    /**
+     * Clean up orphaned thumbnails that don't belong to any existing tab.
+     * This prevents storage bloat from closed tabs' thumbnails.
+     */
+    private fun cleanupOrphanedThumbnails() {
+        try {
+            val currentTabIds = components.store.state.tabs.map { it.id }.toSet()
+            val thumbnailDir = java.io.File(applicationContext.filesDir, "thumbnails")
+
+            if (thumbnailDir.exists() && thumbnailDir.isDirectory) {
+                var deletedCount = 0
+                thumbnailDir.listFiles()?.forEach { file ->
+                    val tabId = file.nameWithoutExtension
+                    if (!currentTabIds.contains(tabId)) {
+                        if (file.delete()) {
+                            deletedCount++
+                        }
+                    }
+                }
+                if (deletedCount > 0) {
+                    android.util.Log.i("BrowserActivity", "Cleaned up $deletedCount orphaned thumbnail(s)")
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("BrowserActivity", "Error cleaning up thumbnails", e)
+        }
+    }
+
+    /**
+     * Shows a one-time dialog after [com.prirai.android.lr.browser.profile.DefaultProfileTabMigration]
+     * has moved tabs into the default profile. Uses a short bounded poll because the
+     * migration flag flips inside BrowserStore's restore coroutine, which is launched
+     * asynchronously from BrowserApp.onCreate and may complete slightly after this
+     * Activity's first `view.post`. If the flag never arrives (fresh install with
+     * nothing to migrate) we bail after ~3 seconds and do nothing.
+     */
+    private fun maybeShowDefaultProfileMigrationPopup() {
+        val prefs = UserPreferences(this)
+        // If nothing pending and the migration flag is already committed, no popup is
+        // ever due on this launch.
+        if (!prefs.pendingDefaultMigrationPopup && prefs.defaultProfileMigrationDone) return
+
+        lifecycleScope.launch {
+            // Poll for up to ~3s at 100ms intervals. The middleware sets the pref
+            // synchronously the moment it rewrites a RestoreAction, so this loop
+            // typically resolves on the first tick after tabs are restored.
+            var elapsed = 0
+            while (elapsed < 3_000 && !prefs.pendingDefaultMigrationPopup) {
+                kotlinx.coroutines.delay(100)
+                elapsed += 100
+            }
+            if (!prefs.pendingDefaultMigrationPopup) return@launch
+            if (isFinishing || isDestroyed) return@launch
+
+            val count = prefs.pendingDefaultMigrationTabCount
+            val message = if (count > 0) {
+                getString(R.string.lr_default_profile_migration_message, count)
+            } else {
+                getString(R.string.lr_default_profile_migration_message_zero)
+            }
+
+            androidx.appcompat.app.AlertDialog.Builder(this@BrowserActivity)
+                .setTitle(R.string.lr_default_profile_migration_title)
+                .setMessage(message)
+                .setPositiveButton(android.R.string.ok) { d, _ -> d.dismiss() }
+                .setOnDismissListener {
+                    // Clear the transient flag so we never show it again. The persistent
+                    // `defaultProfileMigrationDone` pref remains true forever.
+                    prefs.pendingDefaultMigrationPopup = false
+                    prefs.pendingDefaultMigrationTabCount = 0
+                }
+                .setCancelable(true)
+                .show()
+        }
+    }
+
+    /**
+     * Update toolbar background based on private mode
+     */
+    private fun updateToolbarBackground() {
+        // Update toolbar background - use safe cast as it could be UnifiedToolbar or BrowserToolbar
+        val toolbar = findViewById<View>(R.id.toolbar)
+        val unifiedToolbar = toolbar as? com.prirai.android.lr.components.toolbar.unified.UnifiedToolbar
+        val isPrivate = components.store.state.tabs.find { it.id == components.store.state.selectedTabId }?.content?.private == true
+        if (isPrivate) {
+            val purpleColor = com.prirai.android.lr.theme.ColorConstants.PrivateMode.PURPLE
+            unifiedToolbar?.setBackgroundColor(purpleColor) ?: toolbar?.setBackgroundColor(purpleColor)
+        }
+    }
+
+    /**
+     * Get current active profile ID
+     */
+    fun getCurrentProfileId(): String {
+        val profileManager = com.prirai.android.lr.browser.profile.ProfileManager.getInstance(this)
+        return profileManager.getActiveProfile().id
+    }
+
+    companion object {
+        const val OPEN_TO_BROWSER = "open_to_browser"
+        private const val TAG = "LRBrowserAct"
+    }
+}
