@@ -1,0 +1,840 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<resources>
+  <string name="app_name" translatable="false">LR</string>
+  <string
+        name="url_project"
+        translatable="false"
+    >https://github.com/prirai/nira-browser</string>
+
+  <!-- Behavior class names -->
+
+    <string
+        name="key_javascript_enabled"
+        translatable="false"
+    >javascript_enabled</string>
+  <string name="key_app_theme_type" translatable="false">app_theme_type</string>
+  <string name="key_web_theme_type" translatable="false">web_theme_type</string>
+  <string name="key_search_engine" translatable="false">search_engine</string>
+  <string name="key_private_search_engine" translatable="false">private_search_engine</string>
+  <string name="key_desktop_mode_default" translatable="false">desktop_mode_default</string>
+  <string name="key_translations_enabled" translatable="false">translations_enabled</string>
+<string name="key_clear_tabs" translatable="false">clear_tabs</string>
+  <string name="key_clear_history" translatable="false">clear_history</string>
+  <string name="key_clear_cookies" translatable="false">clear_cookies</string>
+  <string name="key_clear_cache" translatable="false">clear_cache</string>
+  <string
+        name="key_clear_permissions"
+        translatable="false"
+    >clear_permissions</string>
+  <string
+        name="key_site_exceptions"
+        translatable="false"
+    >site_exceptions</string>
+  <string name="key_homepage_type" translatable="false">homepage_type</string>
+  <string name="key_move_navbar" translatable="false">move_navbar</string>
+  <string
+        name="key_use_custom_collection"
+        translatable="false"
+    >use_custom_collection</string>
+  <string
+        name="key_collection_name"
+        translatable="false"
+    >collection_name</string>
+  <string
+        name="key_collection_user"
+        translatable="false"
+    >collection_user</string>
+  <string name="key_auto_font_size" translatable="false">auto_font_size</string>
+  <string
+        name="key_font_size_factor"
+        translatable="false"
+    >font_size_factor</string>
+<string
+        name="key_show_contextual_toolbar"
+        translatable="false"
+    >show_contextual_toolbar</string>
+  <string
+        name="key_show_tab_group_bar"
+        translatable="false"
+    >show_tab_group_bar</string>
+    <string name="key_swap_drawers" translatable="false">swap_drawers</string>
+  <string
+        name="key_stack_from_bottom"
+        translatable="false"
+    >stack_from_bottom</string>
+  <string
+        name="key_show_tabs_in_grid"
+        translatable="false"
+    >show_tabs_in_grid</string>
+  <string name="key_sideload_xpi" translatable="false">sideload_xpi</string>
+  <string name="key_swipe_refresh" translatable="false">swipe_refresh</string>
+  <string
+        name="key_remote_debugging"
+        translatable="false"
+    >remote_debugging</string>
+  <string
+        name="key_resist_fingerprinting"
+        translatable="false"
+    >resist_fingerprinting</string>
+  <string name="resist_fingerprinting">Resist fingerprinting</string>
+  <string name="resist_fingerprinting_summary">Hardens against browser fingerprinting, but forces light page theme and can break image uploads on some sites (canvas spoofing). Takes effect after restart.</string>
+  <string
+        name="key_export_bookmarks"
+        translatable="false"
+    >export_bookmarks</string>
+  <string
+        name="key_import_bookmarks"
+        translatable="false"
+    >import_bookmarks</string>
+  <string
+        name="key_export_settings"
+        translatable="false"
+    >export_settings</string>
+  <string
+        name="key_import_settings"
+        translatable="false"
+    >import_settings</string>
+  <string name="key_clear_settings" translatable="false">clear_settings</string>
+  <string
+        name="key_prompt_external_downloader"
+        translatable="false"
+    >prompt_external_downloader</string>
+  <string
+        name="key_show_protocol"
+        translatable="false"
+    >show_url_protocol</string>
+   <string
+        name="key_search_suggestions_enabled"
+        translatable="false"
+    >search_suggestions_enabled</string>
+  <string
+        name="key_search_suggestion_count"
+        translatable="false"
+    >search_suggestion_count</string>
+  <string name="key_safe_browsing" translatable="false">safe_browsing</string>
+  <string name="key_https_only" translatable="false">https_only_mode</string>
+  <string name="key_doh" translatable="false">doh_mode</string>
+  <string name="key_doh_provider" translatable="false">doh_provider_url</string>
+  <string name="key_global_privacy_control" translatable="false">global_privacy_control</string>
+  <string name="key_sleeping_tabs" translatable="false">sleeping_tabs_mode</string>
+  <string
+        name="key_shortcuts_visible"
+        translatable="false"
+    >shortcuts_visible</string>
+    <string
+        name="key_tracking_protection"
+        translatable="false"
+    >tracking_protection</string>
+  <string
+        name="key_trust_third_party_certs"
+        translatable="false"
+    >trust_third_party_certs</string>
+  <string
+        name="key_homepage_background_image"
+        translatable="false"
+    >homepage_background_image</string>
+  <string
+        name="key_load_shortcut_icons"
+        translatable="false"
+    >load_shortcut_icons</string>
+  <string
+        name="key_clear_bookmarks"
+        translatable="false"
+    >clear_bookmarks</string>
+
+  <string name="more">More Info</string>
+  <string name="version">Application version</string>
+  <string name="licenses">Open Source Licenses</string>
+  <string
+        name="mpl_license"
+        translatable="false"
+    >Mozilla Public License 2.0</string>
+  <string name="apache" translatable="false">Apache License 2.0</string>
+    <string
+        name="mozac"
+        translatable="false"
+    >Mozilla Android Components</string>
+  <string
+        name="android_open_source_project"
+        translatable="false"
+    >Android Open Source Project</string>
+  <string name="geckoview" translatable="false">GeckoView</string>
+
+    <string name="custom">Custom</string>
+
+  <string name="tabs">Tabs</string>
+<string name="close">Close</string>
+<string name="retry">Retry</string>
+<string name="group">Group</string>
+<string name="delete">Delete</string>
+<string name="drag_to_reorder">Drag to reorder</string>
+<string name="add_tab_to_group">Add tab to group</string>
+<string name="duplicate_tab">Duplicate Tab</string>
+<string name="change_color">Change Color</string>
+<string name="pin_island">Pin Island</string>
+<string name="confirm_rename">Confirm rename</string>
+<string name="selected">Selected</string>
+<string name="list_view">List view</string>
+<string name="grid_view">Grid view</string>
+<string name="close_menu">Close menu</string>
+<string name="options">Options</string>
+<string name="remove_from_island">Remove from Island</string>
+<string name="ungroup_all_tabs">Ungroup All Tabs</string>
+<string name="close_all_tabs">Close All Tabs</string>
+<string name="move_to_profile">Move to Profile</string>
+<string name="collapse_expand">Collapse/Expand</string>
+<string name="rename_island">Rename Island</string>
+<string name="island_name">Island Name</string>
+<string name="rename_action">Rename</string>
+<string name="choose_color">Choose Color</string>
+<string name="tab">Tab</string>
+<string name="favorites">Favorites</string>
+<string name="add_go_to_sites">Add your go-to sites here</string>
+<string name="my_website_placeholder">My Website</string>
+<string name="private_mode_short">Private</string>
+<string name="jump_back_in">Jump Back In</string>
+<string name="recently_closed">Recently Closed</string>
+<string name="private_browsing">Private Browsing</string>
+<string name="private_browsing_does">What Private Browsing Does</string>
+<string name="private_browsing_does_desc">Your browsing history, cookies, and site data won\'t be saved after you close all private tabs.</string>
+<string name="private_downloads_bookmarks">Downloads and Bookmarks</string>
+<string name="private_downloads_bookmarks_desc">Files you download and bookmarks you create will be kept even after closing private tabs.</string>
+<string name="private_activity_visible">Your Activity is Still Visible To</string>
+<string name="private_activity_visible_desc">Websites you visit, your internet service provider, and your network administrator can still see your browsing activity.</string>
+<string name="private_browsing_note">Note: Private browsing doesn\'t make you anonymous online. For enhanced privacy, consider using a VPN.</string>
+<string name="add_shortcut_dialog">Add Shortcut</string>
+<string name="url_invalid">Please enter a valid URL</string>
+<string name="untitled">Untitled</string>
+<string name="save">Save</string>
+<string name="app_icon">App icon</string>
+<string name="app_name_display" translatable="false">LR</string>
+<string name="homepage_background">Homepage background</string>
+<string name="downloads_title">Downloads</string>
+<string name="search_downloads">Search downloads</string>
+<string name="no_downloads_yet">No downloads yet</string>
+<string name="active_downloads">Active Downloads (%1$d)</string>
+<string name="completed_section">Completed (%1$d)</string>
+<string name="download_this_file">Download this file?</string>
+<string name="download_action">Download</string>
+<string name="pause">Pause</string>
+<string name="resume">Resume</string>
+<string name="completed">Completed</string>
+<string name="retrying_download">Retrying download…</string>
+<string name="download_requeued">Download requeued</string>
+<string name="rename_file">Rename file</string>
+<string name="copy_link">Copy link</string>
+<string name="link_copied">Link copied</string>
+<string name="clear_all">Clear all</string>
+<string name="status_downloading">Downloading</string>
+<string name="status_starting">Starting</string>
+<string name="status_failed">Failed</string>
+<string name="status_paused">Paused</string>
+<string name="status_cancelled">Cancelled</string>
+<string name="all_extensions">All extensions</string>
+<string name="no_extensions_available">No extensions available</string>
+<string name="no_extensions_installed">No extensions installed</string>
+<string name="manage_addons">Manage Add-ons</string>
+<string name="search_extensions">Search Extensions</string>
+<string name="search_by_name_or_description">Search by name or description</string>
+<string name="type_to_search_extensions">Type at least 2 characters to search</string>
+<string name="no_extensions_found">No extensions found</string>
+<string name="status_installed">Installed</string>
+<string name="extension_version">Version %1$s</string>
+<string name="create_profile">Create Profile</string>
+<string name="edit_profile">Edit Profile</string>
+<string name="choose_style">Choose Style</string>
+<string name="profile_name">Profile Name</string>
+<string name="profile_name_placeholder">Work, Personal, etc.</string>
+<string name="import_zip">Import ZIP</string>
+<string name="create_action">Create</string>
+<string name="export_profile_zip">Export Profile as ZIP</string>
+<plurals name="tab_count">
+    <item quantity="one">%1$d Tab</item>
+    <item quantity="other">%1$d Tabs</item>
+</plurals>
+<plurals name="connected_devices">
+    <item quantity="one">Connected to %1$d other device</item>
+    <item quantity="other">Connected to %1$d other devices</item>
+</plurals>
+<string name="enabled">Enabled</string>
+<string name="disabled">Disabled</string>
+<string name="start_browsing">Start Browsing</string>
+<string name="skip">Skip</string>
+<string name="next">Next</string>
+<string name="welcome_to_lr">Welcome to LR</string>
+<string name="fast_private_browser">A fast, private browser</string>
+<string name="onboarding_bullet_geckoview">• Built on Mozilla\'s powerful GeckoView engine</string>
+<string name="onboarding_bullet_tab_groups">• Tab groups to stay organised</string>
+<string name="onboarding_bullet_sync">• Firefox Account sync across devices</string>
+<string name="onboarding_bullet_extensions">• Powerful extension support</string>
+<string name="onboarding_bullet_profiles">• Multiple profiles for different identities</string>
+<string name="onboarding_bullet_downloads">• Download manager with progress tracking</string>
+<string name="choose_your_theme">Choose Your Theme</string>
+<string name="personalise_looks">Personalise how LR looks</string>
+<string name="app_theme">App Theme</string>
+<string name="web_page_theme">Web Page Theme</string>
+<string name="theme_system_default">System Default</string>
+<string name="light_pages">Light pages</string>
+<string name="dark_pages">Dark pages</string>
+<string name="follow_system">Follow system</string>
+<string name="pick_search_engine">Pick a Search Engine</string>
+<string name="choose_default_search">Choose your default search for browsing</string>
+<string name="privacy_by_default">Privacy by Default</string>
+<string name="lr_protects">LR protects you as you browse</string>
+<string name="tracker_ad_blocking">Tracker &amp; ad blocking</string>
+<string name="fingerprint_protection">Fingerprint protection</string>
+<string name="enhanced_tracking_protection_short">Enhanced Tracking Protection</string>
+<string name="strict_https">Strict HTTPS enforcement</string>
+<string name="customise_settings">Customise Settings</string>
+<string name="block_trackers_cookies">Block trackers and third-party cookies</string>
+<string name="warn_dangerous_sites">Warn about dangerous sites</string>
+<string name="show_suggestions_as_you_type">Show suggestions as you type</string>
+<string name="you_re_all_set">You\'re all set!</string>
+<string name="here_s_what_configured">Here\'s what you configured</string>
+<string name="theme_label">Theme</string>
+<string name="search_engine_label">Search Engine</string>
+<string name="toolbar_position_title">Toolbar Position</string>
+<string name="address_bar_where">Choose where the address bar appears</string>
+<string name="toolbar_top">Top</string>
+<string name="toolbar_bottom">Bottom</string>
+<string name="address_bar_top_desc">Address bar at the top of the screen</string>
+<string name="address_bar_bottom_desc">Address bar at the bottom of the screen</string>
+<string name="tab_bar_title">Tab Bar</string>
+<string name="tab_bar_subtitle">Quick-access bar for switching tab groups</string>
+<string name="show_tab_bar">Show Tab Bar</string>
+<string name="show_tab_bar_desc">Switch between tab groups at a glance</string>
+<string name="hide_tab_bar">Hide Tab Bar</string>
+<string name="hide_tab_bar_desc">More screen space while browsing</string>
+<string name="contextual_toolbar_title">Contextual Toolbar</string>
+<string name="contextual_toolbar_subtitle">Toolbar shown while browsing pages</string>
+<string name="hide_contextual_toolbar">Hide Contextual Toolbar</string>
+<string name="hide_contextual_toolbar_desc">More vertical space for page content</string>
+<string name="icon_size">Icon Size</string>
+<string name="enabled_section">Enabled (%1$d)</string>
+<string name="recommended_section">Recommended (%1$d)</string>
+<string name="sort_name">Name</string>
+<string name="sort_rating">Rating</string>
+<string name="sort_recently_updated">Recently Updated</string>
+<string name="ungroup">Ungroup</string>
+<string name="expand">Expand</string>
+<string name="collapse">Collapse</string>
+
+  <string name="tab_grid">Show tabs in grid</string>
+
+  <string name="action_print">Print</string>
+  <string name="action_add_to_homescreen">Add to home screen</string>
+  <string name="action_history">History</string>
+  <string name="no_history">No browsing history yet</string>
+  <string name="action_bookmarks">Bookmarks</string>
+    <string name="action_add_bookmark">Add bookmark</string>
+
+    <string name="forward">Forward</string>
+  <string name="reload">Reload</string>
+  <string name="settings">Settings</string>
+  <string name="new_tab">New tab</string>
+<string name="desktop_mode">Desktop site</string>
+  <string name="desktop_mode_default">Request desktop site by default</string>
+  <string name="desktop_mode_default_summary">New tabs open in desktop mode. Tablets and large windows use this unless you turn it off.</string>
+  <string name="translations_enabled">Page translations</string>
+  <string name="translations_enabled_summary">Offer to translate pages in another language</string>
+  <string name="translate_page">Translate page</string>
+  <string name="show_original_page">Show original</string>
+    <string name="stop">Stop</string>
+  <string name="cancel">Cancel</string>
+
+  <string name="export_bookmarks">Export bookmarks to backup</string>
+  <string name="import_backup">Import bookmarks from backup</string>
+  <string name="clear_bookmarks">Clear bookmarks</string>
+  <string
+        name="clear_bookmarks_confirm"
+    >Are you sure you want to clear all bookmarks?</string>
+
+    <string name="settings_general">General settings</string>
+
+  <string
+        name="settings_privacy_and_security"
+    >Privacy and security settings</string>
+
+  <string name="settings_import_and_export">Import and export settings</string>
+
+  <string name="settings_customization">Customization settings</string>
+
+  <string name="settings_advanced">Advanced settings</string>
+
+  <string name="settings_addons">Add-on settings</string>
+
+  <string name="settings_about">About</string>
+
+
+  <!-- Update bottom sheet (shown by BrowserActivity when the periodic
+       worker has written a pending manifest; see
+       UpdateAvailableBottomSheet.kt). -->
+
+    <string name="javascript_enabled">Enable JavaScript</string>
+
+  <string name="clear_tabs">Clear open tabs</string>
+  <string name="clear_history">Clear browsing history and site data</string>
+  <string name="clear_cookies">Clear cookies</string>
+  <string name="clear_cache">Clear cache</string>
+  <string name="clear_permissions">Clear permissions</string>
+
+    <string
+        name="app_restart"
+    >Please restart the app for the change to take effect.</string>
+
+<string name="show_contextual_toolbar">Show contextual toolbar</string>
+  <string
+        name="show_contextual_toolbar_desc"
+    >Display bottom toolbar with navigation buttons</string>
+  <string name="show_tab_group_bar">Show tab group bar</string>
+  <string
+        name="show_tab_group_bar_desc"
+    >Display tab island bar above address bar</string>
+
+    <string name="search">Search or enter address</string>
+  <string name="title">Title</string>
+  <string name="url">URL</string>
+  <string name="folder">Folder</string>
+  <string name="add_to_top">Add at top of list</string>
+
+  <string name="add_bookmark">Add bookmark</string>
+  <string name="edit_bookmark">Edit bookmark</string>
+  <string name="remove_history_item">Remove history item</string>
+  <string name="edit_folder">Edit folder</string>
+  <string name="add_folder">Add folder</string>
+  <string name="new_folder_name">New folder</string>
+  <string name="url_empty_mes">URL empty!</string>
+  <string name="title_empty_mes">Title empty!</string>
+  <string name="sort">Sort</string>
+<string name="move_bookmark">Move to folder</string>
+    <string name="delete_bookmark">Delete bookmark</string>
+  <string name="delete_folder">Delete folder</string>
+  <string name="flatten_folder">Flatten folder</string>
+  <string
+        name="flatten_folder_confirm_formatted"
+    >Flatten \"%1$s\"? All items inside will be moved to the current folder and the folder will be deleted.</string>
+<string name="open">Open</string>
+  <string name="open_new">Open in new tab</string>
+  <string name="open_new_private">Open in new private tab</string>
+  <string name="open_bg">Open in background tab</string>
+  <string name="delete_selected">Delete selected</string>
+  <string name="move_selected">Move to folder</string>
+  <string name="open_in_background_tabs">Open in background tabs</string>
+
+    <string name="successful">Successful</string>
+  <string name="failed">Failed</string>
+
+  <string name="search_engine">Search engine</string>
+  <string name="private_search_engine">Private search engine</string>
+  <string name="private_search_engine_summary">Used only in private tabs. Same as the default engine if unset.</string>
+  <string name="use_default_search_engine">Same as default</string>
+
+  <string name="fill_from_clipboard">Fill from clipboard</string>
+
+  <string name="copy">Copy</string>
+  <string name="paste">Paste</string>
+  <string name="paste_and_go">Paste and go</string>
+  <string name="copied">Copied to clipboard</string>
+<string name="loading">Loading…</string>
+
+  <string name="tabs_cleared">Tabs cleared!</string>
+  <string name="history_cleared">History cleared!</string>
+  <string name="cookies_cleared">Cookies cleared!</string>
+  <string name="cache_cleared">Cache cleared!</string>
+  <string name="permissions_cleared">Permissions cleared!</string>
+<string name="add_shortcut">Add shortcut</string>
+<string name="homepage_type">Homepage type</string>
+  <string name="default_word">Default</string>
+  <string name="blank_page">Blank page</string>
+  <string name="only_search_bar">Only Search Bar</string>
+
+  <string name="homepage_background_image">Homepage background image</string>
+  <string name="homepage_background_gallery">Choose from gallery</string>
+  <string name="homepage_background_url">Enter URL</string>
+
+  <string name="load_shortcut_icons">Load website icons for shortcuts</string>
+
+  <string-array name="homepage_background_image_types" translatable="false">
+    <item>@string/none</item>
+    <item>@string/homepage_background_gallery</item>
+    <item>@string/homepage_background_url</item>
+  </string-array>
+
+  <string name="move_navbar">Move address bar to top</string>
+
+  <string-array name="homepage_types" translatable="false">
+    <item>@string/default_word</item>
+    <item>@string/blank_page</item>
+    <item>@string/only_search_bar</item>
+  </string-array>
+
+  <string name="custom_collection">Custom add-on collection</string>
+  <string name="use_custom_collection">Use custom add-on collection</string>
+  <string
+        name="use_custom_collection_disclaimer"
+    >When using a custom add-on collection, the browser queries Mozilla\'s servers for add-ons. CookieJarApps cannot gurarantee that these add-ons are safe or will function correctly on your device.</string>
+  <string name="collection_user">Collection user</string>
+  <string name="collection_name">Collection name</string>
+
+  <string name="backup_bookmarks">Backup bookmarks</string>
+
+  <string name="theme">App theme</string>
+  <string name="theme_explain">The theme of the browser\'s UI elements.</string>
+  <string name="web_theme">Web theme</string>
+  <string
+        name="web_theme_explain"
+    >The theme that the browser asks extensions and website to use.</string>
+  <string name="light_theme">Light</string>
+  <string name="dark_theme">Dark</string>
+  <string name="auto">Follow system</string>
+
+  <string name="auto_font">Auto font size</string>
+  <string name="font_size">Font size</string>
+
+  <string-array name="theme_types" translatable="false">
+    <item>@string/light_theme</item>
+    <item>@string/dark_theme</item>
+    <item>@string/auto</item>
+  </string-array>
+
+    <string
+        name="swap_bookmarks_and_tabs"
+    >Swap bookmark and tab drawers</string>
+  <string name="stack_items_reverse">Stack items from bottom of drawer</string>
+
+    <string name="load_xpi_link">Sideload XPI link</string>
+  <string name="load_xpi_file">Upload XPI file</string>
+  <string
+        name="key_sideload_xpi_file"
+        translatable="false"
+    >sideload_xpi_file</string>
+<string name="swipe_to_refresh">Swipe to refresh</string>
+  <string name="swipe_to_refresh_summary">Pull down from the top of the page to reload</string>
+
+    <string
+        name="already_available"
+    >This add-on is already available in the official add-on store. Add-ons available in the official store cannot be sideloaded.</string>
+  <string name="installed">Installed successfully</string>
+  <string name="error">Error</string>
+
+  <string name="remote_debugging">Remote debugging</string>
+
+  <string name="export_settings">Export settings to backup</string>
+  <string name="import_settings">Import settings from backup</string>
+  <string name="clear_settings">Reset settings</string>
+  <string name="backup_settings">Settings backup</string>
+
+  <string
+        name="prompt_external_downloader"
+    >Ask which app to use to download files</string>
+<string name="show_protocol_in_url">Show URL protocol in toolbar</string>
+
+  <string name="search_suggestions">Search suggestions</string>
+  <string name="search_suggestion_count">Number of search suggestions</string>
+
+  <string name="safe_browsing">Safe browsing</string>
+  <string name="tracking_protection">Tracking protection</string>
+  <string name="https_only_title">HTTPS-Only Mode</string>
+  <string name="https_only_summary">Upgrade connections to HTTPS and block insecure HTTP</string>
+  <string name="https_only_off">Off</string>
+  <string name="https_only_private">Private tabs only</string>
+  <string name="https_only_all">Enabled in all tabs</string>
+  <string name="doh_title">DNS over HTTPS</string>
+  <string name="doh_summary">Encrypt DNS lookups so your ISP cannot see which sites you visit</string>
+  <string name="doh_default">Default</string>
+  <string name="doh_default_summary">Use the system DNS resolver</string>
+  <string name="doh_increased">Increased</string>
+  <string name="doh_increased_summary">Use DoH when possible, fall back to system DNS</string>
+  <string name="doh_max">Max Protection</string>
+  <string name="doh_max_summary">Only use DoH. Sites may fail if the resolver is unreachable</string>
+  <string name="doh_off">Off</string>
+  <string name="doh_off_summary">Never use DoH</string>
+  <string name="doh_provider_title">DoH provider</string>
+  <string name="doh_provider_cloudflare">Cloudflare</string>
+  <string name="doh_provider_nextdns">NextDNS</string>
+  <string name="doh_provider_custom">Custom</string>
+  <string name="doh_provider_custom_hint">https://dns.example/dns-query</string>
+  <string name="doh_provider_custom_error">Enter a valid HTTPS URL</string>
+  <string name="gpc_title">Global Privacy Control</string>
+  <string name="gpc_summary">Tell websites not to sell or share your data</string>
+  <string name="security_connections">Connections</string>
+  <string name="performance_title">Performance</string>
+  <string name="sleeping_tabs_title">Sleeping tabs</string>
+  <string name="sleeping_tabs_summary">Save memory by suspending tabs you are not using</string>
+  <string name="sleeping_tabs_off">Off</string>
+  <string name="sleeping_tabs_off_summary">Keep all tabs alive</string>
+  <string name="sleeping_tabs_balanced">Balanced</string>
+  <string name="sleeping_tabs_balanced_summary">Sleep tabs idle for 30 min. Keep up to 8 live. Sleep in background.</string>
+  <string name="sleeping_tabs_aggressive">Aggressive</string>
+  <string name="sleeping_tabs_single">Single tab (lowest RAM)</string>
+  <string name="sleeping_tabs_single_summary">Keep only the tab you are viewing alive, like Safari. Other tabs reload when opened. Applies fully after restarting the app.</string>
+  <string name="sleeping_tabs_aggressive_summary">Sleep tabs idle for 5 min. Keep up to 3 live. Sleep on low memory.</string>
+
+    <string name="show_shortcuts">Show shortcuts</string>
+
+    <string
+        name="trust_third_party_certs"
+    >Trust third party CA certificates</string>
+
+  <string name="custom_search_engine">Custom search engine</string>
+  <string
+        name="custom_search_engine_details"
+        formatted="false"
+    >Enter URL with %s in place of the query</string>
+  <string
+        name="custom_search_engine_error"
+        formatted="false"
+    >Search URL does not contain %s</string>
+
+  <string name="clear">Clear</string>
+<string name="none">None</string>
+
+    <string name="save_as_pdf">Save as PDF</string>
+
+  <!-- Add-on related strings for Mozilla Components 145.0 compatibility -->
+  <string
+        name="mozac_feature_addons_settings_allow_in_private_browsing"
+    >Allow in private browsing</string>
+  <string
+        name="mozac_feature_addons_failed_to_query_extensions"
+    >Failed to query extensions</string>
+  <string name="mozac_feature_addons_cant_install_extension">"Can't install extension"</string>
+  <string name="mozac_feature_addons_blocklisted_2">"%1$s is blocked and can't be installed on %2$s."</string>
+  <string name="mozac_feature_addons_soft_blocked_2">"%1$s is restricted and can't be installed on %2$s."</string>
+
+  <string
+        name="mozac_feature_addons_extension_failed_to_install"
+    >Extension failed to install</string>
+  <string
+        name="mozac_feature_addons_extension_failed_to_install_network_error"
+    >Extension failed to install due to a network error.</string>
+  <string
+        name="mozac_feature_addons_extension_failed_to_install_corrupt_error"
+    >Extension failed to install because the file appears to be corrupt.</string>
+  <string name="mozac_feature_addons_extension_failed_to_install_not_signed_error">"Extension failed to install because it isn't signed."</string>
+  <string
+        name="mozac_feature_addons_failed_to_install_incompatible_error"
+    >%1$s is incompatible with %2$s %3$s.</string>
+  <string
+        name="mozac_feature_addons_successfully_enabled"
+    >%s enabled successfully</string>
+  <string
+        name="mozac_feature_addons_successfully_disabled"
+    >%s disabled successfully</string>
+  <string
+        name="mozac_feature_addons_failed_to_enable"
+    >Failed to enable %s</string>
+  <string
+        name="mozac_feature_addons_failed_to_disable"
+    >Failed to disable %s</string>
+  <string
+        name="mozac_feature_addons_successfully_uninstalled"
+    >%s uninstalled successfully</string>
+  <string
+        name="mozac_feature_addons_failed_to_install"
+    >Failed to install %1$s</string>
+
+  <!-- Download related strings for Mozilla Components 145.0 compatibility -->
+
+    <!-- AwesomeBar related strings -->
+  <string name="switch_to_tab">Switch to tab</string>
+
+  <!-- Contextual Bottom Toolbar strings -->
+  <string name="back">Back</string>
+  <string name="share">Share</string>
+  <string name="menu">Menu</string>
+  <string name="tabs_count_description">%d tabs open</string>
+
+  <!-- Tab history popup strings -->
+  <string name="tab_history_new_tab">New Tab</string>
+
+  <!-- Bookmarks Bottom Sheet strings -->
+  <string name="sort_by_name">Sort by Name</string>
+  <string name="sort_by_url">Sort by URL</string>
+  <string name="sort_by_date_added">Sort by Date Added</string>
+  <string name="no_bookmarks">No bookmarks</string>
+  <string
+        name="no_bookmarks_description"
+    >Your bookmarks will appear here</string>
+  <string name="create_folder">Create folder</string>
+  <string name="select_folder">Select Folder</string>
+  <string name="select_folder_confirm">Select \"%1$s\"</string>
+  <string name="delete_bookmark_confirm">Delete bookmark \"%1$s\"?</string>
+  <string
+        name="delete_folder_confirm"
+    >Delete folder \"%1$s\" and all its contents?</string>
+  <string
+        name="delete_confirm"
+    >Are you sure you want to delete this item?</string>
+  <string name="delete_confirm_title">Confirm Delete</string>
+
+  <!-- Tab Islands -->
+<!-- Tab groups in tabs list -->
+<!-- Accessibility descriptions -->
+<!-- Drag and drop -->
+
+    <!-- Delete confirmation -->
+
+    <!-- Custom Tabs -->
+  <string name="browser_menu_open_in_lr">Open in LR</string>
+  <string name="browser_menu_find_in_page">Find in page</string>
+  <string name="custom_tab_menu_minimize">Minimize</string>
+
+  <!-- WebAuthn/FIDO2 Digital Asset Links -->
+  <string name="asset_statements" translatable="false">
+    [{
+      \"relation\": [\"delegate_permission/common.handle_all_urls\", \"delegate_permission/common.get_login_creds\"],
+      \"target\": {
+        \"namespace\": \"web\"
+      }
+    }]
+  </string>
+
+  <!-- Onboarding strings -->
+<string name="extensions">Extensions</string>
+<string name="small">Small</string>
+  <string name="large">Large</string>
+<!-- Per-site dark mode -->
+
+
+    <!-- Web Theme -->
+<!-- Settings -->
+  <string name="toolbar_icon_size">Toolbar Icon Size</string>
+  <string
+        name="toolbar_icon_size_desc"
+    >Adjust the size of toolbar icons</string>
+  <string name="interface_font_scale">Interface Font Size</string>
+  <string
+        name="interface_font_scale_desc"
+    >Adjust the size of interface text</string>
+  <string name="interface_font_scale_preview">Preview Text Size</string>
+
+  <!-- ContentDescription strings for accessibility -->
+<!-- HardcodedText fixes -->
+<string name="select_time_range">Select time range</string>
+  <string name="issued_by">Issued by</string>
+  <string name="issued_to">Issued to</string>
+  <string name="connection_is_secure">Connection is secure</string>
+  <string name="certificate_information">Certificate Information</string>
+  <string name="privacy_and_security">Privacy &amp; Security</string>
+  <string
+        name="enhanced_tracking_protection"
+    >Enhanced Tracking Protection</string>
+  <string
+        name="clear_cookies_and_site_data"
+    >Clear cookies and site data</string>
+  <string name="clear_cookies_dialog_title">Clear cookies and site data?</string>
+  <string
+        name="clear_cookies_dialog_message"
+    >This will clear all cookies and site data for this website. You may need to sign in again.</string>
+  <string name="clear_cookies_dialog_positive">Clear</string>
+  <string name="clear_cookies_toast">Cookies and site data cleared</string>
+  <string name="cookie_policy_label">Cookie Policy</string>
+  <string name="cookie_retention_none">Never</string>
+  <string name="cookie_retention_dialog_title">Clear cookies for this site every…</string>
+  <string name="cookie_retention_option_never">Never</string>
+  <string name="cookie_retention_option_6h">6 hours</string>
+  <string name="cookie_retention_option_24h">24 hours</string>
+  <string name="cookie_retention_option_7d">7 days</string>
+  <string name="cookie_retention_option_30d">30 days</string>
+  <string name="cookie_retention_hours">%1$d h</string>
+  <string name="cookie_retention_days">%1$d d</string>
+  <string name="site_exceptions_title">Site exceptions</string>
+  <string
+        name="site_exceptions_summary"
+    >Per-site permissions and cookie-retention policies</string>
+  <string name="site_exceptions_empty">No per-site exceptions yet</string>
+  <string name="site_exceptions_clear_all">Clear all exceptions</string>
+  <string
+        name="site_exceptions_clear_all_confirm"
+    >Remove every per-site exception (permissions and cookie retention)? This cannot be undone.</string>
+  <string name="site_exceptions_remove_row">Remove exceptions for this site</string>
+  <string
+        name="site_exceptions_cookie_window"
+    >Clearing cookies every %1$s</string>
+  <string name="site_exceptions_no_overrides">No active overrides</string>
+
+
+  <string name="more_options">More Options</string>
+
+<string name="addon_enabled_for_profiles">Enabled for profiles</string>
+  <string name="addon_enabled_for_all_profiles">All profiles</string>
+
+  <!-- Tab Search Strings -->
+<string
+        name="search_tabs_bookmarks_history"
+    >Search tabs, bookmarks, and history</string>
+  <string
+        name="search_tabs_description"
+    >Type to search across all your tabs, bookmarks, and browsing history</string>
+
+  <!-- Theme picker descriptions -->
+<!-- Web theme picker descriptions -->
+    <string name="refresh">Refresh</string>
+    <string name="sort_addons">Sort</string>
+    <string name="mozac_feature_addons_install_addon">Install</string>
+    <string name="mozac_feature_toolbar_back_button">Back</string>
+    <string name="mozac_feature_toolbar_forward_button">Forward</string>
+    <string name="change_search_engine">Change Search Engine</string>
+<plurals name="multiselect_count">
+    <item quantity="one">%1$d selected</item>
+    <item quantity="other">%1$d selected</item>
+  </plurals>
+<plurals name="site_exceptions_permissions_count">
+    <item quantity="one">%1$d permission override</item>
+    <item quantity="other">%1$d permission overrides</item>
+  </plurals>
+<!-- Firefox Sync -->
+
+    <!-- ETP Level picker -->
+    <string name="etp_level_title">Tracking Protection</string>
+    <string name="etp_strict_title">Strict Tracking Protection</string>
+    <string name="etp_strict_warning">Strict mode may cause some sites to break. You can switch back to Standard or Custom mode at any time.</string>
+    <string name="etp_none_title">None</string>
+    <string name="etp_standard_title">Standard</string>
+    <string name="etp_custom_title">Custom</string>
+
+    <!-- Global browser menu. -->
+    <string name="menu_add_to_favorite">Favorite</string>
+    <string name="menu_close_tab">Close tab</string>
+
+
+    <!-- One-time tab migration popup (see DefaultProfileTabMigration). -->
+    <string name="lr_default_profile_migration_title">Tabs moved to Default profile</string>
+    <string name="lr_default_profile_migration_message">%1$d tab(s) that had no profile assigned were moved to the Default profile. You can find them in the tab bar now.</string>
+    <string name="lr_default_profile_migration_message_zero">Your tabs are now organized under the Default profile.</string>
+
+    <!-- Site permissions bottom sheet, opened from the Connection Info pill. -->
+    <string name="site_permissions">Site permissions</string>
+    <string name="site_permissions_title">Site permissions</string>
+    <string name="site_permissions_empty_hint">This site has not requested any permissions yet.</string>
+    <string name="permission_location">Location</string>
+    <string name="permission_notification">Notifications</string>
+    <string name="permission_microphone">Microphone</string>
+    <string name="permission_camera">Camera</string>
+    <string name="permission_persistent_storage">Persistent storage</string>
+    <string name="permission_drm">DRM-controlled content</string>
+    <string name="permission_cross_origin_storage">Cross-site cookies</string>
+    <string name="permission_autoplay_audible">Autoplay with sound</string>
+    <string name="permission_autoplay_inaudible">Autoplay (muted)</string>
+    <string name="permission_local_device_access">Local device access</string>
+    <string name="permission_local_network_access">Local network access</string>
+
+    <!-- LR-local background-playback permission. Not an AC SitePermissions field;
+         backed by `BackgroundPlaybackAllowlist`. See SitePermissionsBottomSheet
+         for rationale. -->
+    <string name="permission_background_playback">Background playback</string>
+    <string
+        name="permission_background_playback_subtitle"
+    >Keeps audio playing when the tab is backgrounded, the screen is off, or the app has been swiped from recents.</string>
+
+    <!-- Minimal-state toggle button (right of the URL pill in the address bar).
+         Down chevron while expanded (tap to minimize); up chevron while
+         minimal (tap to restore the tab bar + contextual bar). -->
+    <string name="minimal_state_collapse">Collapse toolbar</string>
+    <string name="info_icon_description">Show information</string>
+
+    <!-- Firefox Sync settings page -->
+  <string name="mozac_browser_menu_new_tab">New tab</string>
+  <string name="mozac_browser_menu_new_private_tab">New private tab</string>
+</resources>
