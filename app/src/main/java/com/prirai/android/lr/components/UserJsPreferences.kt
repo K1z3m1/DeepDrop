@@ -71,8 +71,11 @@ object UserJsPreferences {
         // Respect the page's referrer policy for cross-origin subresources.
         // Restricting this to same-origin breaks hotlink-protected images on CDNs.
         "network.http.referer.XOriginPolicy" to 0,
-        // Trim cross-origin Referer to origin only
-        "network.http.referer.XOriginTrimmingPolicy" to 2,
+        // Do not force-trim cross-origin Referer: let the page's own referrer
+        // policy decide (Gecko's default policy is already
+        // strict-origin-when-cross-origin). hitomi.la sets
+        // no-referrer-when-downgrade and its image CDN checks the Referer.
+        "network.http.referer.XOriginTrimmingPolicy" to 0,
         "network.http.sendRefererHeader" to 1,
         // Page-content prefetch stays off: it spends mobile data and asks
         // for pages the user may never open. (The network predictor, which
