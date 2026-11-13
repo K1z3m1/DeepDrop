@@ -1,15 +1,12 @@
 package com.prirai.android.lr.browser.bookmark.repository
 
 import android.content.Context
+import android.util.JsonReader
+import android.util.JsonWriter
 import com.prirai.android.lr.browser.bookmark.items.BookmarkFolderItem
 import com.prirai.android.lr.browser.bookmark.items.BookmarkItem
 import com.prirai.android.lr.browser.bookmark.items.BookmarkSiteItem
-import com.squareup.moshi.JsonReader
-import com.squareup.moshi.JsonWriter
 import mozilla.components.support.base.log.logger.Logger
-import okio.buffer
-import okio.sink
-import okio.source
 import java.io.File
 import java.io.IOException
 import java.io.Serializable
@@ -53,7 +50,7 @@ class BookmarkManager private constructor(context: Context) : Serializable {
         }
 
         try {
-            JsonReader.of(file.source().buffer()).use {
+            JsonReader(file.bufferedReader(Charsets.UTF_8)).use {
                 root.readForRoot(it)
                 createIndex()
 
@@ -74,7 +71,7 @@ class BookmarkManager private constructor(context: Context) : Serializable {
         }
 
         try {
-            JsonWriter.of(file.sink().buffer()).use {
+            JsonWriter(file.bufferedWriter(Charsets.UTF_8)).use {
                 root.writeForRoot(it)
                 return true
             }

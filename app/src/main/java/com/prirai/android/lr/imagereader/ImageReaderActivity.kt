@@ -174,6 +174,7 @@ private const val KEY_HIDE_BANNERS = "hide_banners"
 
 /** Largest decode size: original resolution, bounded for memory safety. */
 private val ORIGINAL_SIZE = Size(Dimension.Pixels(4096), Dimension.Pixels(8192))
+private val PREVIEW_SIZE = Size(Dimension.Pixels(768), Dimension.Pixels(1024))
 private val THUMB_SIZE = Size(Dimension.Pixels(240), Dimension.Pixels(340))
 
 /** Zoom limits shared by the long-strip and single-page readers. */
@@ -469,6 +470,7 @@ private fun BottomPanel(
                         targetSize = THUMB_SIZE,
                         contentScale = ContentScale.Crop,
                         flowLayout = false,
+                        preferPreview = true,
                         modifier = Modifier.fillMaxSize(),
                     )
                     Text(
@@ -561,9 +563,9 @@ private fun BottomPanel(
 }
 
 /**
- * One image with: original-resolution request, Referer/User-Agent headers
- * (many image hosts block hot-linking), fallback through the candidate URL
- * list on error, and tap-to-retry once every candidate has failed.
+ * One image with: an optional displayed-size preview while the original
+ * request loads, Referer/User-Agent headers (many image hosts block
+ * hot-linking), candidate fallback on error, and tap-to-retry after failure.
  *
  * With [flowLayout] the box takes the image's aspect ratio (known from the
  * page, or from the first successful decode) so the vertical list does not
@@ -578,12 +580,22 @@ private fun ReaderImageView(
     targetSize: Size,
     contentScale: ContentScale,
     flowLayout: Boolean,
+    preferPreview: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    var candidateIndex by remember(image) { mutableIntStateOf(0) }
+    val candidates = remember(image, preferPreview) {
+        if (preferPreview && image.previewUrl != null) {
+            listOf(image.previewUrl) + image.candidates.filterNot { it == image.previewUrl }
+        } else {
+            image.candidates
+        }
+    }
+    val previewUrl = image.previewUrl?.takeIf { !preferPreview && it != candidates.firstOrNull() }
+    var candidateIndex by remember(image, preferPreview) { mutableIntStateOf(0) }
     var failed by remember(image) { mutableStateOf(false) }
     var loading by remember(image) { mutableStateOf(true) }
+    var previewVisible by remember(image, preferPreview) { mutableStateOf(previewUrl != null) }
     var retry by remember(image) { mutableIntStateOf(0) }
     var ratio by remember(image) {
         mutableFloatStateOf(
@@ -591,13 +603,29 @@ private fun ReaderImageView(
         )
     }
 
-    val url = image.candidates[candidateIndex.coerceIn(0, image.candidates.lastIndex)]
-    val request = remember(url, retry, targetSize) {
+    val url = candidates[candidateIndex.coerceIn(0, candidates.lastIndex)]
+    val previewRequest = remember(previewUrl, referer, userAgent) {
+        previewUrl?.let { preview ->
+            ImageRequest.Builder(context)
+                .data(preview)
+                .memoryCacheKey(preview)
+                .apply {
+                    if (referer.isNotBlank()) addHeader("Referer", referer)
+                    if (userAgent.isNotBlank()) addHeader("User-Agent", userAgent)
+                }
+                .size(PREVIEW_SIZE)
+                .scale(Scale.FIT)
+                .precision(Precision.INEXACT)
+                .build()
+        }
+    }
+    val request = remember(url, previewUrl, retry, targetSize) {
         ImageRequest.Builder(context)
             .data(url)
             .apply {
                 if (referer.isNotBlank()) addHeader("Referer", referer)
                 if (userAgent.isNotBlank()) addHeader("User-Agent", userAgent)
+                if (previewUrl != null) placeholderMemoryCacheKey(previewUrl)
             }
             .size(targetSize)
             .scale(Scale.FIT)
@@ -636,13 +664,14 @@ private fun ReaderImageView(
                 onLoading = { loading = true },
                 onSuccess = { state ->
                     loading = false
+                    previewVisible = false
                     val size = state.painter.intrinsicSize
                     if (size.isSpecified && size.height > 0f && size.width > 0f) {
                         ratio = size.width / size.height
                     }
                 },
                 onError = {
-                    if (candidateIndex < image.candidates.lastIndex) {
+                    if (candidateIndex < candidates.lastIndex) {
                         candidateIndex++
                     } else {
                         loading = false
@@ -650,6 +679,16 @@ private fun ReaderImageView(
                     }
                 },
             )
+            if (previewVisible && previewRequest != null) {
+                AsyncImage(
+                    model = previewRequest,
+                    imageLoader = loader,
+                    contentDescription = null,
+                    contentScale = contentScale,
+                    modifier = Modifier.fillMaxSize(),
+                    onError = { previewVisible = false },
+                )
+            }
             if (loading && targetSize == ORIGINAL_SIZE) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(28.dp),

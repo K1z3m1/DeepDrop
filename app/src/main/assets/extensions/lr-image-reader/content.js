@@ -7,9 +7,9 @@
  *   2. collects <img>, <picture>, CSS background and linked images in
  *      DOM order,
  *   3. for each one builds an ordered list of candidate URLs, best
- *      (original resolution) first, as-found last. The host tries
- *      them in order and falls back on error, so an over-eager URL
- *      rewrite can never lose an image.
+ *      (original resolution) first, as-found last, plus a separate
+ *      as-displayed preview URL when available. The host can show the
+ *      preview while loading the best candidate and fall back on error.
  */
 (function () {
   "use strict";
@@ -226,6 +226,17 @@
     return uniq(cands);
   }
 
+  function previewFromImg(img, cands) {
+    var possible = [absolute(img.currentSrc), absolute(img.getAttribute("src"))];
+    LAZY_ATTRS.forEach(function (k) {
+      possible.push(absolute(img.getAttribute(k)));
+    });
+    for (var i = 0; i < possible.length; i++) {
+      if (possible[i] && possible[i] !== cands[0]) return possible[i];
+    }
+    return "";
+  }
+
   function skipByContext(el, w, h) {
     // Chrome/branding images in nav/header/footer are almost never content.
     var small = Math.max(w, h) < 300;
@@ -243,6 +254,7 @@
       var img = imgs[i];
       var cands = fromImg(img);
       if (!cands.length) continue;
+      var preview = previewFromImg(img, cands);
       var nw = img.complete ? img.naturalWidth : 0;
       var nh = img.complete ? img.naturalHeight : 0;
       var r = img.getBoundingClientRect();
@@ -253,7 +265,7 @@
       if (nw === 0 && rw > 0 && rh > 0 && rw < 100 && rh < 100) continue;
       if (/\.svg(?:$|[?#])/i.test(cands[cands.length - 1])) continue;
       if (skipByContext(img, nw || rw, nh || rh)) continue;
-      items.push({ el: img, c: cands, w: nw, h: nh });
+      items.push({ el: img, c: cands, p: preview, w: nw, h: nh });
     }
 
     // CSS backgrounds (hero images, some readers render pages this way).
@@ -272,7 +284,7 @@
       if (!u || /\.svg(?:$|[?#])/i.test(u)) continue;
       if (skipByContext(el, rect.width, rect.height)) continue;
       var cs = uniq(upgrades(u).concat([u]));
-      items.push({ el: el, c: cs, w: 0, h: 0 });
+      items.push({ el: el, c: cs, p: "", w: 0, h: 0 });
     }
 
     // DOM order, then de-duplicate on the best candidate.
@@ -289,7 +301,7 @@
       var key = items[k].c[0];
       if (seen[key]) continue;
       seen[key] = true;
-      out.push({ c: items[k].c, w: items[k].w, h: items[k].h, el: items[k].el });
+      out.push({ c: items[k].c, p: items[k].p, w: items[k].w, h: items[k].h, el: items[k].el });
     }
     return out;
   }
@@ -412,7 +424,7 @@
       var cands = fromImg(imgs[i]);
       if (!cands.length || seen[cands[0]]) continue;
       seen[cands[0]] = true;
-      list.push({ c: cands, w: 0, h: 0, el: null });
+      list.push({ c: cands, p: previewFromImg(imgs[i], cands), w: 0, h: 0, el: null });
       added++;
     }
     return added;
@@ -481,7 +493,7 @@
       var key = items[k].c[0];
       if (seen[key]) continue;
       seen[key] = true;
-      list.push({ c: items[k].c, w: items[k].w, h: items[k].h, el: null });
+      list.push({ c: items[k].c, p: items[k].p, w: items[k].w, h: items[k].h, el: null });
       added++;
     }
     return added;
@@ -774,7 +786,7 @@
         all = await resolveDetail(all, rep, startedAt);
       } catch (e) { /* keep the thumbnails */ }
       result.images = all.map(function (it) {
-        return { c: it.c, w: it.w, h: it.h };
+        return { c: it.c, p: it.p || "", w: it.w, h: it.h };
       });
     } catch (e) {
       result.error = String(e && e.message ? e.message : e);

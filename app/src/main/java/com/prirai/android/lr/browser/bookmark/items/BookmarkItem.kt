@@ -1,8 +1,9 @@
 package com.prirai.android.lr.browser.bookmark.items
 
+import android.util.JsonReader
+import android.util.JsonToken
+import android.util.JsonWriter
 import com.prirai.android.lr.utils.BookmarkUtils
-import com.squareup.moshi.JsonReader
-import com.squareup.moshi.JsonWriter
 import java.io.IOException
 import java.io.Serializable
 
@@ -26,7 +27,7 @@ abstract class BookmarkItem(var title: String?, val id: Long) : Serializable {
 
     @Throws(IOException::class)
     protected fun read(reader: JsonReader, parent: BookmarkFolderItem): BookmarkItem? {
-        if (reader.peek() != JsonReader.Token.BEGIN_OBJECT){
+        if (reader.peek() != JsonToken.BEGIN_OBJECT){
             return null
         }
         reader.beginObject()
@@ -37,20 +38,20 @@ abstract class BookmarkItem(var title: String?, val id: Long) : Serializable {
         loop@ while (reader.hasNext()) {
             when (val name = reader.nextName()) {
                 COLUMN_NAME_TYPE -> {
-                    if (reader.peek() != JsonReader.Token.NUMBER){
+                    if (reader.peek() != JsonToken.NUMBER){
                         return null
                     }
                     id = reader.nextInt()
                 }
                 COLUMN_NAME_TITLE -> {
-                    if (reader.peek() == JsonReader.Token.STRING) {
+                    if (reader.peek() == JsonToken.STRING) {
                         title = reader.nextString()
                     } else {
                         reader.skipValue()
                     }
                 }
                 COLUMN_NAME_ID -> {
-                    if (reader.peek() != JsonReader.Token.NUMBER) return null
+                    if (reader.peek() != JsonToken.NUMBER) return null
                     itemId = reader.nextLong()
                 }
                 else -> {
@@ -73,7 +74,7 @@ abstract class BookmarkItem(var title: String?, val id: Long) : Serializable {
             else -> return null
         }
         item.readMain(lastName, reader)
-        while (reader.peek() != JsonReader.Token.END_OBJECT) {
+        while (reader.peek() != JsonToken.END_OBJECT) {
             reader.skipValue()
         }
         reader.endObject()

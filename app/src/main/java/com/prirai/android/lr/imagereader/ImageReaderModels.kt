@@ -7,13 +7,15 @@ import org.json.JSONObject
 /**
  * One image found on the page. [candidates] is ordered best (original
  * resolution) first; the viewer tries them in order and falls back on error.
- * [width]/[height] are the natural size when the page had already loaded the
- * image, otherwise 0.
+ * [previewUrl], when available, is a distinct URL suitable for showing while
+ * the best candidate loads. [width]/[height] are the natural size when the
+ * page had already loaded the image, otherwise 0.
  */
 data class ReaderImage(
     val candidates: List<String>,
     val width: Int,
     val height: Int,
+    val previewUrl: String? = null,
 )
 
 data class ReaderPayload(
@@ -45,6 +47,8 @@ data class ReaderPayload(
                             candidates = list,
                             width = obj.optInt("w", 0).coerceAtLeast(0),
                             height = obj.optInt("h", 0).coerceAtLeast(0),
+                            previewUrl = obj.optString("p", "")
+                                .takeIf { isLoadable(it) && it != list.first() },
                         )
                     )
                 }

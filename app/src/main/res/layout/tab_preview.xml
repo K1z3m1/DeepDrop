@@ -7,7 +7,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
 >
 
-    <mozilla.components.browser.tabstray.thumbnail.TabThumbnailView
+    <com.prirai.android.lr.browser.BrowserThumbnailView
         android:id="@+id/previewThumbnail"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

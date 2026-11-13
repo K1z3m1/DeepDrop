@@ -1,7 +1,8 @@
 package com.prirai.android.lr.browser.bookmark.items
 
-import com.squareup.moshi.JsonReader
-import com.squareup.moshi.JsonWriter
+import android.util.JsonReader
+import android.util.JsonToken
+import android.util.JsonWriter
 import java.io.IOException
 import java.io.Serializable
 
@@ -53,7 +54,7 @@ class BookmarkFolderItem(title: String?, var parent: BookmarkFolderItem?, id: Lo
     @Throws(IOException::class)
     override fun readMain(name: String?, reader: JsonReader): Boolean {
         if (COLUMN_NAME_LIST != name) return false
-        if (reader.peek() != JsonReader.Token.BEGIN_ARRAY) return false
+        if (reader.peek() != JsonToken.BEGIN_ARRAY) return false
         reader.beginArray()
         while (reader.hasNext()) {
             list.add(read(reader, this) ?: return false)
@@ -74,7 +75,7 @@ class BookmarkFolderItem(title: String?, var parent: BookmarkFolderItem?, id: Lo
 
     @Throws(IOException::class)
     fun readForRoot(reader: JsonReader): Boolean {
-        if (reader.peek() != JsonReader.Token.BEGIN_ARRAY) return false
+        if (reader.peek() != JsonToken.BEGIN_ARRAY) return false
         reader.beginArray()
         while (reader.hasNext()) {
             list.add(read(reader, this) ?: return false)

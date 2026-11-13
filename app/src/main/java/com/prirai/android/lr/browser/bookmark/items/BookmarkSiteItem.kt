@@ -1,7 +1,8 @@
 package com.prirai.android.lr.browser.bookmark.items
 
-import com.squareup.moshi.JsonReader
-import com.squareup.moshi.JsonWriter
+import android.util.JsonReader
+import android.util.JsonToken
+import android.util.JsonWriter
 import java.io.IOException
 import java.io.Serializable
 
@@ -28,7 +29,7 @@ class BookmarkSiteItem : BookmarkItem, Serializable {
     @Throws(IOException::class)
     override fun readMain(name: String?, reader: JsonReader): Boolean {
         if (COLUMN_NAME_URL != name) return false
-        if (reader.peek() != JsonReader.Token.STRING) return false
+        if (reader.peek() != JsonToken.STRING) return false
         url = reader.nextString()
         return true
     }

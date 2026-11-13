@@ -17,6 +17,7 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.app.AppCompatDialogFragment
+import androidx.appcompat.widget.AppCompatEditText
 import androidx.constraintlayout.widget.ConstraintProperties.BOTTOM
 import androidx.constraintlayout.widget.ConstraintProperties.PARENT_ID
 import androidx.constraintlayout.widget.ConstraintProperties.TOP
@@ -72,7 +73,6 @@ import mozilla.components.lib.state.ext.consumeFrom
 import mozilla.components.support.base.feature.UserInteractionHandler
 import mozilla.components.support.ktx.android.content.getColorFromAttr
 import mozilla.components.support.ktx.android.view.hideKeyboard
-import mozilla.components.ui.autocomplete.InlineAutocompleteEditText
 import com.prirai.android.lr.components.toolbar.ToolbarPosition as OldToolbarPosition
 
 typealias SearchDialogFragmentStore = SearchFragmentStore
@@ -266,7 +266,7 @@ class SearchDialogFragment : AppCompatDialogFragment(), UserInteractionHandler {
         }
 
         val urlView = toolbarView.view
-            .findViewById<InlineAutocompleteEditText>(R.id.mozac_browser_toolbar_edit_url_view)
+            .findViewById<AppCompatEditText>(R.id.mozac_browser_toolbar_edit_url_view)
         urlView?.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
 
         components.engine.speculativeCreateSession(isPrivate)
@@ -377,7 +377,7 @@ class SearchDialogFragment : AppCompatDialogFragment(), UserInteractionHandler {
     private fun onFillLinkFromClipboardClicked() {
         val clipboardUrl = requireContext().components.clipboardHandler.extractURL() ?: ""
         val urlView = toolbarView.view
-            .findViewById<InlineAutocompleteEditText>(R.id.mozac_browser_toolbar_edit_url_view)
+            .findViewById<AppCompatEditText>(R.id.mozac_browser_toolbar_edit_url_view)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             toolbarView.view.edit.updateUrl(clipboardUrl)
@@ -498,7 +498,7 @@ class SearchDialogFragment : AppCompatDialogFragment(), UserInteractionHandler {
 
     private fun updateToolbarContentDescription(searchState: SearchFragmentState) {
         val urlView = toolbarView.view
-            .findViewById<InlineAutocompleteEditText>(R.id.mozac_browser_toolbar_edit_url_view)
+            .findViewById<AppCompatEditText>(R.id.mozac_browser_toolbar_edit_url_view)
 
         searchState.searchEngineSource.searchEngine?.let { engine ->
             toolbarView.view.contentDescription = engine.name + ", " + urlView.hint

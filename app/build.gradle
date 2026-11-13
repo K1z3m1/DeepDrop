@@ -30,7 +30,6 @@ android {
             // arm64 only: native libs of other ABIs are skipped entirely
             abiFilters 'arm64-v8a'
         }
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     compileOptions {
@@ -106,14 +105,10 @@ androidComponents {
 
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation libs.material
 
     // Support libraries
     implementation libs.androidx.recyclerview
-    // VerticalSwipeRefreshLayout (ui-widgets) extends SwipeRefreshLayout; the
-    // class must be on the app's compile classpath to use it from Kotlin.
-    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
     implementation libs.androidx.core.ktx
     implementation libs.androidx.constraintlayout
     implementation libs.androidx.preference.ktx
@@ -152,7 +147,6 @@ dependencies {
     implementation libs.browser.state
     implementation libs.browser.toolbar
     implementation libs.browser.session.storage
-    implementation libs.browser.tabstray
     implementation libs.browser.menu
     implementation libs.browser.storage.sync
     implementation libs.browser.errorpages
@@ -193,7 +187,6 @@ dependencies {
     implementation libs.remotesettings
 
     // Mozilla UI components
-    implementation libs.ui.autocomplete
     implementation libs.ui.icons
     implementation libs.ui.widgets
 
@@ -203,16 +196,6 @@ dependencies {
     implementation libs.lib.fetch.httpurlconnection
     implementation libs.support.appservices
 
-
-    testImplementation libs.junit
-    androidTestImplementation libs.androidx.junit
-    androidTestImplementation libs.androidx.espresso.core
-
-    // JSON parsing
-    implementation libs.moshi
-    implementation libs.moshi.kotlin
-
-    // OkHTTP
 
     implementation libs.androidx.ui
     implementation libs.androidx.foundation
