@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<resources>
+    <!-- Legacy colors (deprecated - use Material 3 attributes instead) -->
+<color name="white">#FFFFFF</color>
+    
+    <!-- Material 3 Light Color Scheme -->
+    <color name="m3_primary">#6650a4</color>
+    <color name="m3_on_primary">#FFFFFF</color>
+    <color name="m3_primary_container">#EADDFF</color>
+    <color name="m3_on_primary_container">#21005D</color>
+    
+    <color name="m3_secondary">#625b71</color>
+    <color name="m3_on_secondary">#FFFFFF</color>
+    <color name="m3_secondary_container">#E8DEF8</color>
+    <color name="m3_on_secondary_container">#1D192B</color>
+    
+    <color name="m3_tertiary">#7D5260</color>
+    <color name="m3_on_tertiary">#FFFFFF</color>
+    <color name="m3_tertiary_container">#FFD8E4</color>
+    <color name="m3_on_tertiary_container">#31111D</color>
+    
+    <color name="m3_error">#B3261E</color>
+    <color name="m3_on_error">#FFFFFF</color>
+    <color name="m3_error_container">#F9DEDC</color>
+    <color name="m3_on_error_container">#410E0B</color>
+    
+    <color name="m3_surface">#FDFBFF</color>
+    <color name="m3_on_surface">#1C1B1F</color>
+    <color name="m3_surface_variant">#E7E0EC</color>
+    <color name="m3_on_surface_variant">#49454F</color>
+    <color name="m3_surface_container_low">#F7F2FA</color>
+    <color name="m3_surface_container">#F3EDF7</color>
+    <color name="m3_surface_container_high">#ECE6F0</color>
+    <color name="m3_surface_container_highest">#E6E0E9</color>
+    
+    <color name="m3_background">#FFFBFE</color>
+    <color name="m3_on_background">#1C1B1F</color>
+    
+    <color name="m3_outline">#79747E</color>
+    <color name="m3_outline_variant">#CAC4D0</color>
+<!-- Semantic colors for compatibility -->
+<color name="primary_icon">@color/m3_on_surface_variant</color>
+    <color name="secondary_icon">@color/m3_outline</color>
+<color name="statusbar_background">@color/m3_surface_container_high</color>
+<color name="icon_circle_5">#F7E9D5</color>
+    <color name="icon_inside_5">#f59714</color>
+
+    <!-- Tab card colors (light mode) -->
+<!-- Search result chips -->
+    <color name="chip_stroke_color_themed">@color/m3_primary</color>
+    <color name="chip_text_color_themed">@color/m3_primary</color>
+
+    <!-- Unified Toolbar colors -->
+<color name="secure_icon_color">#4CAF50</color>
+    <color name="insecure_icon_color">@color/m3_error</color>
+    
+    <!-- Material 3 themed backgrounds and text -->
+<!-- Additional semantic colors -->
+    <color name="security_indicator_secure">@color/secure_icon_color</color>
+    <color name="menu_text_color">@color/m3_on_surface</color>
+    
+    <!-- Settings/Preference dividers -->
+    <color name="preference_divider">@color/m3_outline_variant</color>
+    
+    <!-- Pure black for AMOLED mode -->
+<!-- Legacy Mozilla colors for compatibility -->
+    <color name="photonGrey40">@color/m3_outline_variant</color>
+<color name="photonBlue40">@color/m3_primary</color>
+
+    <!-- Settings category icon tints: muted, deepened tones that hold
+         ~3:1 contrast on light surfaces. Night variants lift them. -->
+    <color name="settings_icon_general">#4A6579</color>
+    <color name="settings_icon_sync">#45707A</color>
+    <color name="settings_icon_privacy">#4A7A5C</color>
+    <color name="settings_icon_customization">#6E5A86</color>
+    <color name="settings_icon_webapps">#3F7270</color>
+    <color name="settings_icon_addons">#9C6B3F</color>
+    <color name="settings_icon_import_export">#7A5F4E</color>
+    <color name="settings_icon_advanced">#964F4A</color>
+    <color name="settings_icon_about">#5C6470</color>
+
+    
+</resources>

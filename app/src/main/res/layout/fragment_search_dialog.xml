@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/search_wrapper"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    android:background="?attr/colorSurface">
+
+    <mozilla.components.browser.toolbar.BrowserToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:background="?attr/colorSurface"
+        app:browserToolbarClearColor="?attr/colorOnSurface"
+        app:browserToolbarInsecureColor="?attr/colorError"
+        app:browserToolbarMenuColor="?attr/colorOnSurface"
+        app:browserToolbarProgressBarGravity="bottom"
+        app:browserToolbarSecureColor="?attr/colorPrimary"
+        app:browserToolbarTrackingProtectionAndSecurityIndicatorSeparatorColor="?attr/colorOutline"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_scrollFlags="scroll|enterAlways|snap|exitUntilCollapsed" />
+
+    <com.prirai.android.nira.search.awesomebar.AwesomeBarWrapper
+        android:id="@+id/awesome_bar"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="4dp"
+        android:fadingEdge="horizontal"
+        android:fadingEdgeLength="40dp"
+        android:nestedScrollingEnabled="false"
+        android:requiresFadingEdge="vertical"
+        android:visibility="invisible"
+        android:background="?attr/colorSurface"
+        app:layout_constraintBottom_toTopOf="@+id/pill_wrapper"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/top_barrier" />
+
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/top_barrier"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="bottom"
+        app:layout_constraintTop_toBottomOf="@id/toolbar" />
+
+    <!--
+        Clipboard "fill link" accessory. Content is composed in
+        SearchDialogFragment (NiraCardRow card + divider); visibility is
+        still driven by the fragment via View.VISIBLE/GONE so the
+        constraint-layout flow matches the old plain-View row.
+    -->
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/fill_link_from_clipboard"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/toolbar" />
+
+    <!--
+        Search-actions accessory (divider + engine-shortcut chip + QR
+        scan). Content is composed in SearchDialogFragment; the id is
+        kept because the awesome bar constrains its bottom to this
+        node's top.
+    -->
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/pill_wrapper"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>
