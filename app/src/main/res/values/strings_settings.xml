@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings screen labels (moved out of the XML layouts). -->
+<resources>
+    <string name="pref_amoled_mode">AMOLED mode</string>
+    <string name="pref_appearance">Appearance</string>
+    <string name="pref_apply_semi_transparent_overlay_to_homepa">Apply semi-transparent overlay to homepage background</string>
+    <string name="pref_blocked_categories">Blocked Categories</string>
+    <string name="pref_blocks_ads_that_track_your_browsing">Blocks ads that track your browsing</string>
+    <string name="pref_blocks_content_that_tracks_your_browsing">Blocks content that tracks your browsing</string>
+    <string name="pref_blocks_email_tracking_pixels">Blocks email tracking pixels</string>
+    <string name="pref_blocks_scripts_that_fingerprint_your_dev">Blocks scripts that fingerprint your device</string>
+    <string name="pref_blocks_scripts_that_mine_cryptocurrency">Blocks scripts that mine cryptocurrency</string>
+    <string name="pref_blocks_social_media_tracking">Blocks social media tracking</string>
+    <string name="pref_browser">Browser</string>
+    <string name="pref_choose_what_to_block_in_custom_mode">Choose what to block in Custom mode</string>
+    <string name="pref_clear_browsing_data">Clear browsing data</string>
+    <string name="pref_controls_how_lr_blocks_trackers_and_scri">Controls how LR blocks trackers and scripts</string>
+    <string name="pref_cryptominers">Cryptominers</string>
+    <string name="pref_developer_options">Developer options (advanced)</string>
+    <string name="pref_dim_homepage_wallpaper">Dim homepage wallpaper</string>
+    <string name="pref_downloads">Downloads</string>
+    <string name="pref_dynamic_colors">Dynamic colors</string>
+    <string name="pref_email_tracking">Email Tracking</string>
+    <string name="pref_enhanced_tracking_protection">Enhanced Tracking Protection</string>
+    <string name="pref_extension_management">Extension Management</string>
+    <string name="pref_fingerprinters">Fingerprinters</string>
+    <string name="pref_gestures">Gestures</string>
+    <string name="pref_homepage">Homepage</string>
+    <string name="pref_pure_black_background_for_oled_displays_">Pure black background for OLED displays (dark mode only)</string>
+    <string name="pref_security">Certificates</string>
+    <string name="pref_social_trackers">Social Trackers</string>
+    <string name="pref_tabs_layout">Tabs &amp; Layout</string>
+    <string name="pref_tabs_permissions">Site permissions &amp; tabs</string>
+    <string name="pref_text_display">Text &amp; Display</string>
+    <string name="pref_toolbar_navigation">Toolbar &amp; Navigation</string>
+    <string name="pref_tracking_ads">Tracking Ads</string>
+    <string name="pref_tracking_content">Tracking Content</string>
+    <string name="pref_tracking_protection">Tracking Protection</string>
+    <string name="pref_use_colors_from_your_wallpaper_android_1">Use colors from your wallpaper (Android 12+)</string>
+    <string name="pref_warn_remote_debugging">Lets a computer inspect open pages over USB. Keep off unless you are developing.</string>
+    <string name="pref_warn_trust_certs">Trusts certificates installed by you or other apps. Turn on only if you understand the risk.</string>
+    <string name="settings_group_browsing">Browsing</string>
+    <string name="settings_group_privacy_data">Privacy &amp; data</string>
+    <string name="settings_group_system">System</string>
+</resources>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings home: three groups. Browsing / Privacy & data / System. -->
+<androidx.preference.PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <androidx.preference.PreferenceCategory android:title="@string/settings_group_browsing">
+        <androidx.preference.Preference
+            android:fragment="com.prirai.android.lr.settings.fragment.GeneralSettingsFragment"
+            android:icon="@drawable/mozac_ic_settings_24"
+            android:title="@string/settings_general"
+            android:singleLineTitle="false"/>
+        <androidx.preference.Preference
+            android:fragment="com.prirai.android.lr.settings.fragment.CustomizationSettingsFragment"
+            android:icon="@drawable/mozac_ic_themes_24"
+            android:title="@string/settings_customization"
+            android:singleLineTitle="false"/>
+        <androidx.preference.Preference
+            android:key="addons_settings"
+            android:icon="@drawable/mozac_ic_extension_24"
+            android:title="@string/settings_addons"
+            android:singleLineTitle="false"/>
+    </androidx.preference.PreferenceCategory>
+
+    <androidx.preference.PreferenceCategory android:title="@string/settings_group_privacy_data">
+        <androidx.preference.Preference
+            android:fragment="com.prirai.android.lr.settings.fragment.PrivacyAndSecuritySettingsFragment"
+            android:icon="@drawable/mozac_ic_shield_24"
+            android:title="@string/settings_privacy_and_security"
+            android:singleLineTitle="false"/>
+        <androidx.preference.Preference
+            android:fragment="com.prirai.android.lr.settings.fragment.ImportExportSettingsFragment"
+            android:icon="@drawable/mozac_ic_import_data_24"
+            android:title="@string/settings_import_and_export"
+            android:singleLineTitle="false"/>
+    </androidx.preference.PreferenceCategory>
+
+    <androidx.preference.PreferenceCategory android:title="@string/settings_group_system">
+        <androidx.preference.Preference
+            android:fragment="com.prirai.android.lr.settings.fragment.AdvancedSettingsFragment"
+            android:icon="@drawable/mozac_ic_tool_24"
+            android:title="@string/settings_advanced"
+            android:singleLineTitle="false"/>
+        <androidx.preference.Preference
+            android:fragment="com.prirai.android.lr.settings.fragment.AboutSettingsFragment"
+            android:icon="@drawable/mozac_ic_information_24"
+            android:title="@string/settings_about"
+            android:singleLineTitle="false"/>
+    </androidx.preference.PreferenceCategory>
+
+</androidx.preference.PreferenceScreen>
