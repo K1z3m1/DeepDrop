@@ -72,7 +72,7 @@ jobs:
             echo "::warning::No KEYSTORE_BASE64 secret set - signing with a temporary key. The APK installs, but in-app updates will be rejected because the signature changes every build."
             keytool -genkeypair -v -keystore "$RUNNER_TEMP/temp.jks" -alias temp \
               -keyalg RSA -keysize 2048 -validity 10000 \
-              -storepass temppass -keypass temppass -dname "CN=Nira CI"
+              -storepass temppass -keypass temppass -dname "CN=LR CI"
             echo "ks=$RUNNER_TEMP/temp.jks" >> "$GITHUB_OUTPUT"
             echo "alias=temp" >> "$GITHUB_OUTPUT"
             echo "release_key=false" >> "$GITHUB_OUTPUT"
@@ -90,7 +90,7 @@ jobs:
           set -euo pipefail
           IN=$(ls app/build/outputs/apk/release/*.apk | head -n 1)
           VER=$(grep -oP 'versionName\s*=\s*"\K[^"]+' app/build.gradle | head -n 1)
-          NAME="nira-${VER}-arm64-v8a.apk"
+          NAME="LR-${VER}-arm64-v8a.apk"
           mkdir -p dist
           "$BT/zipalign" -p -f 4 "$IN" dist/aligned.apk
           if [ "$RELEASE_KEY" = "true" ]; then

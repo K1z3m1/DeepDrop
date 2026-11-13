@@ -22,5 +22,5 @@
 
     <solid android:color="?attr/colorSurfaceContainerHigh" />
 
-    <corners android:radius="8dp" />
+    <corners android:radius="20dp" />
 </shape>

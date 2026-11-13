@@ -154,11 +154,11 @@
     <string name="delete_folder_confirm">حذف المجلد \"%1$s\" وجميع محتوياته؟</string>
     <string name="delete_confirm">هل أنت متأكد أنك تريد حذف هذا العنصر؟</string>
     <string name="delete_confirm_title">تأكيد الحذف</string>
-    <string name="browser_menu_open_in_nira">فتح في متصفح نيرا</string>
+    <string name="browser_menu_open_in_lr">فتح في متصفح LR</string>
     <string name="browser_menu_find_in_page">بحث في الصفحة</string>
     <string name="skip">تخطي</string>
     <string name="next">التالي</string>
-    <string name="welcome_to_nira">مرحباً بك في متصفح نيرا</string>
+    <string name="welcome_to_lr">مرحباً بك في متصفح LR</string>
     <string name="extensions">الإضافات</string>
     <string name="choose_your_theme">اختر مظهرك</string>
     <string name="icon_size">حجم الأيقونة</string>

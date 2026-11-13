@@ -154,11 +154,11 @@
     <string name="delete_folder_confirm">Удалить папку «%1$s» со всем содержимым?</string>
     <string name="delete_confirm">Вы уверены, что хотите удалить этот элемент?</string>
     <string name="delete_confirm_title">Подтвердить удаление</string>
-    <string name="browser_menu_open_in_nira">Открыть в браузере Nira</string>
+    <string name="browser_menu_open_in_lr">Открыть в браузере LR</string>
     <string name="browser_menu_find_in_page">Найти на странице</string>
     <string name="skip">Пропустить</string>
     <string name="next">Далее</string>
-    <string name="welcome_to_nira">Добро пожаловать в Nira Browser</string>
+    <string name="welcome_to_lr">Добро пожаловать в LR</string>
     <string name="extensions">Расширения</string>
     <string name="choose_your_theme">Выбрать тему</string>
     <string name="icon_size">Размер значков</string>

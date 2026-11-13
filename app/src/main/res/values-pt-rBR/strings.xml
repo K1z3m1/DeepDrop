@@ -154,11 +154,11 @@
     <string name="delete_folder_confirm">Excluir pasta \"%1$s\" e todo o seu conteúdo?</string>
     <string name="delete_confirm">Tem certeza de que deseja excluir este item?</string>
     <string name="delete_confirm_title">Confirmar Exclusão</string>
-    <string name="browser_menu_open_in_nira">Abrir no Nira Browser</string>
+    <string name="browser_menu_open_in_lr">Abrir no LR</string>
     <string name="browser_menu_find_in_page">Localizar na página</string>
     <string name="skip">Pular</string>
     <string name="next">Próximo</string>
-    <string name="welcome_to_nira">Bem-vindo ao Nira Browser</string>
+    <string name="welcome_to_lr">Bem-vindo ao LR</string>
     <string name="extensions">Extensões</string>
     <string name="choose_your_theme">Escolha Seu Tema</string>
     <string name="icon_size">Tamanho do Ícone</string>

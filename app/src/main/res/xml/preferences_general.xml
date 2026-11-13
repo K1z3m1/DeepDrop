@@ -12,14 +12,14 @@
             app:icon="@drawable/mozac_ic_search_24"
             app:singleLineTitle="false"/>
 
-        <com.prirai.android.nira.settings.InfoPreference
+        <com.prirai.android.lr.settings.InfoPreference
             app:key="@string/key_private_search_engine"
             app:title="@string/private_search_engine"
             app:infoText="@string/private_search_engine_summary"
             app:icon="@drawable/mozac_ic_private_mode_24"
             app:singleLineTitle="false"/>
 
-        <com.prirai.android.nira.settings.MaterialSwitchPreference
+        <com.prirai.android.lr.settings.MaterialSwitchPreference
             app:key="@string/key_search_suggestions_enabled"
             app:title="@string/search_suggestions"
             app:singleLineTitle="false"
@@ -37,7 +37,7 @@
 
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="Browser">
+    <PreferenceCategory android:title="@string/pref_browser">
         
         <Preference
             app:key="@string/key_homepage_type"
@@ -45,7 +45,7 @@
             app:icon="@drawable/mozac_ic_home_24"
             app:singleLineTitle="false"/>
 
-        <com.prirai.android.nira.settings.InfoSwitchPreference
+        <com.prirai.android.lr.settings.InfoSwitchPreference
             app:key="@string/key_desktop_mode_default"
             app:title="@string/desktop_mode_default"
             app:infoText="@string/desktop_mode_default_summary"
@@ -53,7 +53,7 @@
             app:singleLineTitle="false"
             app:defaultValue="false"/>
 
-        <com.prirai.android.nira.settings.InfoSwitchPreference
+        <com.prirai.android.lr.settings.InfoSwitchPreference
             app:key="@string/key_translations_enabled"
             app:title="@string/translations_enabled"
             app:infoText="@string/translations_enabled_summary"
@@ -61,7 +61,7 @@
             app:singleLineTitle="false"
             app:defaultValue="true"/>
 
-        <com.prirai.android.nira.settings.MaterialSwitchPreference
+        <com.prirai.android.lr.settings.MaterialSwitchPreference
             app:key="@string/key_javascript_enabled"
             app:title="@string/javascript_enabled"
             app:singleLineTitle="false"

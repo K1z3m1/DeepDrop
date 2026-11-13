@@ -154,11 +154,11 @@
     <string name="delete_folder_confirm">フォルダー \"%1$s\" とそのすべてのコンテンツを削除しますか？</string>
     <string name="delete_confirm">この項目を削除してもよろしいですか？</string>
     <string name="delete_confirm_title">削除の確認</string>
-    <string name="browser_menu_open_in_nira">Niraブラウザで開く</string>
+    <string name="browser_menu_open_in_lr">LRブラウザで開く</string>
     <string name="browser_menu_find_in_page">ページ内検索</string>
     <string name="skip">スキップ</string>
     <string name="next">次へ</string>
-    <string name="welcome_to_nira">Niraブラウザへようこそ</string>
+    <string name="welcome_to_lr">LRブラウザへようこそ</string>
     <string name="extensions">拡張機能</string>
     <string name="choose_your_theme">テーマを選択</string>
     <string name="icon_size">アイコンサイズ</string>

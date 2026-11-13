@@ -154,11 +154,11 @@
     <string name="delete_folder_confirm">\"%1$s\" klasörü ve tüm içeriği silinsin mi?</string>
     <string name="delete_confirm">Bu öğeyi silmek istediğinizden emin misiniz?</string>
     <string name="delete_confirm_title">Silmeyi Onayla</string>
-    <string name="browser_menu_open_in_nira">Nira Tarayıcı\'da aç</string>
+    <string name="browser_menu_open_in_lr">LR Tarayıcı\'da aç</string>
     <string name="browser_menu_find_in_page">Sayfada bul</string>
     <string name="skip">Atla</string>
     <string name="next">İleri</string>
-    <string name="welcome_to_nira">Nira Tarayıcı\'ya hoş geldiniz</string>
+    <string name="welcome_to_lr">LR Tarayıcı\'ya hoş geldiniz</string>
     <string name="extensions">Uzantılar</string>
     <string name="choose_your_theme">Temanızı Seçin</string>
     <string name="icon_size">Simge Boyutu</string>

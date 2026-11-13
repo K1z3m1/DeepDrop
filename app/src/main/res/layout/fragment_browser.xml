@@ -1,4 +1,4 @@
-<com.prirai.android.nira.browser.SwipeGestureLayout
+<com.prirai.android.lr.browser.SwipeGestureLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -72,7 +72,7 @@
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 
-    <com.prirai.android.nira.browser.FakeTab
+    <com.prirai.android.lr.browser.FakeTab
         android:id="@+id/tabPreview"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -80,4 +80,4 @@
         android:focusable="false"
         android:visibility="gone"
     />
-</com.prirai.android.nira.browser.SwipeGestureLayout>
+</com.prirai.android.lr.browser.SwipeGestureLayout>

@@ -20,7 +20,7 @@
             android:layout_marginHorizontal="24dp"
             android:layout_marginVertical="8dp" />
 
-        <com.prirai.android.nira.utils.LinkTextView
+        <com.prirai.android.lr.utils.LinkTextView
             android:id="@+id/link"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

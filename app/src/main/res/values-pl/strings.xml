@@ -154,11 +154,11 @@
     <string name="delete_folder_confirm">Usunąć folder \"%1$s\" i całą jego zawartość?</string>
     <string name="delete_confirm">Czy na pewno chcesz usunąć ten element?</string>
     <string name="delete_confirm_title">Potwierdź usunięcie</string>
-    <string name="browser_menu_open_in_nira">Otwórz w przeglądarce Nira</string>
+    <string name="browser_menu_open_in_lr">Otwórz w przeglądarce LR</string>
     <string name="browser_menu_find_in_page">Znajdź na stronie</string>
     <string name="skip">Pomiń</string>
     <string name="next">Dalej</string>
-    <string name="welcome_to_nira">Witaj w przeglądarce Nira</string>
+    <string name="welcome_to_lr">Witaj w przeglądarce LR</string>
     <string name="extensions">Rozszerzenia</string>
     <string name="choose_your_theme">Wybierz swój motyw</string>
     <string name="icon_size">Rozmiar ikony</string>

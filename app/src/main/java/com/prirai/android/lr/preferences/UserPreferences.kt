@@ -1,0 +1,346 @@
+package com.prirai.android.lr.preferences
+
+import android.content.Context
+import android.content.Context.MODE_PRIVATE
+import android.content.SharedPreferences
+import com.prirai.android.lr.browser.AddonSortType
+import com.prirai.android.lr.browser.BookmarkSortType
+import com.prirai.android.lr.settings.HomepageBackgroundChoice
+import com.prirai.android.lr.settings.HomepageChoice
+import com.prirai.android.lr.settings.ThemeChoice
+import com.prirai.android.lr.components.toolbar.ToolbarPosition
+import mozilla.components.concept.engine.Engine
+import mozilla.components.support.ktx.android.content.booleanPreference
+import mozilla.components.support.ktx.android.content.floatPreference
+import mozilla.components.support.ktx.android.content.intPreference
+import mozilla.components.support.ktx.android.content.longPreference
+import mozilla.components.support.ktx.android.content.stringPreference
+
+class UserPreferences(appContext: Context) : mozilla.components.support.ktx.android.content.PreferencesHolder {
+
+    override val preferences: SharedPreferences =
+        appContext.getSharedPreferences(SCW_PREFERENCES, MODE_PRIVATE)
+
+    // Saved values
+    var bookmarkFolder by booleanPreference("save_bookmark_folder", false)
+    var bookmarkFolderId by longPreference("save_bookmark_folder_id", -1L)
+    var shortcutDrawerOpen by booleanPreference("shortcut_drawer", true)
+    var lastKnownPrivate by booleanPreference("last_known_mode_private", false)
+    var firstLaunch by booleanPreference("first_launch", true)
+
+    /**
+     * Marks that the current default-profile tab migration has run on this
+     * install. When false, [DefaultProfileTabMigration] clears the legacy
+     * `"profile_default"` contextId sentinel from every restored tab (and
+     * every corresponding tab group row) back to `null`, so the default
+     * profile shares Gecko's default partition with custom tabs.
+     *
+     * The pref key is bumped to `*.v2` so installs that completed the
+     * previous migration (which moved `null -> "profile_default"`) run this
+     * one exactly once.
+     *
+     * See browser/profile/DefaultProfileTabMigration.kt.
+     */
+    var defaultProfileMigrationDone by booleanPreference(LR_TABS_PROFILE_DEFAULT_MIGRATE, false)
+
+    /**
+     * Transient flag: set by [DefaultProfileTabMigration] after it moves tabs, cleared
+     * by BrowserActivity once it has shown the "migration complete" popup.
+     */
+    var pendingDefaultMigrationPopup by booleanPreference(LR_TABS_PROFILE_DEFAULT_MIGRATE_PENDING_POPUP, false)
+
+    /**
+     * Number of tabs moved during the one-time default-profile migration. Used only to
+     * populate the popup message; safe to leave stale after the popup is dismissed.
+     */
+    var pendingDefaultMigrationTabCount by intPreference(LR_TABS_PROFILE_DEFAULT_MIGRATE_TAB_COUNT, 0)
+
+    /**
+     * Set to true after [com.prirai.android.lr.permissions.LRBgPlayController]
+     * has queried `Engine.listInstalledWebExtensions` once on this install.
+     * The scan is only needed to detect a stale `lr-bg-play` extension that
+     * might have been installed by a previous LR build with the old
+     * always-on controller; once we have checked, we never need to pay the
+     * Gecko IPC round-trip at cold start again.
+     *
+     * Cleared only by uninstall/reinstall of the APK or `clear app data`.
+     */
+    var lrBgPlayStaleCheckDone by booleanPreference(LR_BG_PLAY_STALE_CHECK_DONE, false)
+
+    // Preferences
+    var javaScriptEnabled by booleanPreference(JAVA_SCRIPT_ENABLED, true)
+    var searchEngineChoice by intPreference(SEARCH_ENGINE, 0)
+    var customSearchEngine by booleanPreference(CUSTOM_SEARCH_ENGINE, false)
+    var customSearchEngineURL by stringPreference(CUSTOM_SEARCH_ENGINE_URL, "")
+    var privateSearchEngineChoice by intPreference(PRIVATE_SEARCH_ENGINE, -1)
+    var desktopModeDefault by booleanPreference(DESKTOP_MODE_DEFAULT, false)
+    var translationsEnabled by booleanPreference(TRANSLATIONS_ENABLED, true)
+
+    /**
+     * Inject a small built-in WebExtension into youtube.com pages that neutralises the
+     * Page Visibility API so that audio keeps playing when the tab is backgrounded.
+     * Off by default because it changes site behaviour.
+     */
+    var backgroundPlaybackYoutube by booleanPreference(BACKGROUND_PLAYBACK_YOUTUBE, false)
+
+    fun hasDesktopModeDefault(): Boolean = preferences.contains(DESKTOP_MODE_DEFAULT)
+    var toolbarPosition by intPreference(TOOLBAR_POSITION, ToolbarPosition.BOTTOM.ordinal)
+    var homepageType by intPreference(HOMEPAGE_TYPE, HomepageChoice.VIEW.ordinal)
+    var customHomepageUrl by stringPreference(HOMEPAGE_URL, "")
+    
+    /**
+     * Get the resolved homepage URL based on user preferences.
+     * Returns the appropriate URL for creating new tabs.
+     */
+    fun getHomepageUrl(): String {
+        return "about:homepage"
+    }
+    var appThemeChoice by intPreference(APP_THEME_CHOICE, ThemeChoice.SYSTEM.ordinal)
+    var webThemeChoice by intPreference(WEB_THEME_CHOICE, ThemeChoice.SYSTEM.ordinal)
+    var homepageBackgroundChoice by intPreference(HOMEPAGE_BACKGROUND_CHOICE, HomepageBackgroundChoice.NONE.ordinal)
+    var homepageBackgroundUrl by stringPreference(HOMEPAGE_BACKGROUND_URL, "")
+    var launchInApp by booleanPreference(LAUNCH_IN_APP, true)
+    var customAddonCollection by booleanPreference(CUSTOM_ADDON_BOOL, false)
+    var shownCollectionDisclaimer by booleanPreference(SHOWN_ADDON_DISCLAIMER, false)
+    var customAddonCollectionUser by stringPreference(COLLECTION_USER, "")
+    var customAddonCollectionName by stringPreference(COLLECTION_NAME, "")
+    var autoFontSize by booleanPreference(AUTO_FONT_SIZE, true)
+    var fontSizeFactor by floatPreference(FONT_SIZE_FACTOR, 1f)
+
+    var stackFromBottom by booleanPreference(STACK_FROM_BOTTOM, false)
+    var showTabsInGrid by booleanPreference(SHOW_TABS_IN_GRID, false)
+    var showContextualToolbar by booleanPreference(SHOW_CONTEXTUAL_TOOLBAR, true)
+    var showTabGroupBar by booleanPreference(SHOW_TAB_GROUP_BAR, true)
+    var swipeToRefresh by booleanPreference(SWIPE_TO_REFRESH, true)
+
+    /**
+     * Enables GeckoView remote debugging so a desktop Firefox can inspect
+     * pages in this app via about:debugging.
+     *
+     * Off by default: only turn on while actively debugging over USB, because
+     * a debugger connection has full read/write access to any page loaded
+     * in the browser.
+     */
+    var remoteDebugging by booleanPreference(REMOTE_DEBUGGING, false)
+    var resistFingerprinting by booleanPreference(RESIST_FINGERPRINTING, false)
+    var promptExternalDownloader by booleanPreference(PROMPT_EXTERNAL_DOWNLOADER, false)
+    var addonSort by intPreference(ADDON_SORT, AddonSortType.RATING.ordinal)
+    var showUrlProtocol by booleanPreference(SHOW_URL_PROTOCOL, false)
+    var searchSuggestionsEnabled by booleanPreference(SEARCH_SUGGESTIONS, true)
+    var searchSuggestionCount by intPreference(SEARCH_SUGGESTION_COUNT, 5)
+    var safeBrowsing by booleanPreference(SAFE_BROWSING, true)
+    var trackingProtection: Boolean
+        get() = etpLevel != 0
+        set(value) {
+            preferences.edit().putBoolean(TRACKING_PROTECTION, value).apply()
+            etpLevel = if (value) {
+                maxOf(etpLevel, 1)
+            } else {
+                0
+            }
+        }
+    var showShortcuts by booleanPreference(SHOW_SHORTCUTS, true)
+    var loadShortcutIcons by booleanPreference(LOAD_SHORTCUT_ICONS, true)
+
+    // ETP (Enhanced Tracking Protection) level: 0=None, 1=Standard(recommended), 2=Strict, 3=Custom
+    var etpLevel: Int
+        get() {
+            val value = preferences.all[ETP_LEVEL] ?: return if (preferences.getBoolean(TRACKING_PROTECTION, true)) 1 else 0
+            return when (value) {
+                is Int -> value
+                is String -> value.toIntOrNull() ?: 1
+                else -> 1
+            }
+        }
+        set(value) = preferences.edit().putInt(ETP_LEVEL, value).apply()
+    var etpCryptominers by booleanPreference(ETP_CRYPTOMINERS, true)
+    var etpFingerprinters by booleanPreference(ETP_FINGERPRINTERS, true)
+    var etpTrackingContent by booleanPreference(ETP_TRACKING_CONTENT, true)
+    var etpTrackingAds by booleanPreference(ETP_TRACKING_ADS, true)
+    var etpSocialTracking by booleanPreference(ETP_SOCIAL_TRACKING, true)
+    var etpEmailTracking by booleanPreference(ETP_EMAIL_TRACKING, true)
+
+    // HTTPS-Only: 0=Off, 1=Private tabs only, 2=All tabs
+    var httpsOnlyMode by intPreference(HTTPS_ONLY_MODE, HTTPS_ONLY_ALL)
+    // DNS over HTTPS: 0=Default, 1=Increased, 2=Max, 3=Off
+    var dohMode by intPreference(DOH_MODE, DOH_INCREASED)
+    var dohProviderUrl by stringPreference(DOH_PROVIDER_URL, CLOUDFLARE_DOH_URI)
+    var globalPrivacyControl by booleanPreference(GLOBAL_PRIVACY_CONTROL, true)
+
+    // Sleeping tabs: 0=Off, 1=Balanced, 2=Aggressive, 3=Single tab (default, Safari-style low RAM)
+    var sleepingTabsMode by intPreference(SLEEPING_TABS_MODE, SLEEPING_TABS_SINGLE)
+
+    fun getSleepingTabsMode(): com.prirai.android.lr.browser.tabs.sleep.SleepingTabsMode =
+        when (sleepingTabsMode) {
+            SLEEPING_TABS_SINGLE -> com.prirai.android.lr.browser.tabs.sleep.SleepingTabsMode.SingleTab
+            SLEEPING_TABS_AGGRESSIVE -> com.prirai.android.lr.browser.tabs.sleep.SleepingTabsMode.Aggressive
+            SLEEPING_TABS_OFF -> com.prirai.android.lr.browser.tabs.sleep.SleepingTabsMode.Off
+            else -> com.prirai.android.lr.browser.tabs.sleep.SleepingTabsMode.Balanced
+        }
+
+    fun getHttpsOnlyMode(): Engine.HttpsOnlyMode = when (httpsOnlyMode) {
+        HTTPS_ONLY_PRIVATE -> Engine.HttpsOnlyMode.ENABLED_PRIVATE_ONLY
+        HTTPS_ONLY_ALL -> Engine.HttpsOnlyMode.ENABLED
+        else -> Engine.HttpsOnlyMode.DISABLED
+    }
+
+    fun getDohSettingsMode(): Engine.DohSettingsMode = when (dohMode) {
+        DOH_INCREASED -> Engine.DohSettingsMode.INCREASED
+        DOH_MAX -> Engine.DohSettingsMode.MAX
+        DOH_OFF -> Engine.DohSettingsMode.OFF
+        else -> Engine.DohSettingsMode.DEFAULT
+    }
+
+    fun isDohProviderSelectable(): Boolean = dohMode == DOH_INCREASED || dohMode == DOH_MAX
+
+    // SECURITY: Third-party certificate trust disabled for security
+    // var trustThirdPartyCerts by booleanPreference(TRUST_THIRD_PARTY_CERTS, false)
+    var bookmarkSortType by intPreference(BOOKMARK_SORT_TYPE, BookmarkSortType.MANUAL.ordinal)
+    
+    // Icon size preference (0.8 to 1.5 scale)
+    var toolbarIconSize by floatPreference(TOOLBAR_ICON_SIZE, 1.0f)
+    
+    // Interface font scale (0.8 to 1.3 scale)
+    var interfaceFontScale by floatPreference(INTERFACE_FONT_SCALE, 1.0f)
+    
+    // AMOLED mode - pure black backgrounds for OLED displays
+    var amoledMode by booleanPreference(AMOLED_MODE, false)
+    
+    // Enable dynamic colors (Material You) on Android 12+
+    // Default off so the app's own "Deep Teal" palette is what new users see;
+    // Settings -> Customization can still switch to wallpaper-based colors.
+    var dynamicColors by booleanPreference(DYNAMIC_COLORS, false)
+    
+    // Homepage wallpaper dimming
+    var keepWallpaperDimmed by booleanPreference(KEEP_WALLPAPER_DIMMED, true)
+
+    // Sync engine toggles — each controls whether that engine participates in Firefox Sync
+    var syncHistoryEnabled by booleanPreference(SYNC_HISTORY_ENABLED, true)
+    var syncTabsEnabled by booleanPreference(SYNC_TABS_ENABLED, true)
+    var syncBookmarksEnabled by booleanPreference(SYNC_BOOKMARKS_ENABLED, true)
+
+    // Status bar blur - forced enabled on Android 12+, disabled on older versions
+    val statusBarBlurEnabled: Boolean
+        get() = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S
+
+    var shouldUseBottomToolbar: Boolean
+        get() {
+            return toolbarPosition == ToolbarPosition.BOTTOM.ordinal
+        }
+        set(value) {
+            toolbarPosition = if (value) ToolbarPosition.BOTTOM.ordinal else ToolbarPosition.TOP.ordinal
+        }
+
+    val toolbarPositionType: ToolbarPosition
+        get() {
+            return if (toolbarPosition == ToolbarPosition.BOTTOM.ordinal) ToolbarPosition.BOTTOM else ToolbarPosition.TOP
+        }
+
+    companion object {
+        const val SCW_PREFERENCES = "scw_preferences"
+
+        const val JAVA_SCRIPT_ENABLED = "java_script_enabled"
+        const val SEARCH_ENGINE = "search_engine"
+        const val CUSTOM_SEARCH_ENGINE = "custom_search_engine"
+        const val CUSTOM_SEARCH_ENGINE_URL = "custom_search_engine_url"
+        const val TOOLBAR_POSITION = "toolbar_position"
+        const val HOMEPAGE_TYPE = "homepage_type"
+        const val HOMEPAGE_URL = "homepage_url"
+        const val APP_THEME_CHOICE = "app_theme_choice"
+        const val WEB_THEME_CHOICE = "web_theme_choice"
+        const val LAUNCH_IN_APP = "launch_in_app"
+        const val CUSTOM_ADDON_BOOL = "custom_addon_bool"
+        const val SHOWN_ADDON_DISCLAIMER = "shown_disclaimer"
+        const val COLLECTION_NAME = "collection_name"
+        const val COLLECTION_USER = "collection_user"
+        const val AUTO_FONT_SIZE = "auto_font_size"
+        const val FONT_SIZE_FACTOR = "font_size_factor"
+        const val HIDE_URL_BAR = "hide_url_bar"
+        const val STACK_FROM_BOTTOM = "stack_from_bottom"
+        const val SHOW_TABS_IN_GRID = "show_tabs_in_grid"
+        const val SHOW_CONTEXTUAL_TOOLBAR = "show_contextual_toolbar"
+        const val SHOW_TAB_GROUP_BAR = "show_tab_group_bar"
+        const val SWIPE_TO_REFRESH = "swipe_to_refresh"
+        const val REMOTE_DEBUGGING = "remote_debugging"
+        const val RESIST_FINGERPRINTING = "resist_fingerprinting"
+        const val PROMPT_EXTERNAL_DOWNLOADER = "prompt_external_downloader"
+        const val SHOW_URL_PROTOCOL = "show_url_protocol"
+        const val SEARCH_SUGGESTIONS = "search_suggestions"
+        const val SEARCH_SUGGESTION_COUNT = "search_suggestion_count"
+        const val SAFE_BROWSING = "safe_browsing"
+        const val TRACKING_PROTECTION = "tracking_protection"
+        const val SHOW_SHORTCUTS = "show_shortcuts"
+        const val TRUST_THIRD_PARTY_CERTS = "trust_third_party_certs"
+        const val HOMEPAGE_BACKGROUND_CHOICE = "homepage_background_choice"
+        const val HOMEPAGE_BACKGROUND_URL = "homepage_background_url"
+        const val LOAD_SHORTCUT_ICONS = "load_shortcut_icons"
+        const val BOOKMARK_SORT_TYPE = "bookmark_sort_type"
+        const val STATUS_BAR_BLUR = "status_bar_blur"
+        const val TOOLBAR_ICON_SIZE = "toolbar_icon_size"
+        const val INTERFACE_FONT_SCALE = "interface_font_scale"
+        const val AMOLED_MODE = "amoled_mode"
+        const val DYNAMIC_COLORS = "dynamic_colors"
+        const val KEEP_WALLPAPER_DIMMED = "keep_wallpaper_dimmed"
+        const val SYNC_HISTORY_ENABLED = "sync_history_enabled"
+        const val SYNC_TABS_ENABLED = "sync_tabs_enabled"
+        const val SYNC_BOOKMARKS_ENABLED = "sync_bookmarks_enabled"
+        const val ADDON_SORT = "addon_sort"
+        const val ETP_LEVEL = "etp_level"
+        const val ETP_CRYPTOMINERS = "etp_cryptominers"
+        const val ETP_FINGERPRINTERS = "etp_fingerprinters"
+        const val ETP_TRACKING_CONTENT = "etp_tracking_content"
+        const val ETP_TRACKING_ADS = "etp_tracking_ads"
+        const val ETP_SOCIAL_TRACKING = "etp_social_tracking"
+        const val ETP_EMAIL_TRACKING = "etp_email_tracking"
+        const val HTTPS_ONLY_MODE = "https_only_mode"
+        const val DOH_MODE = "doh_mode"
+        const val DOH_PROVIDER_URL = "doh_provider_url"
+        const val GLOBAL_PRIVACY_CONTROL = "global_privacy_control"
+        const val SLEEPING_TABS_MODE = "sleeping_tabs_mode"
+        const val PRIVATE_SEARCH_ENGINE = "private_search_engine"
+
+        const val SLEEPING_TABS_OFF = 0
+        const val SLEEPING_TABS_BALANCED = 1
+        const val SLEEPING_TABS_AGGRESSIVE = 2
+        const val SLEEPING_TABS_SINGLE = 3
+
+        const val DESKTOP_MODE_DEFAULT = "desktop_mode_default"
+        const val TRANSLATIONS_ENABLED = "translations_enabled"
+        const val BACKGROUND_PLAYBACK_YOUTUBE = "background_playback_youtube"
+
+        // One-time migration flags (lr.* namespace). Keys are literal so they survive
+        // future refactors and can be inspected directly in `scw_preferences.xml`.
+        // Bumped from `.defaultMigrate` to `.defaultMigrate.v2` so installs
+        // that completed the previous null -> "profile_default" migration
+        // re-run and perform the inverse (profile_default -> null) exactly
+        // once.
+        const val LR_TABS_PROFILE_DEFAULT_MIGRATE = "lr.tabs.profile.defaultMigrate.v2"
+        const val LR_TABS_PROFILE_DEFAULT_MIGRATE_PENDING_POPUP =
+            "lr.tabs.profile.defaultMigrate.v2.pendingPopup"
+        const val LR_TABS_PROFILE_DEFAULT_MIGRATE_TAB_COUNT =
+            "lr.tabs.profile.defaultMigrate.v2.tabCount"
+
+        /**
+         * One-shot flag that gates the `listInstalledWebExtensions` scan
+         * done by [com.prirai.android.lr.permissions.LRBgPlayController]
+         * at startup to detect a stale `lr-bg-play` install from an
+         * earlier LR build. See the pref doc for details.
+         */
+        const val LR_BG_PLAY_STALE_CHECK_DONE =
+            "lr.permissions.bgPlay.staleCheckDone"
+
+        // Auto-updater prefs (see field kdoc above for semantics).
+
+        const val HTTPS_ONLY_OFF = 0
+        const val HTTPS_ONLY_PRIVATE = 1
+        const val HTTPS_ONLY_ALL = 2
+
+        const val DOH_DEFAULT = 0
+        const val DOH_INCREASED = 1
+        const val DOH_MAX = 2
+        const val DOH_OFF = 3
+
+        const val CLOUDFLARE_DOH_URI = "https://mozilla.cloudflare-dns.com/dns-query"
+        const val NEXTDNS_DOH_URI = "https://firefox.dns.nextdns.io/"
+    }
+}

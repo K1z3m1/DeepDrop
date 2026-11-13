@@ -19,7 +19,7 @@
     <string name="backup_settings">Sauvegarde des paramètres</string>
     <string name="blank_page">Page vierge</string>
     <string name="browser_menu_find_in_page">Rechercher dans la page</string>
-    <string name="browser_menu_open_in_nira">Ouvrir dans le navigateur Nira</string>
+    <string name="browser_menu_open_in_lr">Ouvrir dans le navigateur LR</string>
     <string name="cache_cleared">Cache vidé avec succès.</string>
     <string name="cancel">Annuler</string>
     <string name="certificate_information">Informations sur le certificat</string>
@@ -180,7 +180,7 @@
     <string name="version">Version de l’application</string>
     <string name="web_theme">Thème de navigation</string>
     <string name="web_theme_explain">Le thème que les extensions et les sites doivent de préférence utiliser.</string>
-    <string name="welcome_to_nira">Bienvenue sur Nira Browser</string>
+    <string name="welcome_to_lr">Bienvenue sur LR</string>
     <string name="flatten_folder">Aplatir le dossier</string>
     <string name="delete_selected">Supprimer la sélection</string>
     <string name="move_selected">Déplacer la sélection</string>

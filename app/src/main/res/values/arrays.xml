@@ -26,5 +26,6 @@
         <item>@string/sleeping_tabs_off</item>
         <item>@string/sleeping_tabs_balanced</item>
         <item>@string/sleeping_tabs_aggressive</item>
+        <item>@string/sleeping_tabs_single</item>
     </string-array>
 </resources>

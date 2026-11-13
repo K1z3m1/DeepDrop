@@ -15,7 +15,7 @@
   clickable/focusable are set so the toolbar (not just the URL view) absorbs
   ripples and passes accessibility focus, matching Fenix's XML.
 -->
-<com.prirai.android.nira.components.toolbar.BottomToolbarContainerView
+<com.prirai.android.lr.components.toolbar.BottomToolbarContainerView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/toolbarContainer"
@@ -47,4 +47,4 @@
         app:browserToolbarTrackingProtectionAndSecurityIndicatorSeparatorColor="?android:attr/textColorSecondary"
     />
 
-</com.prirai.android.nira.components.toolbar.BottomToolbarContainerView>
+</com.prirai.android.lr.components.toolbar.BottomToolbarContainerView>

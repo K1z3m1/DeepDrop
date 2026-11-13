@@ -154,11 +154,11 @@
     <string name="delete_folder_confirm">删除文件夹“%1$s”及其所有内容？</string>
     <string name="delete_confirm">您确定要删除此项目吗？</string>
     <string name="delete_confirm_title">确认删除</string>
-    <string name="browser_menu_open_in_nira">在 Nira 浏览器中打开</string>
+    <string name="browser_menu_open_in_lr">在 LR 浏览器中打开</string>
     <string name="browser_menu_find_in_page">在页面中查找</string>
     <string name="skip">跳过</string>
     <string name="next">下一步</string>
-    <string name="welcome_to_nira">欢迎使用 Nira 浏览器</string>
+    <string name="welcome_to_lr">欢迎使用 LR 浏览器</string>
     <string name="extensions">扩展</string>
     <string name="choose_your_theme">选择您的主题</string>
     <string name="icon_size">图标大小</string>

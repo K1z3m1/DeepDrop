@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <resources>
-  <string name="app_name" translatable="false">Nira Browser</string>
+  <string name="app_name" translatable="false">LR</string>
   <string
         name="url_project"
         translatable="false"
@@ -207,7 +207,7 @@
 <string name="untitled">Untitled</string>
 <string name="save">Save</string>
 <string name="app_icon">App icon</string>
-<string name="app_name_display" translatable="false">Nira</string>
+<string name="app_name_display" translatable="false">LR</string>
 <string name="homepage_background">Homepage background</string>
 <string name="downloads_title">Downloads</string>
 <string name="search_downloads">Search downloads</string>
@@ -261,7 +261,7 @@
 <string name="start_browsing">Start Browsing</string>
 <string name="skip">Skip</string>
 <string name="next">Next</string>
-<string name="welcome_to_nira">Welcome to Nira</string>
+<string name="welcome_to_lr">Welcome to LR</string>
 <string name="fast_private_browser">A fast, private browser</string>
 <string name="onboarding_bullet_geckoview">• Built on Mozilla\'s powerful GeckoView engine</string>
 <string name="onboarding_bullet_tab_groups">• Tab groups to stay organised</string>
@@ -270,7 +270,7 @@
 <string name="onboarding_bullet_profiles">• Multiple profiles for different identities</string>
 <string name="onboarding_bullet_downloads">• Download manager with progress tracking</string>
 <string name="choose_your_theme">Choose Your Theme</string>
-<string name="personalise_looks">Personalise how Nira Browser looks</string>
+<string name="personalise_looks">Personalise how LR looks</string>
 <string name="app_theme">App Theme</string>
 <string name="web_page_theme">Web Page Theme</string>
 <string name="theme_system_default">System Default</string>
@@ -280,7 +280,7 @@
 <string name="pick_search_engine">Pick a Search Engine</string>
 <string name="choose_default_search">Choose your default search for browsing</string>
 <string name="privacy_by_default">Privacy by Default</string>
-<string name="nira_protects">Nira protects you as you browse</string>
+<string name="lr_protects">LR protects you as you browse</string>
 <string name="tracker_ad_blocking">Tracker &amp; ad blocking</string>
 <string name="fingerprint_protection">Fingerprint protection</string>
 <string name="enhanced_tracking_protection_short">Enhanced Tracking Protection</string>
@@ -566,6 +566,8 @@
   <string name="sleeping_tabs_balanced">Balanced</string>
   <string name="sleeping_tabs_balanced_summary">Sleep tabs idle for 30 min. Keep up to 8 live. Sleep in background.</string>
   <string name="sleeping_tabs_aggressive">Aggressive</string>
+  <string name="sleeping_tabs_single">Single tab (lowest RAM)</string>
+  <string name="sleeping_tabs_single_summary">Keep only the tab you are viewing alive, like Safari. Other tabs reload when opened. Applies fully after restarting the app.</string>
   <string name="sleeping_tabs_aggressive_summary">Sleep tabs idle for 5 min. Keep up to 3 live. Sleep on low memory.</string>
 
     <string name="show_shortcuts">Show shortcuts</string>
@@ -674,7 +676,7 @@
     <!-- Delete confirmation -->
 
     <!-- Custom Tabs -->
-  <string name="browser_menu_open_in_nira">Open in Nira Browser</string>
+  <string name="browser_menu_open_in_lr">Open in LR</string>
   <string name="browser_menu_find_in_page">Find in page</string>
   <string name="custom_tab_menu_minimize">Minimize</string>
 
@@ -798,9 +800,9 @@
 
 
     <!-- One-time tab migration popup (see DefaultProfileTabMigration). -->
-    <string name="nira_default_profile_migration_title">Tabs moved to Default profile</string>
-    <string name="nira_default_profile_migration_message">%1$d tab(s) that had no profile assigned were moved to the Default profile. You can find them in the tab bar now.</string>
-    <string name="nira_default_profile_migration_message_zero">Your tabs are now organized under the Default profile.</string>
+    <string name="lr_default_profile_migration_title">Tabs moved to Default profile</string>
+    <string name="lr_default_profile_migration_message">%1$d tab(s) that had no profile assigned were moved to the Default profile. You can find them in the tab bar now.</string>
+    <string name="lr_default_profile_migration_message_zero">Your tabs are now organized under the Default profile.</string>
 
     <!-- Site permissions bottom sheet, opened from the Connection Info pill. -->
     <string name="site_permissions">Site permissions</string>
@@ -818,7 +820,7 @@
     <string name="permission_local_device_access">Local device access</string>
     <string name="permission_local_network_access">Local network access</string>
 
-    <!-- Nira-local background-playback permission. Not an AC SitePermissions field;
+    <!-- LR-local background-playback permission. Not an AC SitePermissions field;
          backed by `BackgroundPlaybackAllowlist`. See SitePermissionsBottomSheet
          for rationale. -->
     <string name="permission_background_playback">Background playback</string>

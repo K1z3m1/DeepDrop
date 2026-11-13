@@ -27,7 +27,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_scrollFlags="scroll|enterAlways|snap|exitUntilCollapsed" />
 
-    <com.prirai.android.nira.search.awesomebar.AwesomeBarWrapper
+    <com.prirai.android.lr.search.awesomebar.AwesomeBarWrapper
         android:id="@+id/awesome_bar"
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -52,7 +52,7 @@
 
     <!--
         Clipboard "fill link" accessory. Content is composed in
-        SearchDialogFragment (NiraCardRow card + divider); visibility is
+        SearchDialogFragment (LRCardRow card + divider); visibility is
         still driven by the fragment via View.VISIBLE/GONE so the
         constraint-layout flow matches the old plain-View row.
     -->

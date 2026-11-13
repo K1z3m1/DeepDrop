@@ -19,7 +19,7 @@
     <string name="backup_settings">Sao lưu cài đặt</string>
     <string name="blank_page">Trang trống</string>
     <string name="browser_menu_find_in_page">Tìm trong trang</string>
-    <string name="browser_menu_open_in_nira">Mở trong Nira</string>
+    <string name="browser_menu_open_in_lr">Mở trong LR</string>
     <string name="cache_cleared">Đã xóa bộ nhớ đệm</string>
     <string name="cancel">Hủy</string>
     <string name="certificate_information">Thông tin chứng chỉ</string>
@@ -180,7 +180,7 @@
     <string name="version">Phiên bản ứng dụng</string>
     <string name="web_theme">Chủ đề web</string>
     <string name="web_theme_explain">Chủ đề mà trình duyệt yêu cầu các tiện ích mở rộng và trang web sử dụng.</string>
-    <string name="welcome_to_nira">Chào mừng đến với Nira</string>
+    <string name="welcome_to_lr">Chào mừng đến với LR</string>
     <string name="flatten_folder">Làm phẳng thư mục</string>
     <string name="delete_selected">Xóa đã chọn</string>
     <string name="move_selected">Di chuyển đã chọn</string>

@@ -3,7 +3,6 @@ plugins {
     id 'kotlin-parcelize'
     alias(libs.plugins.google.devtools.ksp)
     alias(libs.plugins.jetbrains.kotlin.plugin.compose)
-    alias(libs.plugins.jetbrains.kotlin.plugin.serialization)
 }
 
 
@@ -18,10 +17,10 @@ android {
         compose = true
     }
 
-    namespace = 'com.prirai.android.nira'
+    namespace = 'com.prirai.android.lr'
 
     defaultConfig {
-        applicationId = "com.prirai.android.nira"
+        applicationId = "com.prirai.android.lr"
         minSdkVersion 27
         targetSdkVersion 37
         // Increment by 4 with each update, by 1 with each fix
@@ -62,7 +61,7 @@ android {
         debug {
             minifyEnabled = false
             shrinkResources = false
-            resValue "string", "app_name", "Nira (Debug)"
+            resValue "string", "app_name", "LR (Debug)"
             applicationIdSuffix = '.debug'
         }
     }
@@ -140,7 +139,6 @@ dependencies {
     // Mozilla concept components
     implementation libs.concept.storage
     implementation libs.concept.engine
-    implementation libs.concept.menu
     // Kept: required by browser-menu
     implementation libs.concept.toolbar
     implementation libs.concept.base
@@ -219,7 +217,7 @@ dependencies {
     implementation libs.androidx.ui
     implementation libs.androidx.foundation
     implementation platform(libs.androidx.compose.bom)
-    // material-icons-extended removed: needed icons live in ui/icons/NiraIconData.kt
+    // material-icons-extended removed: needed icons live in ui/icons/LRIconData.kt
     implementation "androidx.compose.material:material-icons-core"
     implementation libs.androidx.material3
     implementation libs.androidx.runtime
@@ -229,12 +227,6 @@ dependencies {
     // whose origin isn't on the bg-playback allow-list).
     implementation libs.androidx.lifecycle.process
     implementation libs.coil.compose
-
-    // DataStore for preferences
-    implementation libs.androidx.datastore.preferences
-
-    // Kotlinx Serialization
-    implementation libs.kotlinx.serialization.json
 
 }
 

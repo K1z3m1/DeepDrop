@@ -3,7 +3,7 @@
 <PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <PreferenceCategory android:title="Appearance">
+    <PreferenceCategory android:title="@string/pref_appearance">
         
         <Preference
             app:key="@string/key_app_theme_type"
@@ -12,17 +12,17 @@
             app:icon="@drawable/mozac_ic_themes_24"
             app:singleLineTitle="false"/>
 
-        <com.prirai.android.nira.settings.MaterialSwitchPreference
+        <com.prirai.android.lr.settings.MaterialSwitchPreference
             app:key="dynamic_colors"
-            app:title="Dynamic colors"
-            app:summary="Use colors from your wallpaper (Android 12+)"
+            app:title="@string/pref_dynamic_colors"
+            app:summary="@string/pref_use_colors_from_your_wallpaper_android_1"
             app:singleLineTitle="false"
             app:defaultValue="false" />
 
-        <com.prirai.android.nira.settings.MaterialSwitchPreference
+        <com.prirai.android.lr.settings.MaterialSwitchPreference
             app:key="amoled_mode"
-            app:title="AMOLED mode"
-            app:summary="Pure black background for OLED displays (dark mode only)"
+            app:title="@string/pref_amoled_mode"
+            app:summary="@string/pref_pure_black_background_for_oled_displays_"
             app:singleLineTitle="false"
             app:defaultValue="false" />
 
@@ -40,9 +40,9 @@
 
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="Toolbar &amp; Navigation">
+    <PreferenceCategory android:title="@string/pref_toolbar_navigation">
         
-        <com.prirai.android.nira.settings.MaterialSwitchPreference
+        <com.prirai.android.lr.settings.MaterialSwitchPreference
             app:key="@string/key_move_navbar"
             app:title="@string/move_navbar"
             app:singleLineTitle="false"
@@ -50,14 +50,14 @@
 
 
 
-        <com.prirai.android.nira.settings.MaterialSwitchPreference
+        <com.prirai.android.lr.settings.MaterialSwitchPreference
             app:key="@string/key_show_contextual_toolbar"
             app:title="@string/show_contextual_toolbar"
             app:summary="@string/show_contextual_toolbar_desc"
             app:singleLineTitle="false"
             app:defaultValue="true" />
 
-        <com.prirai.android.nira.settings.MaterialSwitchPreference
+        <com.prirai.android.lr.settings.MaterialSwitchPreference
             app:key="@string/key_show_tab_group_bar"
             app:title="@string/show_tab_group_bar"
             app:summary="@string/show_tab_group_bar_desc"
@@ -72,21 +72,21 @@
 
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="Tabs &amp; Layout">
+    <PreferenceCategory android:title="@string/pref_tabs_layout">
         
-        <com.prirai.android.nira.settings.MaterialSwitchPreference
+        <com.prirai.android.lr.settings.MaterialSwitchPreference
             app:key="@string/key_show_tabs_in_grid"
             app:title="@string/tab_grid"
             app:singleLineTitle="false"
             app:defaultValue="true" />
 
-        <com.prirai.android.nira.settings.MaterialSwitchPreference
+        <com.prirai.android.lr.settings.MaterialSwitchPreference
             app:key="@string/key_swap_drawers"
             app:title="@string/swap_bookmarks_and_tabs"
             app:singleLineTitle="false"
             app:defaultValue="true" />
 
-        <com.prirai.android.nira.settings.MaterialSwitchPreference
+        <com.prirai.android.lr.settings.MaterialSwitchPreference
             app:key="@string/key_stack_from_bottom"
             app:title="@string/stack_items_reverse"
             app:singleLineTitle="false"
@@ -94,38 +94,38 @@
 
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="Homepage">
+    <PreferenceCategory android:title="@string/pref_homepage">
         
-        <com.prirai.android.nira.settings.MaterialSwitchPreference
+        <com.prirai.android.lr.settings.MaterialSwitchPreference
             app:key="@string/key_shortcuts_visible"
             app:title="@string/show_shortcuts"
             app:singleLineTitle="false"
             app:defaultValue="true" />
 
-        <com.prirai.android.nira.settings.MaterialSwitchPreference
+        <com.prirai.android.lr.settings.MaterialSwitchPreference
             app:key="@string/key_load_shortcut_icons"
             app:title="@string/load_shortcut_icons"
             app:singleLineTitle="false"
             app:defaultValue="true" />
 
-        <com.prirai.android.nira.settings.MaterialSwitchPreference
+        <com.prirai.android.lr.settings.MaterialSwitchPreference
             app:key="keep_wallpaper_dimmed"
-            app:title="Dim homepage wallpaper"
-            app:summary="Apply semi-transparent overlay to homepage background"
+            app:title="@string/pref_dim_homepage_wallpaper"
+            app:summary="@string/pref_apply_semi_transparent_overlay_to_homepa"
             app:singleLineTitle="false"
             app:defaultValue="true" />
 
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="Text &amp; Display">
+    <PreferenceCategory android:title="@string/pref_text_display">
         
-        <com.prirai.android.nira.settings.MaterialSwitchPreference
+        <com.prirai.android.lr.settings.MaterialSwitchPreference
             app:key="@string/key_show_protocol"
             app:title="@string/show_protocol_in_url"
             app:singleLineTitle="false"
             app:defaultValue="false" />
 
-        <com.prirai.android.nira.settings.MaterialSwitchPreference
+        <com.prirai.android.lr.settings.MaterialSwitchPreference
             app:key="@string/key_auto_font_size"
             app:title="@string/auto_font"
             app:singleLineTitle="false"
@@ -148,9 +148,9 @@
 
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="Gestures">
+    <PreferenceCategory android:title="@string/pref_gestures">
         
-        <com.prirai.android.nira.settings.MaterialSwitchPreference
+        <com.prirai.android.lr.settings.MaterialSwitchPreference
             app:key="@string/key_swipe_refresh"
             app:title="@string/swipe_to_refresh"
             app:summary="@string/swipe_to_refresh_summary"

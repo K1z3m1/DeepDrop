@@ -3,29 +3,9 @@
 <PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <PreferenceCategory android:title="Developer Options">
+    <PreferenceCategory android:title="@string/pref_downloads">
         
-        <com.prirai.android.nira.settings.MaterialSwitchPreference
-            app:key="@string/key_remote_debugging"
-            app:title="@string/remote_debugging"
-            app:singleLineTitle="false"
-            app:defaultValue="false" />
-
-    </PreferenceCategory>
-
-    <PreferenceCategory android:title="Security">
-
-        <com.prirai.android.nira.settings.MaterialSwitchPreference
-            app:key="@string/key_trust_third_party_certs"
-            app:title="@string/trust_third_party_certs"
-            app:singleLineTitle="false"
-            app:defaultValue="false" />
-
-    </PreferenceCategory>
-
-    <PreferenceCategory android:title="Downloads">
-        
-        <com.prirai.android.nira.settings.MaterialSwitchPreference
+        <com.prirai.android.lr.settings.MaterialSwitchPreference
             app:key="@string/key_prompt_external_downloader"
             app:title="@string/prompt_external_downloader"
             app:singleLineTitle="false"
@@ -33,7 +13,7 @@
 
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="Extension Management">
+    <PreferenceCategory android:title="@string/pref_extension_management">
         
         <Preference
             app:key="@string/key_sideload_xpi"
@@ -49,7 +29,7 @@
             app:singleLineTitle="false"
             app:enabled="true" />
 
-        <com.prirai.android.nira.settings.MaterialSwitchPreference
+        <com.prirai.android.lr.settings.MaterialSwitchPreference
             app:key="@string/key_use_custom_collection"
             app:title="@string/use_custom_collection"
             app:singleLineTitle="false"
@@ -66,6 +46,28 @@
             app:title="@string/collection_name"
             app:singleLineTitle="false"
             app:enabled="false" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_security">
+
+        <com.prirai.android.lr.settings.MaterialSwitchPreference
+            app:key="@string/key_trust_third_party_certs"
+            app:title="@string/trust_third_party_certs"
+            app:summary="@string/pref_warn_trust_certs"
+            app:singleLineTitle="false"
+            app:defaultValue="false" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_developer_options">
+        
+        <com.prirai.android.lr.settings.MaterialSwitchPreference
+            app:key="@string/key_remote_debugging"
+            app:title="@string/remote_debugging"
+            app:summary="@string/pref_warn_remote_debugging"
+            app:singleLineTitle="false"
+            app:defaultValue="false" />
 
     </PreferenceCategory>
 

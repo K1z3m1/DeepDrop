@@ -1,4 +1,4 @@
-# ProGuard rules for Nira Browser
+# ProGuard rules for LR Browser
 
 # 1. Global package preservation to prevent Package.getName() NullPointerExceptions
 # This is critical for libraries that use reflection to look up package information.
@@ -29,7 +29,7 @@
 -keep class **.BuildConfig { *; }
 
 # 7. Keep application classes
--keep class com.prirai.android.nira.** { *; }
+-keep class com.prirai.android.lr.** { *; }
 -keep public class * extends androidx.fragment.app.Fragment
 -keep public class * extends androidx.appcompat.app.AppCompatActivity
 -keep public class * extends android.app.Service
