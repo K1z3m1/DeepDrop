@@ -1,0 +1,30 @@
+{
+  "manifest_version": 2,
+  "name": "Nira Background Playback",
+  "short_name": "NiraBgPlay",
+  "description": "Keeps audio playing on allow-listed sites when the tab is backgrounded by neutralising the Page Visibility API and auto-resuming <video> pauses that are not user-initiated.",
+  "version": "2.0.0",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "nira-bg-play@prirai.android.nira"
+    }
+  },
+  "permissions": [
+    "nativeMessaging",
+    "storage"
+  ],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": true
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ]
+}
