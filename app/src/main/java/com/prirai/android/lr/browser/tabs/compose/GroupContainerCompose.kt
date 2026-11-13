@@ -82,8 +82,7 @@ private fun GroupContainerShell(
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 4.dp),
         shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        tonalElevation = 1.dp
+        color = MaterialTheme.colorScheme.surfaceContainerHigh
     ) {
         // IntrinsicSize.Min lets the left accent strip fill the container's full height
         Row(
@@ -259,8 +258,7 @@ fun GroupContainerListItem(
                 .fillMaxWidth()
                 .padding(start = 8.dp, end = 8.dp, bottom = 8.dp),
             shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            tonalElevation = 1.dp
+            color = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 children.forEachIndexed { index, tab ->
@@ -539,8 +537,7 @@ private fun GroupTabsGridRow(
             .fillMaxWidth()
             .padding(start = 8.dp, end = 8.dp, bottom = 8.dp),
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        tonalElevation = 1.dp
+        color = MaterialTheme.colorScheme.surfaceContainerHigh
     ) {
         val tabChunks = tabs.chunked(2)
         Column(

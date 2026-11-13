@@ -118,6 +118,13 @@ class ImageReaderActivity : AppCompatActivity() {
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+            // Draw under the camera cutout too: truly edge-to-edge.
+            window.attributes = window.attributes.apply {
+                layoutInDisplayCutoutMode =
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
+        }
 
         setContent {
             LRTheme {
@@ -202,7 +209,8 @@ private fun ReaderScreen(
         mutableStateOf(ReadMode.entries.getOrElse(prefs.getInt(KEY_MODE, 0)) { ReadMode.VERTICAL })
     }
     var hideBanners by remember { mutableStateOf(prefs.getBoolean(KEY_HIDE_BANNERS, true)) }
-    var chromeVisible by remember { mutableStateOf(true) }
+    // Starts hidden: the image owns the whole screen, tap the centre for controls.
+    var chromeVisible by remember { mutableStateOf(false) }
 
     val images = remember(payload, hideBanners) { filterImages(payload.images, hideBanners) }
     val loader = remember {
@@ -289,7 +297,23 @@ private fun ReaderScreen(
                 beyondViewportPageCount = 1,
                 modifier = Modifier.fillMaxSize(),
             ) { page ->
-                ZoomableBox(onTap = { chromeVisible = !chromeVisible }) {
+                ZoomableBox(onTap = { fraction ->
+                    // Edge taps turn the page, centre tap toggles controls.
+                    val rtl = mode == ReadMode.PAGED_RTL
+                    val step = when {
+                        fraction < 0.28f -> if (rtl) 1 else -1
+                        fraction > 0.72f -> if (rtl) -1 else 1
+                        else -> 0
+                    }
+                    if (step == 0) {
+                        chromeVisible = !chromeVisible
+                    } else {
+                        scope.launch {
+                            val t = (pagerState.currentPage + step).coerceIn(0, images.size - 1)
+                            pagerState.animateScrollToPage(t)
+                        }
+                    }
+                }) {
                     ReaderImageView(
                         image = images[page],
                         loader = loader,
@@ -333,9 +357,9 @@ private fun ReaderScreen(
                 mode = mode,
                 hideBanners = hideBanners,
                 onJump = { jump(it) },
-                onToggleMode = {
+                onSetMode = { newMode ->
                     restoreTo = currentIndex
-                    mode = mode.next()
+                    mode = newMode
                     prefs.edit().putInt(KEY_MODE, mode.ordinal).apply()
                 },
                 onToggleBanners = {
@@ -393,7 +417,7 @@ private fun BottomPanel(
     mode: ReadMode,
     hideBanners: Boolean,
     onJump: (Int) -> Unit,
-    onToggleMode: () -> Unit,
+    onSetMode: (ReadMode) -> Unit,
     onToggleBanners: () -> Unit,
 ) {
     Column(
@@ -481,14 +505,40 @@ private fun BottomPanel(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            TextButton(onClick = onToggleMode) {
-                Text(stringResource(mode.labelRes), color = Color.White)
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                NavButton("\u00AB") { onJump(0) }
-                NavButton("\u2039") { onJump(currentIndex - 1) }
-                NavButton("\u203A") { onJump(currentIndex + 1) }
-                NavButton("\u00BB") { onJump(images.size - 1) }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                FilterChip(
+                    selected = mode == ReadMode.VERTICAL,
+                    onClick = { onSetMode(ReadMode.VERTICAL) },
+                    label = { Text(stringResource(R.string.image_reader_long_strip)) },
+                )
+                FilterChip(
+                    selected = mode != ReadMode.VERTICAL,
+                    onClick = {
+                        if (mode == ReadMode.VERTICAL) onSetMode(ReadMode.PAGED_LTR)
+                    },
+                    label = { Text(stringResource(R.string.image_reader_single_page)) },
+                )
+                if (mode != ReadMode.VERTICAL) {
+                    FilterChip(
+                        selected = mode == ReadMode.PAGED_RTL,
+                        onClick = {
+                            onSetMode(
+                                if (mode == ReadMode.PAGED_RTL) ReadMode.PAGED_LTR else ReadMode.PAGED_RTL
+                            )
+                        },
+                        label = {
+                            Text(
+                                stringResource(
+                                    if (mode == ReadMode.PAGED_RTL) R.string.image_reader_dir_rtl
+                                    else R.string.image_reader_dir_ltr
+                                )
+                            )
+                        },
+                    )
+                }
             }
             FilterChip(
                 selected = hideBanners,
@@ -496,13 +546,6 @@ private fun BottomPanel(
                 label = { Text(stringResource(R.string.image_reader_hide_banners)) },
             )
         }
-    }
-}
-
-@Composable
-private fun NavButton(label: String, onClick: () -> Unit) {
-    TextButton(onClick = onClick, contentPadding = PaddingValues(horizontal = 12.dp)) {
-        Text(label, color = Color.White, style = MaterialTheme.typography.headlineSmall)
     }
 }
 
@@ -613,7 +656,7 @@ private fun ReaderImageView(
  * turns the page.
  */
 @Composable
-private fun ZoomableBox(onTap: () -> Unit, content: @Composable () -> Unit) {
+private fun ZoomableBox(onTap: (Float) -> Unit, content: @Composable () -> Unit) {
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
     var size by remember { mutableStateOf(IntSize.Zero) }
@@ -630,7 +673,7 @@ private fun ZoomableBox(onTap: () -> Unit, content: @Composable () -> Unit) {
             .onSizeChanged { size = it }
             .pointerInput(Unit) {
                 detectTapGestures(
-                    onTap = { onTap() },
+                    onTap = { pos -> onTap(if (size.width > 0) pos.x / size.width else 0.5f) },
                     onDoubleTap = {
                         if (scale > 1f) {
                             scale = 1f

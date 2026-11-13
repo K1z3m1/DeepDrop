@@ -603,6 +603,8 @@ open class BrowserActivity : LocaleAwareAppCompatActivity(), ComponentCallbacks2
         val resolvedEngine = engine ?: resolveSearchEngine(isPrivateMode)
 
         if (resolvedEngine == null || (!forceSearch && searchTermOrURL.isUrl())) {
+            // Overlap the handshake with new-tab creation / session link-up.
+            components.speculativeConnect(searchTermOrURL.toNormalizedUrl())
             if (newTab) {
                 // Chrome parity: the new tab starts at the new tab page so
                 // the URL becomes its second history entry (the back popup

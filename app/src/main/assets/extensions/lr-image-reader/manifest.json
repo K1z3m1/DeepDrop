@@ -3,14 +3,16 @@
   "name": "LR Image Reader",
   "short_name": "LRImageReader",
   "description": "Collects every image on the current page (resolving original-resolution URLs) and hands the list to LR's full-screen image reader.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "browser_specific_settings": {
     "gecko": {
       "id": "lr-image-reader@prirai.android.lr"
     }
   },
   "permissions": [
-    "nativeMessaging"
+    "nativeMessaging",
+    "geckoViewAddons",
+    "nativeMessagingFromContent"
   ],
   "content_scripts": [
     {

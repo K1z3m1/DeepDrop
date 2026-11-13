@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -164,7 +165,6 @@ fun HomeScreen(
     wallpaperDimmed: Boolean = true,
     modifier: Modifier = Modifier
 ) {
-    isSystemInDarkTheme()
     val backgroundColor = MaterialTheme.colorScheme.background
 
     // Get window insets for edge-to-edge support
@@ -213,11 +213,11 @@ fun HomeScreen(
                 end = 16.dp,
                 bottom = bottomPadding + 100.dp  // Add navigation bar padding + toolbar space
             ),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            verticalArrangement = Arrangement.spacedBy(28.dp)
         ) {
             // Logo section with profile switcher (hide for BLANK_PAGE)
             if (homepageType != HomepageChoice.BLANK_PAGE.ordinal) {
-                item {
+                item(key = "logo") {
                     LogoSection(
                         isPrivateMode = isPrivateMode,
                         currentProfile = currentProfile,
@@ -228,7 +228,7 @@ fun HomeScreen(
 
             // Centered search bar (hide for BLANK_PAGE)
             if (homepageType != HomepageChoice.BLANK_PAGE.ordinal) {
-                item {
+                item(key = "search") {
                     SearchBar(onSearchClick = onSearchClick)
                 }
             }
@@ -237,7 +237,7 @@ fun HomeScreen(
             if (!isPrivateMode && homepageType == HomepageChoice.VIEW.ordinal) {
                 // Jump Back In section
                 if (jumpBackInItems.isNotEmpty()) {
-                    item {
+                    item(key = "jump") {
                         JumpBackInSection(
                             items = jumpBackInItems,
                             onClick = onJumpBackInClick
@@ -247,7 +247,7 @@ fun HomeScreen(
 
                 // Recently Closed section
                 if (recentlyClosedItems.isNotEmpty()) {
-                    item {
+                    item(key = "closed") {
                         RecentlyClosedSection(
                             items = recentlyClosedItems,
                             onClick = onRecentlyClosedClick
@@ -256,7 +256,7 @@ fun HomeScreen(
                 }
 
                 // Shortcuts section
-                item {
+                item(key = "shortcuts") {
                     ShortcutsSection(
                         shortcuts = shortcuts,
                         onShortcutClick = onShortcutClick,
@@ -265,7 +265,7 @@ fun HomeScreen(
                     )
                 }
 
-                item {
+                item(key = "library") {
                     LibraryLinksRow(
                         onHistoryClick = onHistoryClick,
                         onBookmarksClick = onBookmarksClick,
@@ -273,7 +273,7 @@ fun HomeScreen(
                 }
             } else if (isPrivateMode && homepageType != HomepageChoice.BLANK_PAGE.ordinal) {
                 // Private browsing info (only if not blank page)
-                item {
+                item(key = "private") {
                     PrivateBrowsingInfo()
                 }
             }
@@ -288,84 +288,88 @@ fun LogoSection(
     onProfileClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+    // Profile avatar selector (clickable) - Material icon, not emoji.
+    // The container is the muted, theme-adaptive variant of the profile
+    // color; the icon tint follows the container's luminance so it stays
+    // legible for every palette entry.
+    val avatarColor = if (currentProfile.color != 0) {
+        Color(currentProfile.color).mutedAdaptive()
+    } else {
+        MaterialTheme.colorScheme.primaryContainer
+    }
+
+    Box(modifier = modifier.fillMaxWidth()) {
+        // Brand lockup, centred: icon over name, so a long app name can
+        // never push the profile button off-screen.
+        Column(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .padding(top = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            // App icon
             Icon(
                 painter = painterResource(id = R.mipmap.ic_launcher_foreground),
                 contentDescription = stringResource(R.string.app_icon),
-                modifier = Modifier.size(80.dp),
+                modifier = Modifier.size(88.dp),
                 tint = Color.Unspecified
             )
-
-            // App name
             Text(
                 text = stringResource(R.string.app_name_display),
-                style = MaterialTheme.typography.displaySmallEmphasized,
-                color = MaterialTheme.colorScheme.onBackground
+                style = MaterialTheme.typography.headlineMediumEmphasized,
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
 
-            // Profile avatar selector (clickable) - Material icon, not emoji.
-            // The container is the muted, theme-adaptive variant of the
-            // profile color; the icon tint follows the container's
-            // luminance so it stays legible for every palette entry.
-            val avatarColor = if (currentProfile.color != 0) {
-                Color(currentProfile.color).mutedAdaptive()
-            } else {
-                MaterialTheme.colorScheme.primaryContainer
-            }
-            Surface(
-                shape = CircleShape,
-                color = avatarColor,
-                modifier = Modifier
-                    .size(40.dp)
-                    .clickable(onClick = onProfileClick)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = com.prirai.android.lr.browser.profile.ProfileIcons.iconFor(currentProfile.emoji),
-                        contentDescription = currentProfile.name,
-                        tint = if (avatarColor.luminance() > 0.5f) {
-                            MaterialTheme.colorScheme.onSurface
-                        } else {
-                            Color.White
-                        },
-                        modifier = Modifier.size(22.dp)
-                    )
+            // Private badge
+            if (isPrivateMode) {
+                Spacer(Modifier.height(4.dp))
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.primary
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = stringResource(R.string.private_browsing),
+                            style = MaterialTheme.typography.labelMediumEmphasized,
+                            color = Color.White
+                        )
+                    }
                 }
             }
         }
 
-        // Private badge
-        if (isPrivateMode) {
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.primary
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = stringResource(R.string.private_browsing),
-                        style = MaterialTheme.typography.labelMediumEmphasized,
-                        color = Color.White
-                    )
-                }
+        // Profile button pinned to the top-end corner.
+        Surface(
+            shape = CircleShape,
+            color = avatarColor,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .size(44.dp)
+                .clickable(onClick = onProfileClick)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = com.prirai.android.lr.browser.profile.ProfileIcons.iconFor(currentProfile.emoji),
+                    contentDescription = currentProfile.name,
+                    tint = if (avatarColor.luminance() > 0.5f) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        Color.White
+                    },
+                    modifier = Modifier.size(24.dp)
+                )
             }
         }
     }
@@ -384,15 +388,14 @@ fun SearchBar(
         // The same pill the real search fields wear, so the homepage affordance
         // reads as the same control as LRSearchField before it is tapped.
         shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        tonalElevation = 1.dp
+        color = MaterialTheme.colorScheme.surfaceContainerHigh
     ) {
         Row(
             modifier = Modifier
                 .clickable(interactionSource = interactionSource, onClick = onSearchClick)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.Search,
@@ -420,7 +423,9 @@ fun ShortcutsSection(
     Column(modifier = modifier) {
         // Section header
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -439,37 +444,51 @@ fun ShortcutsSection(
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
-        // Grid
-        if (shortcuts.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = stringResource(R.string.add_go_to_sites),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    textAlign = TextAlign.Center
-                )
-            }
-        } else {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 80.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.heightIn(max = 400.dp),
-                userScrollEnabled = false
-            ) {
-                items(shortcuts) { shortcut ->
-                    ShortcutItem(
-                        shortcut = shortcut,
-                        onClick = { onShortcutClick(shortcut) },
-                        onLongClick = { onShortcutDelete(shortcut) }
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerLow
+        ) {
+            if (shortcuts.isEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onAddClick)
+                        .padding(vertical = 28.dp, horizontal = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(28.dp)
                     )
+                    Text(
+                        text = stringResource(R.string.add_go_to_sites),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 80.dp),
+                    contentPadding = PaddingValues(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.heightIn(max = 420.dp),
+                    userScrollEnabled = false
+                ) {
+                    items(shortcuts, key = { it.id.toString() + it.url }) { shortcut ->
+                        ShortcutItem(
+                            shortcut = shortcut,
+                            onClick = { onShortcutClick(shortcut) },
+                            onLongClick = { onShortcutDelete(shortcut) }
+                        )
+                    }
                 }
             }
         }
@@ -499,8 +518,8 @@ fun ShortcutItem(
     ) {
         // Favicon or letter
         Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.primaryContainer,
+            shape = RoundedCornerShape(18.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHighest,
             modifier = Modifier.size(56.dp)
         ) {
             Box(
@@ -576,11 +595,11 @@ private fun LibraryLinkButton(
         modifier = modifier
             .pressScale(interactionSource)
             .clickable(interactionSource = interactionSource, onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
@@ -600,55 +619,73 @@ private fun LibraryLinkButton(
 }
 
 @Composable
+private fun HomeSectionHeader(title: String, modifier: Modifier = Modifier) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMediumEmphasized,
+        color = MaterialTheme.colorScheme.onBackground,
+        modifier = modifier.padding(start = 4.dp, bottom = 12.dp)
+    )
+}
+
+/** One rounded container holding a divided list of site rows. */
+@Composable
+private fun SiteListCard(
+    entries: List<Triple<String, String, () -> Unit>>, // url, title, onClick
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow
+    ) {
+        Column {
+            entries.forEachIndexed { index, (url, title, onClick) ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onClick)
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    FaviconImageFromUrl(
+                        url = url,
+                        title = title,
+                        size = 28.dp,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                if (index < entries.lastIndex) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 58.dp, end = 16.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun JumpBackInSection(
     items: List<JumpBackInItem>,
     onClick: (JumpBackInItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = stringResource(R.string.jump_back_in),
-                style = MaterialTheme.typography.titleMediumEmphasized,
-                color = MaterialTheme.colorScheme.onBackground
-            )
+        HomeSectionHeader(stringResource(R.string.jump_back_in))
+        val entries = remember(items, onClick) {
+            items.take(4).map { item -> Triple(item.url, item.title) { onClick(item) } }
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        items.take(4).forEach { item ->
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onClick(item) },
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    FaviconImageFromUrl(
-                        url = item.url,
-                        title = item.title,
-                        size = 24.dp,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Text(
-                        text = item.title,
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-        }
+        SiteListCard(entries = entries)
     }
 }
 
@@ -659,49 +696,11 @@ fun RecentlyClosedSection(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = stringResource(R.string.recently_closed),
-                style = MaterialTheme.typography.titleMediumEmphasized,
-                color = MaterialTheme.colorScheme.onBackground
-            )
+        HomeSectionHeader(stringResource(R.string.recently_closed))
+        val entries = remember(items, onClick) {
+            items.take(4).map { item -> Triple(item.url, item.title) { onClick(item) } }
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        items.take(4).forEach { item ->
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onClick(item) },
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    FaviconImageFromUrl(
-                        url = item.url,
-                        title = item.title,
-                        size = 24.dp,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Text(
-                        text = item.title,
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-        }
+        SiteListCard(entries = entries)
     }
 }
 

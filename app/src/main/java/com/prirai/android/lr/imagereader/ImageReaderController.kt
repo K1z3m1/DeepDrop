@@ -41,8 +41,11 @@ object ImageReaderController {
     const val EXTENSION_URL = "resource://android/assets/extensions/lr-image-reader/"
     private const val PORT_NAME = "lrImageReader"
 
+    // Max silence between messages; paged readers send progress per page.
     private const val SCAN_TIMEOUT_MS = 15_000L
-    private const val PORT_WAIT_MS = 20_000L
+    private const val SCAN_MAX_MS = 180_000L
+    private const val FAST_PORT_WAIT_MS = 4_000L
+    private const val PORT_WAIT_MS = 8_000L
 
     private val scope = MainScope()
 
@@ -59,6 +62,9 @@ object ImageReaderController {
 
     @Volatile
     private var pending: CompletableDeferred<ReaderPayload>? = null
+
+    @Volatile
+    private var lastActivityAt = 0L
 
     @Volatile
     private var busy = false
@@ -92,35 +98,45 @@ object ImageReaderController {
         toast(context, R.string.image_reader_scanning)
 
         val ext = ensureExtension(components.engine)
-        if (ext == null) {
-            toast(context, R.string.image_reader_failed)
-            return
-        }
+        // If the extension can't be installed we still have the HTML fallback.
+        if (ext != null) {
+            if (registered.add(session)) {
+                ext.registerContentMessageHandler(session, PORT_NAME, SessionHandler(session))
+            }
 
-        var justRegistered = false
-        if (registered.add(session)) {
-            ext.registerContentMessageHandler(session, PORT_NAME, SessionHandler(session))
-            justRegistered = true
-        }
-
-        // The content script connects when a page finishes loading. If our
-        // handler was registered after that, the connection was dropped, so
-        // reload once to get a fresh connection.
-        if (ports[session] == null) {
-            if (justRegistered) {
+            // The content script keeps reconnecting until a handler exists,
+            // so normally the port shows up within a second or two without
+            // any reload. If it doesn't (page loaded before the extension
+            // was installed, so there is no content script yet), reload once.
+            if (ports[session] == null) {
+                waitForPort(context, tabId, session, FAST_PORT_WAIT_MS)
+            }
+            if (ports[session] == null) {
                 components.sessionUseCases.reload.invoke(tabId)
                 delay(600)
+                waitForPort(context, tabId, session, PORT_WAIT_MS)
             }
-            waitForPort(context, tabId, session)
         }
 
         val port = ports[session]
-        if (port == null) {
-            toast(context, R.string.image_reader_failed)
-            return
+        var payload = if (port != null) request(port) else null
+
+        // The extension couldn't answer (no port / timeout / nothing found).
+        // Tier 2: render the page in an off-screen WebView so its JavaScript
+        // runs. Tier 3: download the raw HTML and read <img> tags and image
+        // URLs embedded in scripts.
+        val ua = runCatching { components.engine.settings.userAgentString }.getOrNull()
+        if (payload == null || payload.images.isEmpty()) {
+            Log.w(TAG, "extension gave no images (port=${port != null}); using WebView fallback")
+            val rendered = ImageReaderWebViewFallback.load(context, tab.content.url, ua)
+            if (rendered != null && rendered.images.isNotEmpty()) payload = rendered
+        }
+        if (payload == null || payload.images.isEmpty()) {
+            Log.w(TAG, "WebView fallback gave no images; using HTML fallback")
+            val fallback = ImageReaderHtmlFallback.load(tab.content.url, ua)
+            if (fallback != null && fallback.images.isNotEmpty()) payload = fallback
         }
 
-        val payload = request(port)
         when {
             payload == null -> toast(context, R.string.image_reader_failed)
             payload.images.isEmpty() -> toast(context, R.string.image_reader_none_found)
@@ -134,8 +150,13 @@ object ImageReaderController {
         }
     }
 
-    private suspend fun waitForPort(context: Context, tabId: String, session: EngineSession) {
-        val deadline = System.currentTimeMillis() + PORT_WAIT_MS
+    private suspend fun waitForPort(
+        context: Context,
+        tabId: String,
+        session: EngineSession,
+        timeoutMs: Long,
+    ) {
+        val deadline = System.currentTimeMillis() + timeoutMs
         while (System.currentTimeMillis() < deadline) {
             if (ports[session] != null) {
                 // Let the page settle after a reload before scanning.
@@ -163,7 +184,15 @@ object ImageReaderController {
             pending = null
             return null
         }
-        val result = withTimeoutOrNull(SCAN_TIMEOUT_MS) { deferred.await() }
+        val startedAt = System.currentTimeMillis()
+        lastActivityAt = startedAt
+        var result: ReaderPayload? = null
+        while (true) {
+            if (deferred.isCompleted) { result = deferred.await(); break }
+            val now = System.currentTimeMillis()
+            if (now - lastActivityAt > SCAN_TIMEOUT_MS || now - startedAt > SCAN_MAX_MS) break
+            delay(150)
+        }
         pending = null
         pendingId = null
         return result
@@ -171,15 +200,10 @@ object ImageReaderController {
 
     private suspend fun ensureExtension(engine: Engine): WebExtension? {
         extension?.let { return it }
-        val existing = withContext(Dispatchers.Main) {
-            suspendCoroutine<WebExtension?> { cont ->
-                engine.listInstalledWebExtensions(
-                    onSuccess = { list -> cont.resume(list.firstOrNull { it.id == EXTENSION_ID }) },
-                    onError = { _ -> cont.resume(null) },
-                )
-            }
-        }
-        val ext = existing ?: withContext(Dispatchers.Main) {
+        // ensureBuiltIn semantics: installs, or updates when the bundled
+        // version differs, so manifest changes (permissions) reach existing
+        // installs instead of keeping the stale copy.
+        val ext = withContext(Dispatchers.Main) {
             suspendCoroutine<WebExtension?> { cont ->
                 engine.installBuiltInWebExtension(
                     id = EXTENSION_ID,
@@ -226,8 +250,12 @@ object ImageReaderController {
             // SECURITY: page-controlled data. Parse defensively and accept
             // only the response to the request we sent.
             val json = message as? JSONObject ?: return
-            if (json.optString("type") != "images") return
             if (json.optString("requestId") != pendingId) return
+            if (json.optString("type") == "progress") {
+                lastActivityAt = System.currentTimeMillis()
+                return
+            }
+            if (json.optString("type") != "images") return
             val payload = try {
                 ReaderPayload.fromJson(json)
             } catch (t: Throwable) {

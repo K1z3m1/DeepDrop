@@ -122,6 +122,15 @@ class UserPreferences(appContext: Context) : mozilla.components.support.ktx.andr
      */
     var remoteDebugging by booleanPreference(REMOTE_DEBUGGING, false)
     var resistFingerprinting by booleanPreference(RESIST_FINGERPRINTING, false)
+
+    /**
+     * "Faster page loading": lets Gecko's network predictor learn which servers
+     * a site pulls from and pre-connect to them on repeat visits, and lets the
+     * app pre-connect to a URL the moment it is handed over (external link,
+     * address-bar entry). Read when the Gecko runtime is created, so toggling
+     * it takes effect on the next app start.
+     */
+    var fastPageLoad by booleanPreference(FAST_PAGE_LOAD, true)
     var promptExternalDownloader by booleanPreference(PROMPT_EXTERNAL_DOWNLOADER, false)
     var addonSort by intPreference(ADDON_SORT, AddonSortType.RATING.ordinal)
     var showUrlProtocol by booleanPreference(SHOW_URL_PROTOCOL, false)
@@ -261,6 +270,7 @@ class UserPreferences(appContext: Context) : mozilla.components.support.ktx.andr
         const val SWIPE_TO_REFRESH = "swipe_to_refresh"
         const val REMOTE_DEBUGGING = "remote_debugging"
         const val RESIST_FINGERPRINTING = "resist_fingerprinting"
+        const val FAST_PAGE_LOAD = "fast_page_load"
         const val PROMPT_EXTERNAL_DOWNLOADER = "prompt_external_downloader"
         const val SHOW_URL_PROTOCOL = "show_url_protocol"
         const val SEARCH_SUGGESTIONS = "search_suggestions"

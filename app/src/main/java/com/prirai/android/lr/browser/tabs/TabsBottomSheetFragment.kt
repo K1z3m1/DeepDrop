@@ -37,7 +37,7 @@ import com.prirai.android.lr.R
 import com.prirai.android.lr.browser.BrowsingMode
 import com.prirai.android.lr.browser.BrowsingModeManager
 import com.prirai.android.lr.browser.tabgroups.UnifiedTabGroupManager
-import com.prirai.android.lr.browser.tabs.compose.ProfileSwitcherRow
+import com.prirai.android.lr.browser.tabs.compose.ProfileCardsPage
 import com.prirai.android.lr.browser.tabs.compose.TabViewModel
 import com.prirai.android.lr.browser.tabs.compose.TabSheetListView
 import com.prirai.android.lr.browser.tabs.compose.TabSheetGridView
@@ -86,6 +86,8 @@ class TabsBottomSheetFragment : DialogFragment() {
 
     private var isInitializing = true
     private val isGridViewState = mutableStateOf(false)
+    // Sheet page: 0 = tab cards, 1 = profile cards (swapped by the tab row)
+    private val selectedPageState = mutableStateOf(0)
     private var isGridView: Boolean
         get() = isGridViewState.value
         set(value) { isGridViewState.value = value }
@@ -593,6 +595,7 @@ class TabsBottomSheetFragment : DialogFragment() {
         ) { paddingValues ->
             val isGridView by isGridViewState
             val tabs by viewModel.tabs.collectAsState()
+            val selectedPage by selectedPageState
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -606,42 +609,79 @@ class TabsBottomSheetFragment : DialogFragment() {
                     verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                 ) {
                     Text(
-                        text = pluralStringResource(R.plurals.tab_count, tabs.size, tabs.size),
+                        text = if (selectedPage == 0) {
+                            pluralStringResource(R.plurals.tab_count, tabs.size, tabs.size)
+                        } else {
+                            stringResource(R.string.profiles)
+                        },
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                         modifier = Modifier.weight(1f)
                     )
-                    FilledTonalIconButton(onClick = { showTabSearch() }) {
-                        Icon(Icons.Rounded.Search, contentDescription = stringResource(R.string.search_tabs_bookmarks_history))
-                    }
-                    Spacer(Modifier.width(8.dp))
-                    FilledTonalIconButton(
-                        onClick = {
-                            val newValue = !isGridView
-                            isGridViewState.value = newValue
-                            viewPrefs.edit { putBoolean("is_grid_view", newValue) }
-                        }
-                    ) {
-                        if (isGridView) {
-                            Icon(Icons.Rounded.ViewList, contentDescription = stringResource(R.string.list_view))
-                        } else {
-                            Icon(Icons.Rounded.GridView, contentDescription = stringResource(R.string.grid_view))
-                        }
-                    }
-                    Spacer(Modifier.width(8.dp))
-                    FilledIconButton(
-                        onClick = {
-                            addNewTab()
-                            // Post dismiss to avoid touch event recycling crash
-                            view?.post { dismiss() }
-                        }
-                    ) {
-                        Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.new_tab))
-                    }
+                }
+
+                // Page tabs: swap between the tab cards and the profile cards
+                TabRow(
+                    selectedTabIndex = selectedPage,
+                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Tab(
+                        selected = selectedPage == 0,
+                        onClick = { selectedPageState.value = 0 },
+                        text = { Text(stringResource(R.string.tabs)) }
+                    )
+                    Tab(
+                        selected = selectedPage == 1,
+                        onClick = { selectedPageState.value = 1 },
+                        text = { Text(stringResource(R.string.profiles)) }
+                    )
                 }
 
                 // Wrapper Box to hold tabs and menu overlay
-                Box(
+                if (selectedPage == 1) {
+                    val trigger by profileStateTrigger
+                    val profiles = remember(trigger) {
+                        com.prirai.android.lr.browser.profile.ProfileManager
+                            .getInstance(requireContext())
+                            .getAllProfiles()
+                    }
+                    val tabCounts = remember(trigger, tabs.size) {
+                        val allTabs = requireContext().components.store.state.tabs
+                        val byContext = HashMap<String?, Int>()
+                        var privateCount = 0
+                        allTabs.forEach { tab ->
+                            if (tab.content.private) privateCount++
+                            else byContext[tab.contextId] = (byContext[tab.contextId] ?: 0) + 1
+                        }
+                        byContext to privateCount
+                    }
+                    ProfileCardsPage(
+                        profiles = profiles,
+                        currentProfileId = browsingModeManager.currentProfile.id,
+                        isPrivateMode = browsingModeManager.mode == BrowsingMode.Private,
+                        tabCountFor = { profile ->
+                            val counts = tabCounts.first
+                            if (profile.id == "default") {
+                                (counts[null] ?: 0) + (counts["profile_default"] ?: 0)
+                            } else {
+                                counts["profile_${profile.id}"] ?: 0
+                            }
+                        },
+                        privateTabCount = tabCounts.second,
+                        onProfileClick = { profile ->
+                            switchToProfile(profile.id, false)
+                            selectedPageState.value = 0
+                        },
+                        onProfileLongClick = { profile -> showProfileEditDialog(profile) },
+                        onPrivateClick = {
+                            switchToProfile("private", true)
+                            selectedPageState.value = 0
+                        },
+                        onAddClick = { showProfileCreateDialog() },
+                        modifier = Modifier.weight(1f)
+                    )
+                } else Box(
                     modifier = Modifier.weight(1f)
                 ) {
                     // Choose view based on grid mode
@@ -716,26 +756,55 @@ class TabsBottomSheetFragment : DialogFragment() {
                     }
                 }
 
-                // Profile switcher - the Compose pill row replaces the old
-                // MergedProfileButton LinearLayout; hidden while the
-                // long-press menu overlay is up.
+                // Bottom action bar: search, list/grid toggle and + (new tab /
+                // new profile). Hidden while the long-press menu is up.
                 if (!showMenu) {
-                    val trigger by profileStateTrigger
-                    val profiles = remember(trigger) {
-                        com.prirai.android.lr.browser.profile.ProfileManager
-                            .getInstance(requireContext())
-                            .getAllProfiles()
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding(),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp, androidx.compose.ui.Alignment.End)
+                        ) {
+                            if (selectedPage == 0) {
+                                FilledTonalIconButton(onClick = { showTabSearch() }) {
+                                    Icon(Icons.Rounded.Search, contentDescription = stringResource(R.string.search_tabs_bookmarks_history))
+                                }
+                                FilledTonalIconButton(
+                                    onClick = {
+                                        val newValue = !isGridView
+                                        isGridViewState.value = newValue
+                                        viewPrefs.edit { putBoolean("is_grid_view", newValue) }
+                                    }
+                                ) {
+                                    if (isGridView) {
+                                        Icon(Icons.Rounded.ViewList, contentDescription = stringResource(R.string.list_view))
+                                    } else {
+                                        Icon(Icons.Rounded.GridView, contentDescription = stringResource(R.string.grid_view))
+                                    }
+                                }
+                                FilledIconButton(
+                                    onClick = {
+                                        addNewTab()
+                                        // Post dismiss to avoid touch event recycling crash
+                                        view?.post { dismiss() }
+                                    }
+                                ) {
+                                    Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.new_tab))
+                                }
+                            } else {
+                                FilledIconButton(onClick = { showProfileCreateDialog() }) {
+                                    Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.create_profile))
+                                }
+                            }
+                        }
                     }
-                    val isPrivateMode = browsingModeManager.mode == BrowsingMode.Private
-                    ProfileSwitcherRow(
-                        profiles = profiles,
-                        currentProfileId = browsingModeManager.currentProfile.id,
-                        isPrivateMode = isPrivateMode,
-                        onProfileClick = { profile -> switchToProfile(profile.id, false) },
-                        onProfileLongClick = { profile -> showProfileEditDialog(profile) },
-                        onPrivateClick = { switchToProfile("private", true) },
-                        onAddClick = { showProfileCreateDialog() },
-                    )
                 }
             }
         }

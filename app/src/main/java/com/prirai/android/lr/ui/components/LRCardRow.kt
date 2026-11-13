@@ -62,7 +62,6 @@ fun LRCardRow(
             .padding(horizontal = 8.dp),
         shape = shape,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        tonalElevation = 1.dp,
         onClick = onClick ?: {},
         enabled = onClick != null,
     ) {

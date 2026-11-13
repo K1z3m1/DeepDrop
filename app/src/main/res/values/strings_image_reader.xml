@@ -9,6 +9,10 @@
     <string name="image_reader_mode_vertical">Scroll</string>
     <string name="image_reader_mode_ltr">Pages →</string>
     <string name="image_reader_mode_rtl">Pages ←</string>
+    <string name="image_reader_long_strip">Long strip</string>
+    <string name="image_reader_single_page">Single page</string>
+    <string name="image_reader_dir_ltr">L→R</string>
+    <string name="image_reader_dir_rtl">R→L</string>
     <string name="image_reader_show_all">Show all images</string>
     <string name="image_reader_close">Close reader</string>
     <string name="image_reader_hide_banners">Hide banners</string>

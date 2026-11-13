@@ -96,6 +96,20 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
             ).show()
         }
 
+        // Faster page loading: the predictor pref is baked into the Gecko
+        // runtime config at start-up (UserJsPreferences), so it needs a restart.
+        switchPreference(
+            preference = requireContext().resources.getString(R.string.key_fast_page_load),
+            isChecked = UserPreferences(requireContext()).fastPageLoad,
+        ) {
+            UserPreferences(requireContext()).fastPageLoad = it
+            Toast.makeText(
+                context,
+                requireContext().resources.getText(R.string.app_restart),
+                Toast.LENGTH_LONG
+            ).show()
+        }
+
         // SECURITY: Third-party certificate trust disabled for security
         switchPreference(
             preference = requireContext().resources.getString(R.string.key_trust_third_party_certs),

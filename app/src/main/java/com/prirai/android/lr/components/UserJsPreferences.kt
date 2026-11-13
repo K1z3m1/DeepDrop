@@ -73,12 +73,22 @@ object UserJsPreferences {
         // Trim cross-origin Referer to origin only
         "network.http.referer.XOriginTrimmingPolicy" to 2,
         "network.http.sendRefererHeader" to 1,
-        // Disable all forms of speculative/predictive network activity
-        "network.predictor.enabled" to false,
+        // Page-content prefetch stays off: it spends mobile data and asks
+        // for pages the user may never open. (The network predictor, which
+        // only pre-connects to hosts a site is already known to use, is
+        // controlled by the "Faster page loading" toggle: see
+        // speculativePrefs below.)
         "network.prefetch-next" to false,
         "network.dns.disablePrefetch" to true,
         "browser.urlbar.speculativeConnect.enabled" to false,
     )
+
+    // "Faster page loading" toggle. The predictor learns, per site, which
+    // other hosts a page fetches from and opens those connections as soon as
+    // the navigation starts on a repeat visit. The data is a small local
+    // database, and it only reaches hosts that page requested before.
+    private fun speculativePrefs(enabled: Boolean): Map<String, Any> =
+        mapOf("network.predictor.enabled" to enabled)
 
     private val securityPrefs = mapOf<String, Any>(
         // HTTPS-first: try HTTPS before falling back to HTTP
@@ -167,6 +177,20 @@ object UserJsPreferences {
         "network.ssl_tokens_cache_capacity" to 10240,
         // Open the connection for a 103 Early Hints preconnect right away.
         "network.early-hints.preconnect.enabled" to true,
+        // ── HTTP disk cache ──
+        // The mobile Gecko default disk cache can be quite small, so scripts,
+        // styles and images from the previous visit may already be evicted.
+        // Set the size explicitly: 256 MB (value is in KB) lives in the app cache dir; the
+        // OS reclaims it under storage pressure and "Clear cache" empties
+        // it. Smart sizing is off so the explicit capacity is honoured.
+        "browser.cache.disk.enable" to true,
+        "browser.cache.disk.smart_size.enabled" to false,
+        "browser.cache.disk.capacity" to 262144,
+        // Allow larger single responses (JS bundles, hero images) into it.
+        "browser.cache.disk.max_entry_size" to 32768,
+        // Compress cached JavaScript bytecode: smaller entries, more of
+        // them fit in the cache above.
+        "browser.cache.jsbc_compression_level" to 3,
     )
 
     // Applied only in single-tab (low RAM) mode. These replace the
@@ -178,6 +202,8 @@ object UserJsPreferences {
         "browser.cache.memory.capacity" to 8192,
         // Do not pre-launch a spare content process.
         "dom.ipc.processPrelaunch.fission.number" to 0,
+        // Low-RAM phones tend to be low-storage too: half-size disk cache.
+        "browser.cache.disk.capacity" to 131072,
     )
 
     // performancePrefs keys that trade RAM for speed; dropped in low RAM mode.
@@ -189,14 +215,14 @@ object UserJsPreferences {
 
     // ── Config file writing ──────────────────────────────────────────────────
 
-    private fun buildConfigJson(resistFingerprinting: Boolean, lowRam: Boolean): String {
+    private fun buildConfigJson(resistFingerprinting: Boolean, lowRam: Boolean, fastLoad: Boolean): String {
         val perf = if (lowRam) {
             (performancePrefs - lowRamDroppedKeys) + lowRamOverrides
         } else {
             performancePrefs
         }
         val allPrefs = privacyPrefs + rfpPrefs(resistFingerprinting) + telemetryPrefs +
-                networkPrefs + securityPrefs + mediaPrefs + perf
+                networkPrefs + speculativePrefs(fastLoad) + securityPrefs + mediaPrefs + perf
 
         return buildString {
             append("{\"prefs\":{")
@@ -241,7 +267,8 @@ object UserJsPreferences {
         val configFile = File(context.filesDir, CONFIG_FILE_NAME)
         val lowRam = com.prirai.android.lr.preferences.UserPreferences(context).sleepingTabsMode ==
             com.prirai.android.lr.preferences.UserPreferences.SLEEPING_TABS_SINGLE
-        val desired = buildConfigJson(rfpEnabled, lowRam)
+        val fastLoad = com.prirai.android.lr.preferences.UserPreferences(context).fastPageLoad
+        val desired = buildConfigJson(rfpEnabled, lowRam, fastLoad)
         val current = runCatching { if (configFile.exists()) configFile.readText() else null }.getOrNull()
         if (current != desired) {
             configFile.writeText(desired)

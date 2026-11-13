@@ -81,7 +81,7 @@ fun TabGridCard(
             groupColor != null -> Color(groupColor).copy(alpha = 0.05f)
             else -> MaterialTheme.colorScheme.surfaceContainerHighest
         },
-        tonalElevation = if (isSelected) 4.dp else 1.dp,
+        tonalElevation = if (isSelected) 2.dp else 0.dp,
         border = when {
             // Group identity on a resting grouped card; the selected state
             // speaks through its primaryContainer, never an accent stroke.

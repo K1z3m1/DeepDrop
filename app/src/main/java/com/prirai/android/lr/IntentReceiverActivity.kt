@@ -28,6 +28,13 @@ class IntentReceiverActivity : Activity() {
             }
         }
 
+        // Start the connection to the target host now: the rest of this
+        // activity chain (tab creation, BrowserActivity launch, engine view
+        // attach) takes long enough for DNS + TCP + TLS to finish meanwhile.
+        if (intent.action == Intent.ACTION_VIEW) {
+            components.speculativeConnect(intent.dataString)
+        }
+
         intent.flags = intent.flags and Intent.FLAG_ACTIVITY_NEW_TASK.inv()
         intent.flags = intent.flags and Intent.FLAG_ACTIVITY_CLEAR_TASK.inv()
         intent.flags = intent.flags and Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS.inv()

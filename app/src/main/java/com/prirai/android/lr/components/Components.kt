@@ -204,6 +204,24 @@ open class Components(private val applicationContext: Context) {
         }
     }
 
+    /**
+     * Starts DNS + TCP + TLS towards [url]'s origin before the navigation
+     * itself is issued, so the handshake overlaps with tab creation, session
+     * link-up and content-process start instead of running after them.
+     *
+     * Only http(s) URLs the user is about to load are passed in (external
+     * link, address-bar entry), so no host is contacted that the load would
+     * not contact anyway. Honours the "Faster page loading" toggle; never
+     * throws, because a missed pre-connect must not affect the navigation.
+     */
+    fun speculativeConnect(url: String?) {
+        if (url.isNullOrBlank()) return
+        val scheme = url.substringBefore(':', "").lowercase()
+        if (scheme != "http" && scheme != "https") return
+        if (!UserPreferences(applicationContext).fastPageLoad) return
+        runCatching { engine.speculativeConnect(url) }
+    }
+
     fun applyPrivacyEngineSettings() {
         val prefs = UserPreferences(applicationContext)
         engine.settings.httpsOnlyMode = prefs.getHttpsOnlyMode()

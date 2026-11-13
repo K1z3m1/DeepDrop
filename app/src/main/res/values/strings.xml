@@ -76,6 +76,13 @@
         name="key_resist_fingerprinting"
         translatable="false"
     >resist_fingerprinting</string>
+  <string
+        name="key_fast_page_load"
+        translatable="false"
+    >fast_page_load</string>
+  <string name="pref_performance">Performance</string>
+  <string name="fast_page_load">Faster page loading</string>
+  <string name="fast_page_load_summary">Learns which servers a site uses and connects to them early on repeat visits, and pre-connects to a link as you open it. Stores a small local prediction database. Takes effect after restart.</string>
   <string name="resist_fingerprinting">Resist fingerprinting</string>
   <string name="resist_fingerprinting_summary">Hardens against browser fingerprinting, but forces light page theme and can break image uploads on some sites (canvas spoofing). Takes effect after restart.</string>
   <string
@@ -163,6 +170,7 @@
     <string name="custom">Custom</string>
 
   <string name="tabs">Tabs</string>
+<string name="profiles">Profiles</string>
 <string name="close">Close</string>
 <string name="retry">Retry</string>
 <string name="group">Group</string>

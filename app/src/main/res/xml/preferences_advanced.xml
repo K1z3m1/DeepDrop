@@ -60,6 +60,17 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory android:title="@string/pref_performance">
+
+        <com.prirai.android.lr.settings.MaterialSwitchPreference
+            app:key="@string/key_fast_page_load"
+            app:title="@string/fast_page_load"
+            app:summary="@string/fast_page_load_summary"
+            app:singleLineTitle="false"
+            app:defaultValue="true" />
+
+    </PreferenceCategory>
+
     <PreferenceCategory android:title="@string/pref_developer_options">
         
         <com.prirai.android.lr.settings.MaterialSwitchPreference

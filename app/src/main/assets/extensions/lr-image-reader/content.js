@@ -35,15 +35,37 @@
   var MAX_ITEMS = 1500;
   var MAX_BG_SCAN = 4000;
 
+  var currentBase = null; // set while reading a fetched (parsed) document
   var port = null;
+  var retryTimer = null;
+  var attempts = 0;
+  var MAX_ATTEMPTS = 40;
+
+  // The host registers its message handler lazily (the first time the reader
+  // is used), so a connection made before that is dropped. Keep reconnecting
+  // with a short backoff until the host picks up.
+  function scheduleReconnect() {
+    if (retryTimer || attempts >= MAX_ATTEMPTS) return;
+    var delay = Math.min(250 * Math.pow(1.5, attempts), 3000);
+    retryTimer = setTimeout(function () {
+      retryTimer = null;
+      connect();
+    }, delay);
+  }
 
   function connect() {
+    attempts++;
     try {
-      port = browser.runtime.connectNative(NATIVE);
-      port.onMessage.addListener(onRequest);
-      port.onDisconnect.addListener(function () { port = null; });
+      var p = browser.runtime.connectNative(NATIVE);
+      port = p;
+      p.onMessage.addListener(onRequest);
+      p.onDisconnect.addListener(function () {
+        if (port === p) port = null;
+        scheduleReconnect();
+      });
     } catch (e) {
       port = null;
+      scheduleReconnect();
     }
   }
 
@@ -57,7 +79,7 @@
       return u;
     }
     try {
-      var a = new URL(u, document.baseURI);
+      var a = new URL(u, currentBase || document.baseURI);
       if (a.protocol !== "http:" && a.protocol !== "https:") return "";
       return a.href;
     } catch (e) {
@@ -267,7 +289,7 @@
       var key = items[k].c[0];
       if (seen[key]) continue;
       seen[key] = true;
-      out.push({ c: items[k].c, w: items[k].w, h: items[k].h });
+      out.push({ c: items[k].c, w: items[k].w, h: items[k].h, el: items[k].el });
     }
     return out;
   }
@@ -301,26 +323,215 @@
     await sleep(250);
   }
 
-  async function onRequest(msg) {
-    if (!msg || msg.type !== "lrImageReader:collect") return;
+  // ---- Paged readers: one image per page, "Next" button / link ----------
+
+  var NEXT_TEXT = /^\s*(?:next|next page|\u203A|\u00BB|>|>>|\u2192|ถัดไป|หน้าถัดไป|ต่อไป|下一页|下一頁|次へ|次のページ)\s*$/i;
+  var CHAPTER_WORD = /chapter|chap\b|episode|\bep\b|ตอน|章|话|話/i;
+  var MAX_PAGES = 400;
+
+  function isRealHref(h) {
+    return !!h && h.charAt(0) !== "#" && !/^javascript:/i.test(h);
+  }
+
+  function findNext(doc) {
+    var rel = doc.querySelector('a[rel~="next"], link[rel~="next"]');
+    if (rel) return { el: rel, href: rel.getAttribute("href") };
+    var cands = doc.querySelectorAll("a, button, [role=button]");
+    for (var i = 0; i < cands.length; i++) {
+      var c = cands[i];
+      var t = (c.textContent || c.getAttribute("aria-label") || c.getAttribute("title") || "").trim();
+      var cls = (typeof c.className === "string" ? c.className : "") + " " + (c.id || "");
+      if (CHAPTER_WORD.test(t) || CHAPTER_WORD.test(cls)) continue;
+      if (NEXT_TEXT.test(t) || /(?:^|[\s_-])next(?:[\s_-]|$)/i.test(cls)) {
+        return { el: c, href: c.getAttribute("href") };
+      }
+    }
+    return null;
+  }
+
+  function selectorFor(el) {
+    try {
+      if (el.id) return "#" + CSS.escape(el.id);
+      var cls = (typeof el.className === "string" ? el.className : "")
+        .trim().split(/\s+/).filter(Boolean).slice(0, 3);
+      return el.tagName.toLowerCase() + cls.map(function (c) { return "." + CSS.escape(c); }).join("");
+    } catch (e) {
+      return "img";
+    }
+  }
+
+  function digitRuns(u) {
+    try {
+      var x = new URL(u);
+      return (x.pathname + x.search).match(/\d+/g) || [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /**
+   * Only follow links that look like "same chapter, next page": exactly one
+   * number grows by 1 (or a first "2" is appended). A jump to the next
+   * chapter changes more than that, so we stop there.
+   */
+  function isSequential(cur, next) {
+    var a = digitRuns(cur), b = digitRuns(next);
+    if (b.length === a.length + 1) {
+      for (var i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+      return b[b.length - 1] === "2";
+    }
+    if (a.length !== b.length || !a.length) return false;
+    var diffs = 0;
+    for (var j = 0; j < a.length; j++) {
+      if (a[j] !== b[j]) {
+        if (parseInt(b[j], 10) - parseInt(a[j], 10) !== 1) return false;
+        diffs++;
+      }
+    }
+    return diffs === 1;
+  }
+
+  function addUnseen(list, seen, imgs) {
+    var added = 0;
+    for (var i = 0; i < imgs.length; i++) {
+      var cands = fromImg(imgs[i]);
+      if (!cands.length || seen[cands[0]]) continue;
+      seen[cands[0]] = true;
+      list.push({ c: cands, w: 0, h: 0, el: null });
+      added++;
+    }
+    return added;
+  }
+
+  async function viaFetch(sel, firstNext, seen, extra, report) {
+    var curUrl = location.href;
+    var nextUrl = absolute(firstNext.href);
+    var visited = Object.create(null);
+    visited[curUrl] = true;
+    for (var n = 0; n < MAX_PAGES && nextUrl && !visited[nextUrl]; n++) {
+      if (!isSequential(curUrl, nextUrl)) break;
+      visited[nextUrl] = true;
+      var html;
+      var ctl = new AbortController();
+      var timer = setTimeout(function () { ctl.abort(); }, 10000);
+      try {
+        var r = await fetch(nextUrl, { credentials: "include", signal: ctl.signal });
+        if (!r.ok) break;
+        html = await r.text();
+      } catch (e) {
+        break;
+      } finally {
+        clearTimeout(timer);
+      }
+      var doc = new DOMParser().parseFromString(html, "text/html");
+      var base = doc.createElement("base");
+      base.setAttribute("href", nextUrl);
+      doc.head.insertBefore(base, doc.head.firstChild);
+      currentBase = nextUrl;
+      var added, following = null;
+      try {
+        added = addUnseen(extra, seen, doc.querySelectorAll(sel));
+        var nx = findNext(doc);
+        if (nx && isRealHref(nx.href)) following = absolute(nx.href);
+      } finally {
+        currentBase = null;
+      }
+      if (!added) break;
+      report(extra.length);
+      curUrl = nextUrl;
+      nextUrl = following;
+    }
+  }
+
+  function signature(sel) {
+    var els = document.querySelectorAll(sel);
+    var parts = [];
+    for (var i = 0; i < els.length; i++) parts.push(els[i].currentSrc || els[i].src || "");
+    return parts.join("|");
+  }
+
+  async function viaClick(sel, seen, extra, report) {
+    for (var n = 0; n < MAX_PAGES; n++) {
+      var nx = findNext(document);
+      var btn = nx && nx.el;
+      if (!btn || btn.disabled || btn.getAttribute("aria-disabled") === "true") break;
+      var before = signature(sel);
+      btn.click();
+      var changed = false;
+      for (var w = 0; w < 25; w++) {
+        await sleep(100);
+        if (signature(sel) !== before) { changed = true; break; }
+      }
+      if (!changed) break;
+      await sleep(150);
+      var added = addUnseen(extra, seen, document.querySelectorAll(sel));
+      if (!added) break;
+      report(extra.length);
+    }
+  }
+
+  /** If the page shows ~1 image and has a "next" control, walk the pages. */
+  async function paginate(raw, report) {
+    if (!raw.length || raw.length > 3) return [];
+    var main = raw[0];
+    raw.forEach(function (it) { if (it.w * it.h > main.w * main.h) main = it; });
+    if (!main.el || main.el.tagName !== "IMG") return [];
+    var sel = selectorFor(main.el);
+    var next = findNext(document);
+    if (!next) return [];
+    var seen = Object.create(null);
+    raw.forEach(function (it) { seen[it.c[0]] = true; });
+    var extra = [];
+    if (isRealHref(next.href)) {
+      await viaFetch(sel, next, seen, extra, report);
+    } else {
+      await viaClick(sel, seen, extra, report);
+    }
+    return extra;
+  }
+
+  async function scan(warm, requestId, report) {
     var result = {
       type: "images",
-      requestId: msg.requestId || "",
+      requestId: requestId || "",
       pageUrl: location.href,
       title: document.title || "",
       userAgent: navigator.userAgent,
       images: []
     };
     try {
-      if (msg.warm !== false) await warmLazy();
-      result.images = collect();
+      if (warm !== false) await warmLazy();
+      var raw = collect();
+      var more = [];
+      try {
+        more = await paginate(raw, report || function () {});
+      } catch (e) { /* keep what the first page gave */ }
+      result.images = raw.concat(more).map(function (it) {
+        return { c: it.c, w: it.w, h: it.h };
+      });
     } catch (e) {
       result.error = String(e && e.message ? e.message : e);
     }
+    return result;
+  }
+
+  async function onRequest(msg) {
+    if (!msg || msg.type !== "lrImageReader:collect") return;
+    attempts = 0;
+    var result = await scan(msg.warm, msg.requestId, function (count) {
+      try {
+        if (port) port.postMessage({ type: "progress", requestId: msg.requestId || "", count: count });
+      } catch (e) { /* ignore */ }
+    });
     try {
       if (port) port.postMessage(result);
     } catch (e) { /* port closed; host will time out and retry */ }
   }
 
-  connect();
+  // Hook for the host's off-screen WebView fallback (no extension APIs there).
+  window.__lrImageReaderRun = function (warm) { return scan(warm, ""); };
+
+  if (typeof browser !== "undefined" && browser.runtime && browser.runtime.connectNative) {
+    connect();
+  }
 })();
