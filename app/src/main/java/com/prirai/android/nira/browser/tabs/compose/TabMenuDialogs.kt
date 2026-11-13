@@ -1,0 +1,291 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
+package com.prirai.android.nira.browser.tabs.compose
+
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import com.prirai.android.nira.R
+import com.prirai.android.nira.ui.components.NiraAlertDialog
+
+/**
+ * Reusable Dialog Components for Tab Menu System
+ *
+ * This file contains all dialog components used in the tab menu system:
+ * - RenameGroupDialog: For renaming groups/islands
+ * - ColorPickerDialog: For changing group colors
+ * - ProfilePickerDialog: For moving tabs/groups between profiles
+ *
+ * These dialogs are designed to be reusable across different contexts
+ * and maintain consistent styling with Material 3 guidelines.
+ */
+
+// ============================================================================
+// RENAME GROUP DIALOG
+// ============================================================================
+
+/**
+ * Dialog for renaming a group/island.
+ * Validates that the name is not blank before allowing confirmation.
+ *
+ * Features:
+ * - Pre-fills with current name
+ * - Single-line text input
+ * - Validates non-blank input
+ * - Confirm/Cancel actions
+ *
+ * @param currentName The current name of the group
+ * @param onConfirm Callback with new name when user confirms
+ * @param onDismiss Callback when dialog is dismissed without confirming
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RenameGroupDialog(
+    currentName: String,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var name by remember { mutableStateOf(currentName) }
+
+    NiraAlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.rename_island)) },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text(stringResource(R.string.island_name)) },
+                leadingIcon = { Icon(Icons.Rounded.Edit, contentDescription = null) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(name) },
+                enabled = name.isNotBlank()
+            ) {
+                Text(stringResource(R.string.rename_action))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+}
+
+// ============================================================================
+// COLOR PICKER DIALOG
+// ============================================================================
+
+/**
+ * Dialog for picking a color for a group/island.
+ * Shows a grid of 16 predefined Material Design colors.
+ * Highlights the currently selected color with a white border.
+ *
+ * Features:
+ * - 4x4 grid of colors
+ * - Visual indication of current selection
+ * - Immediate selection on tap
+ * - Predefined Material Design color palette
+ *
+ * Color Palette:
+ * - Red, Pink, Purple, Deep Purple
+ * - Indigo, Blue, Light Blue, Cyan
+ * - Teal, Green, Light Green, Lime
+ * - Yellow, Amber, Orange, Deep Orange
+ *
+ * @param currentColor The current color of the group (as Int)
+ * @param onConfirm Callback with selected color (as Int) when user picks a color
+ * @param onDismiss Callback when dialog is dismissed without picking
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ColorPickerDialog(
+    currentColor: Int,
+    onConfirm: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    // Material Design color palette - 16 colors
+    val colors = remember {
+        listOf(
+            0xFFE57373.toInt(), // Red
+            0xFFF06292.toInt(), // Pink
+            0xFFBA68C8.toInt(), // Purple
+            0xFF9575CD.toInt(), // Deep Purple
+            0xFF7986CB.toInt(), // Indigo
+            0xFF64B5F6.toInt(), // Blue
+            0xFF4FC3F7.toInt(), // Light Blue
+            0xFF4DD0E1.toInt(), // Cyan
+            0xFF4DB6AC.toInt(), // Teal
+            0xFF81C784.toInt(), // Green
+            0xFFAED581.toInt(), // Light Green
+            0xFFDCE775.toInt(), // Lime
+            0xFFFFF176.toInt(), // Yellow
+            0xFFFFD54F.toInt(), // Amber
+            0xFFFFB74D.toInt(), // Orange
+            0xFFFF8A65.toInt()  // Deep Orange
+        )
+    }
+
+    NiraAlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.choose_color)) },
+        text = {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(4),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.height(220.dp)
+            ) {
+                items(colors) { color ->
+                    val isSelected = color == currentColor
+                    val scale by animateFloatAsState(
+                        targetValue = if (isSelected) 1.1f else 1f,
+                        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+                        label = "colorScale"
+                    )
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .scale(scale)
+                            .clip(CircleShape)
+                            .background(Color(color))
+                            .clickable { onConfirm(color) }
+                    ) {
+                        if (isSelected) {
+                            Icon(
+                                imageVector = Icons.Rounded.Check,
+                                contentDescription = stringResource(R.string.selected),
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+}
+
+// ============================================================================
+// PROFILE PICKER DIALOG
+// ============================================================================
+
+/**
+ * Dialog for selecting a profile to move tabs/groups to.
+ * Shows a list of available profiles for the user to choose from.
+ *
+ * Features:
+ * - Lists all available profiles
+ * - Simple tap-to-select interaction
+ * - Cancel option
+ *
+ * @param onConfirm Callback with selected profile ID when user picks a profile
+ * @param onDismiss Callback when dialog is dismissed without picking
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProfilePickerDialog(
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    // Real profile list from ProfileManager instead of the previous
+    // "default / work / personal" hard-coded triple. Loaded once when the
+    // dialog is first composed - profiles are rarely created / renamed
+    // while a menu is open.
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val profiles = remember {
+        com.prirai.android.nira.browser.profile.ProfileManager
+            .getInstance(context)
+            .getAllProfiles()
+            .map { it.id to it.name }
+    }
+
+    NiraAlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.move_to_profile)) },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                profiles.forEach { (profileId, profileName) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onConfirm(profileId)
+                                onDismiss()
+                            }
+                            .padding(vertical = 12.dp),
+                        horizontalArrangement = Arrangement.Start,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = profileName,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+}
+
+// ============================================================================
+// FUTURE DIALOG COMPONENTS
+// ============================================================================
+
+/**
+ * Potential future dialogs to implement:
+ *
+ * 1. AddToGroupDialog:
+ *    - Shows list of existing groups to add a tab to
+ *    - Option to create new group
+ *
+ * 2. MergeGroupsDialog:
+ *    - Confirmation dialog when merging two groups
+ *    - Shows preview of combined tabs
+ *
+ * 3. CloseAllTabsDialog:
+ *    - Confirmation dialog for destructive actions
+ *    - Shows count of tabs to be closed
+ *
+ * 4. ExportGroupDialog:
+ *    - Options for exporting group (bookmarks, sharing, etc.)
+ *    - Format selection
+ *
+ * 5. GroupDetailsDialog:
+ *    - Detailed view of group statistics
+ *    - Tab list, memory usage, etc.
+ */

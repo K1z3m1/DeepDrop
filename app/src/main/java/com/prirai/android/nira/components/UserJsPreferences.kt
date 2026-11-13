@@ -1,0 +1,217 @@
+package com.prirai.android.nira.components
+
+import android.content.Context
+import org.mozilla.geckoview.GeckoRuntimeSettings
+import java.io.File
+
+/**
+ * Applies privacy-hardening GeckoView preferences inspired by arkenfox/betterfox.
+ *
+ * GeckoView 148 exposes only a limited set of typed setter methods on
+ * [GeckoRuntimeSettings] / [GeckoRuntimeSettings.Builder]. For preferences that
+ * don't have a typed API, we write a Gecko config JSON file
+ * (`{"prefs": { "pref.name": value }}`) and pass its path to
+ * [GeckoRuntimeSettings.Builder.configFilePath]. These become Gecko default prefs
+ * that are still overridable by the user via about:config.
+ *
+ * Safe browsing is intentionally excluded — it is controlled by UserPreferences.safeBrowsing.
+ *
+ * Usage:
+ * ```
+ * // 1. Before builder.build()
+ * UserJsPreferences.applyTo(applicationContext, builder)
+ * val runtimeSettings = builder.<other methods>.build()
+ *
+ * // 2. After builder.build(), apply typed setters
+ * UserJsPreferences.applyTypedSettings(runtimeSettings)
+ * ```
+ */
+object UserJsPreferences {
+
+    private const val CONFIG_FILE_NAME = "gecko_privacy_config.json"
+
+    // ── Prefs applied via GeckoView config JSON file ──────────────────────────
+    // (No typed builder/setter API exists for these in GeckoView 148.)
+
+    private val privacyPrefs = mapOf<String, Any>(
+        // Disables navigator.sendBeacon — prevents silent background data leakage
+        "beacon.enabled" to false,
+        // Send Do-Not-Track request header
+        "privacy.donottrackheader.enabled" to true,
+        // Clear cookies and HTTP sessions on browser shutdown
+        "privacy.clearOnShutdown.cookies" to true,
+        "privacy.clearOnShutdown.sessions" to true,
+        // Auto-reject cookie consent banners (normal + private browsing)
+        "cookiebanners.service.mode" to 1,
+        "cookiebanners.service.mode.privateBrowsing" to 1,
+    )
+
+    // Classic fingerprint resistance (letterboxing, uniform UA, canvas
+    // spoofing...). While RFP is enabled, Gecko forces content
+    // `prefers-color-scheme: light` (a uniform fingerprint, bug 1535189) and
+    // spoofs canvas/image readbacks, which breaks picture uploads/downloads
+    // on some sites (red-line renderings) and the "Web theme" setting. It is
+    // therefore user-controlled via Advanced settings and OFF by default.
+    private fun rfpPrefs(enabled: Boolean): Map<String, Any> =
+        if (enabled) {
+            mapOf("privacy.resistFingerprinting" to true)
+        } else {
+            emptyMap()
+        }
+
+    private val telemetryPrefs = mapOf<String, Any>(
+        "datareporting.healthreport.uploadEnabled" to false,
+        "datareporting.policy.dataSubmissionEnabled" to false,
+        "app.normandy.enabled" to false,
+        "app.shield.optoutstudies.enabled" to false,
+        "browser.ping-centre.telemetry" to false,
+    )
+
+    private val networkPrefs = mapOf<String, Any>(
+        // Send Referer only for same-origin requests
+        "network.http.referer.XOriginPolicy" to 2,
+        // Trim cross-origin Referer to origin only
+        "network.http.referer.XOriginTrimmingPolicy" to 2,
+        "network.http.sendRefererHeader" to 1,
+        // Disable all forms of speculative/predictive network activity
+        "network.predictor.enabled" to false,
+        "network.prefetch-next" to false,
+        "network.dns.disablePrefetch" to true,
+        "browser.urlbar.speculativeConnect.enabled" to false,
+    )
+
+    private val securityPrefs = mapOf<String, Any>(
+        // HTTPS-first: try HTTPS before falling back to HTTP
+        "dom.security.https_first" to true,
+        // Do not probe HTTP while in HTTPS-only mode
+        "dom.security.https_only_mode_send_http_background_request" to false,
+        // Block pop-up windows opened while a page is loading
+        "dom.disable_open_during_load" to true,
+        // Restrict which events may trigger a pop-up
+        "dom.popup_allowed_events" to "click dblclick mousedown pointerdown",
+        // Enable next-gen storage (prevents cross-site storage tracking)
+        "dom.storage.next_gen" to true,
+        // Prevent sites from detecting whether assistive technology is active
+        "accessibility.force_disabled" to 1,
+    )
+
+    private val mediaPrefs = mapOf<String, Any>(
+        // Block all media autoplay by default
+        "media.autoplay.blocking_policy" to 2,
+        "media.autoplay.default" to 5,
+    )
+
+    private val performancePrefs = mapOf<String, Any>(
+        // Reduce layout notification bursts for smoother rendering
+        "content.notify.interval" to 100000,
+        // Keep up to 2 pages in the back/forward cache so Back/Forward is
+        // instant instead of a full reload. (Was 0 = bfcache disabled, which
+        // made every history navigation re-fetch and re-render the page.)
+        // Capped at 2 to bound memory on low-RAM devices.
+        "browser.sessionhistory.max_total_viewers" to 2,
+        // Do not throttle request starts: lets the browser fire parallel
+        // sub-resource requests immediately (faster page load on fast links).
+        "network.http.pacing.requests.enabled" to false,
+        // TLS 1.3 session resumption tickets: skips full handshakes on
+        // repeat visits. No cross-site identifier is exposed (tickets are
+        // partitioned per top-level site).
+        "network.ssl_tokens_cache_enabled" to true,
+        // Honour 103 Early Hints so CSS/JS preloads start before the
+        // main response finishes.
+        "network.early-hints.enabled" to true,
+        // HTTP/3 (QUIC): fewer round trips on supporting servers.
+        "network.http.http3.enable" to true,
+        // Larger resolver cache; entries still expire (10 min) so stale DNS
+        // is bounded. Purely local - no extra network traffic.
+        "network.dnsCacheEntries" to 1000,
+        "network.dnsCacheExpiration" to 600,
+        // Bigger socket buffers improve throughput on large responses.
+        "network.buffer.cache.size" to 262144,
+        "network.buffer.cache.count" to 128,
+        // ── Best WebGL support ──
+        // Never silently disable WebGL on blocklisted drivers - attempt
+        // hardware WebGL everywhere rather than falling back to "no WebGL"
+        "webgl.force-enabled" to true,
+        // Do not fail context creation when only a software rasterizer is
+        // available (the "major performance caveat") - sites get a working
+        // context instead of none
+        "webgl.disable-fail-if-major-performance-caveat" to true,
+    )
+
+    // ── Config file writing ──────────────────────────────────────────────────
+
+    private fun buildConfigJson(resistFingerprinting: Boolean): String {
+        val allPrefs = privacyPrefs + rfpPrefs(resistFingerprinting) + telemetryPrefs +
+                networkPrefs + securityPrefs + mediaPrefs + performancePrefs
+
+        return buildString {
+            append("{\"prefs\":{")
+            allPrefs.entries.forEachIndexed { index, (key, value) ->
+                if (index > 0) append(",")
+                append("\"$key\":")
+                when (value) {
+                    is Boolean -> append(value)
+                    is Int -> append(value)
+                    is String -> {
+                        append("\"")
+                        append(value.replace("\\", "\\\\").replace("\"", "\\\""))
+                        append("\"")
+                    }
+                    else -> append(value)
+                }
+            }
+            append("}}")
+        }
+    }
+
+    // ── Public API ───────────────────────────────────────────────────────────
+
+    /**
+     * Writes the privacy config JSON file and registers it with [builder] via
+     * [GeckoRuntimeSettings.Builder.configFilePath]. Must be called **before**
+     * [GeckoRuntimeSettings.Builder.build].
+     *
+     * The write is **content-gated**: we read the existing file (if any) and
+     * only call [File.writeText] when its contents differ from the freshly
+     * built JSON. Previously this was an unconditional write on every cold
+     * start, which is a strict-mode-violating main-thread disk write (the
+     * builder itself is constructed on the thread that first resolves the
+     * `runtime` lazy, currently Main). The config is only ~800 bytes but on
+     * slow flash the open + write + fsync can be 5-30 ms. Reading the file
+     * first is cheap (same inode, same block, warm page cache after the first
+     * read) and almost always finds the bytes already match, so the hot path
+     * becomes read-only.
+     */
+    fun applyTo(context: Context, builder: GeckoRuntimeSettings.Builder) {
+        val rfpEnabled = com.prirai.android.nira.preferences.UserPreferences(context).resistFingerprinting
+        val configFile = File(context.filesDir, CONFIG_FILE_NAME)
+        val desired = buildConfigJson(rfpEnabled)
+        val current = runCatching { if (configFile.exists()) configFile.readText() else null }.getOrNull()
+        if (current != desired) {
+            configFile.writeText(desired)
+        }
+        builder.configFilePath(configFile.absolutePath)
+    }
+
+    /**
+     * Applies privacy settings that have a typed setter API on [GeckoRuntimeSettings].
+     * Must be called **after** [GeckoRuntimeSettings.Builder.build].
+     *
+     * These typed setters are belt-and-suspenders on top of the config file approach:
+     * they set the live runtime preference value directly, not just the Gecko default.
+     *
+     * Fingerprinting protection follows the same user preference as the config-file
+     * RFP pref; both are applied at engine construction, so toggling the setting in
+     * Advanced takes effect on the next app start.
+     */
+    fun applyTypedSettings(context: Context, settings: GeckoRuntimeSettings) {
+        // Enhanced fingerprinting protection for both normal and private browsing
+        if (com.prirai.android.nira.preferences.UserPreferences(context).resistFingerprinting) {
+            settings.setFingerprintingProtection(true)
+            settings.setFingerprintingProtectionPrivateBrowsing(true)
+        } else {
+            settings.setFingerprintingProtection(false)
+            settings.setFingerprintingProtectionPrivateBrowsing(false)
+        }
+    }
+}

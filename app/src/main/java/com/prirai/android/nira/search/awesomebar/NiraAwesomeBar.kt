@@ -1,0 +1,247 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
+package com.prirai.android.nira.search.awesomebar
+
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import com.prirai.android.nira.R
+import com.prirai.android.nira.ui.components.NiraCardRow
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import mozilla.components.concept.awesomebar.AwesomeBar.GroupedSuggestion
+import mozilla.components.concept.awesomebar.AwesomeBar.Suggestion
+import mozilla.components.concept.awesomebar.AwesomeBar.SuggestionProvider
+import mozilla.components.concept.awesomebar.AwesomeBar.SuggestionProviderGroup
+
+private val GroupCornerRadius = 24.dp
+private val CardHorizontalPadding = 8.dp
+
+/** Delay before provider queries run, coalescing rapid input changes. */
+private const val INPUT_DEBOUNCE_MS = 120L
+
+private data class SuggestionSection(
+    val group: SuggestionProviderGroup,
+    val suggestions: List<Suggestion>,
+)
+
+@Composable
+fun NiraAwesomeBar(
+    text: String,
+    providers: List<SuggestionProvider>,
+    hiddenSuggestions: Set<GroupedSuggestion>,
+    onSuggestionClicked: (Suggestion) -> Unit,
+    onRemoveClicked: (GroupedSuggestion) -> Unit,
+    onScroll: () -> Unit,
+) {
+    var sections by remember { mutableStateOf(emptyList<SuggestionSection>()) }
+
+    LaunchedEffect(text, providers) {
+        if (providers.isEmpty() || text.isBlank()) {
+            sections = emptyList()
+            return@LaunchedEffect
+        }
+        // Debounce: every input round cancels the in-flight provider
+        // queries and restarts their favicon loads, which is what made the
+        // list flicker and janked the input while typing fast or holding
+        // backspace. Coalescing rapid input changes into one query round
+        // per pause keeps the suggestions responsive without the churn -
+        // restarting this effect on each text change cancels the pending
+        // round automatically.
+        delay(INPUT_DEBOUNCE_MS)
+        fetchSections(text, providers) { fetched ->
+            sections = fetched
+        }
+    }
+
+    val visibleSections = remember(sections, hiddenSuggestions) {
+        sections.mapNotNull { section ->
+            val visible = section.suggestions.filterNot { suggestion ->
+                GroupedSuggestion(suggestion, section.group.id) in hiddenSuggestions
+            }
+            if (visible.isEmpty()) null else section.copy(suggestions = visible)
+        }
+    }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp),
+        userScrollEnabled = true
+    ) {
+        visibleSections.forEach { section ->
+            if (!section.group.title.isNullOrBlank()) {
+                item(key = "header-${section.group.id}") {
+                    Text(
+                        text = section.group.title.orEmpty(),
+                        style = MaterialTheme.typography.titleMediumEmphasized,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp)
+                    )
+                }
+            }
+            itemsIndexed(
+                items = section.suggestions,
+                key = { _, suggestion -> "${section.group.id}-${suggestion.provider.id}-${suggestion.id}" }
+            ) { index, suggestion ->
+                SuggestionCardRow(
+                    suggestion = suggestion,
+                    isFirst = index == 0,
+                    isLast = index == section.suggestions.lastIndex,
+                    onClick = { onSuggestionClicked(suggestion) },
+                    onRemove = {
+                        onRemoveClicked(GroupedSuggestion(suggestion, section.group.id))
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SuggestionCardRow(
+    suggestion: Suggestion,
+    isFirst: Boolean,
+    isLast: Boolean,
+    onClick: () -> Unit,
+    onRemove: () -> Unit,
+) {
+    NiraCardRow(
+        title = suggestion.title?.ifBlank { null } ?: suggestion.description.orEmpty(),
+        isTopRow = isFirst,
+        isBottomRow = isLast,
+        showDivider = !isLast,
+        cornerRadius = GroupCornerRadius,
+        onClick = onClick,
+        leading = {
+            val icon = suggestion.icon
+            if (icon != null) {
+                Image(
+                    bitmap = icon.asImageBitmap(),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Spacer(modifier = Modifier.size(24.dp))
+            }
+        },
+        trailing = {
+            if (suggestion.isRemovalAllowed) {
+                IconButton(
+                    onClick = onRemove,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_close_small),
+                        contentDescription = stringResource(R.string.remove_history_item),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        },
+    )
+}
+
+/**
+ * Fetches suggestions from [providers] for [text], emitting the currently
+ * completed sections to [onSections] each time a group finishes.
+ *
+ * Emission is incremental: fast local providers (tabs, history, bookmarks)
+ * render their results immediately instead of waiting for the slowest
+ * group - network search suggestions - which previously gated the whole
+ * list behind its round-trip and made typing feel laggy. All async blocks
+ * run inside the caller's (main) coroutine context, so the completed map
+ * needs no synchronization.
+ */
+private suspend fun fetchSections(
+    text: String,
+    providers: List<SuggestionProvider>,
+    onSections: (List<SuggestionSection>) -> Unit,
+): Unit = coroutineScope {
+    val groups = providers
+        .groupBy { it.groupTitle() ?: it.id }
+        .map { (title, groupedProviders) ->
+            SuggestionProviderGroup(
+                providers = groupedProviders,
+                title = groupedProviders.first().groupTitle() ?: title,
+                priority = groupedProviders.maxOf { providerPriority(it) },
+            )
+        }
+        .sortedByDescending { it.priority }
+
+    val completed = LinkedHashMap<String, SuggestionSection>()
+    fun emit() {
+        onSections(completed.values.sortedByDescending { it.group.priority })
+    }
+
+    groups.map { group ->
+        async {
+            val suggestions = group.providers
+                .map { provider ->
+                    async {
+                        provider.onInputChanged(text).filterIsInstance<Suggestion>()
+                    }
+                }
+                .awaitAll()
+                .flatten()
+                .sortedByDescending { it.score }
+            if (suggestions.isNotEmpty()) {
+                completed[group.id] = SuggestionSection(group, suggestions)
+                emit()
+            }
+        }
+    }.awaitAll()
+    emit()
+}
+
+internal class HeaderedSuggestionProvider(
+    private val delegate: SuggestionProvider,
+    private val header: String,
+    val priority: Int,
+) : SuggestionProvider by delegate {
+    override fun groupTitle(): String = header
+}
+
+internal fun providerPriority(provider: SuggestionProvider): Int {
+    // SearchForQueryProvider (priority 50) has been removed - the "Search for
+    // '<query>'" row caused per-keystroke UI churn. All remaining priorities
+    // stay unchanged so section ordering (search suggestions, then tabs,
+    // history, bookmarks) is preserved.
+    return when (provider) {
+        is HeaderedSuggestionProvider -> provider.priority
+        is mozilla.components.feature.awesomebar.provider.SearchSuggestionProvider -> 40
+        is NiraTabSuggestionProvider -> 30
+        is NiraHistorySuggestionProvider -> 20
+        is mozilla.components.feature.awesomebar.provider.BookmarksStorageSuggestionProvider -> 10
+        else -> 0
+    }
+}

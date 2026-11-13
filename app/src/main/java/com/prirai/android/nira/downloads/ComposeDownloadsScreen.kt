@@ -1,0 +1,686 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
+package com.prirai.android.nira.downloads
+
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AudioFile
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.FolderZip
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.InsertDriveFile
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.VideoFile
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.prirai.android.nira.R
+import com.prirai.android.nira.ext.components
+import com.prirai.android.nira.ui.components.NiraAlertDialog
+import com.prirai.android.nira.ui.components.NiraEmptyState
+import com.prirai.android.nira.ui.components.NiraSearchField
+import com.prirai.android.nira.ui.components.NiraSheetHeader
+import mozilla.components.browser.state.action.DownloadAction
+import mozilla.components.browser.state.state.content.DownloadState
+import mozilla.components.lib.state.ext.observeAsComposableState
+import java.util.UUID
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DownloadsScreen(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val store = context.components.store
+    val downloadsState by store.observeAsComposableState { it.downloads }
+    val downloads = downloadsState ?: emptyMap()
+    var query by remember { mutableStateOf("") }
+
+    val activeStatuses = setOf(
+        DownloadState.Status.INITIATED,
+        DownloadState.Status.DOWNLOADING,
+        DownloadState.Status.PAUSED,
+    )
+
+    val matchesQuery: (DownloadState) -> Boolean = { download ->
+        val needle = query.trim()
+        needle.isEmpty() ||
+            (download.fileName?.contains(needle, ignoreCase = true) == true) ||
+            download.url.contains(needle, ignoreCase = true)
+    }
+
+    val activeDownloads = downloads.values
+        .filter { it.status in activeStatuses && matchesQuery(it) }
+        .sortedByDescending { it.createdTime }
+
+    val completedDownloads = downloads.values
+        .filter {
+            (it.status == DownloadState.Status.COMPLETED ||
+                it.status == DownloadState.Status.FAILED ||
+                it.status == DownloadState.Status.CANCELLED) &&
+                matchesQuery(it)
+        }
+        .sortedByDescending { it.createdTime }
+
+    // The dialog theme's rounded_bottom_sheet provides the sheet chrome
+    // (28dp top corners, colorSurface); the content draws no second surface.
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 200.dp, max = 640.dp)
+    ) {
+            NiraSheetHeader(
+                title = stringResource(R.string.downloads_title),
+                onClose = onDismiss,
+                dividerAlpha = null,
+            )
+
+            NiraSearchField(
+                query = query,
+                onQueryChange = { query = it },
+                placeholder = stringResource(R.string.search_downloads),
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+            )
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+
+            if (downloads.isEmpty()) {
+                NiraEmptyState(
+                    title = stringResource(R.string.no_downloads_yet),
+                    icon = Icons.Default.InsertDriveFile,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(220.dp),
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(bottom = 24.dp)
+                ) {
+                    if (activeDownloads.isNotEmpty()) {
+                        item {
+                            DownloadSection(
+                                title = stringResource(R.string.active_downloads, activeDownloads.size),
+                                downloads = activeDownloads,
+                                onItemClick = { /* active items don't open */ },
+                                onCancelClick = { dl ->
+                                    DownloadController.cancel(context, dl)
+                                },
+                                onDelete = { id ->
+                                    context.components.store.dispatch(DownloadAction.RemoveDownloadAction(id))
+                                },
+                                showClearButton = false,
+                                onClearClick = {}
+                            )
+                        }
+                    }
+
+                    if (completedDownloads.isNotEmpty()) {
+                        item {
+                            DownloadSection(
+                                title = stringResource(R.string.completed_section, completedDownloads.size),
+                                downloads = completedDownloads,
+                                onItemClick = { dl ->
+                                    when (dl.status) {
+                                        DownloadState.Status.COMPLETED -> openDownloadedFile(context, dl)
+                                        DownloadState.Status.FAILED -> {
+                                            DownloadController.start(context, dl)
+                                            Toast.makeText(context, context.getString(R.string.retrying_download), Toast.LENGTH_SHORT).show()
+                                        }
+                                        DownloadState.Status.CANCELLED -> {
+                                            context.components.store.dispatch(DownloadAction.RemoveDownloadAction(dl.id))
+                                            val freshDownload = DownloadState(
+                                                id = UUID.randomUUID().toString(),
+                                                url = dl.url,
+                                                fileName = dl.fileName,
+                                                contentType = dl.contentType,
+                                                contentLength = dl.contentLength,
+                                                userAgent = dl.userAgent,
+                                                referrerUrl = dl.referrerUrl,
+                                                status = DownloadState.Status.INITIATED
+                                            )
+                                            context.components.store.dispatch(DownloadAction.AddDownloadAction(freshDownload))
+                                            Toast.makeText(context, context.getString(R.string.download_requeued), Toast.LENGTH_SHORT).show()
+                                        }
+                                        else -> {}
+                                    }
+                                },
+                                onCancelClick = null,
+                                onDelete = { id ->
+                                    context.components.store.dispatch(DownloadAction.RemoveDownloadAction(id))
+                                },
+                                showClearButton = false,
+                                onClearClick = {}
+                            )
+                        }
+                    }
+                }
+            }
+        }
+}
+
+@Composable
+fun DownloadSection(
+    title: String,
+    downloads: List<DownloadState>,
+    onItemClick: (DownloadState) -> Unit,
+    onCancelClick: ((DownloadState) -> Unit)?,
+    onDelete: (String) -> Unit,
+    showClearButton: Boolean,
+    onClearClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 4.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmallEmphasized,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f)
+            )
+            if (showClearButton) {
+                TextButton(onClick = onClearClick) {
+                    Text(stringResource(R.string.clear_all))
+                }
+            }
+        }
+
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = 1.dp
+        ) {
+            Column {
+                downloads.forEachIndexed { index, download ->
+                    DownloadListItem(
+                        download = download,
+                        onItemClick = { onItemClick(download) },
+                        onCancelClick = onCancelClick?.let { { it(download) } },
+                        onDelete = onDelete
+                    )
+                    if (index < downloads.lastIndex) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(start = 72.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DownloadListItem(
+    download: DownloadState,
+    onItemClick: () -> Unit,
+    onCancelClick: (() -> Unit)? = null,
+    onDelete: (String) -> Unit = {}
+) {
+    var showMenu by remember { mutableStateOf(false) }
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var renameText by remember { mutableStateOf(download.fileName ?: "") }
+    val context = LocalContext.current
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        onClick = onItemClick
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // File type icon
+            Surface(
+                modifier = Modifier.size(44.dp),
+                shape = RoundedCornerShape(10.dp),
+                color = MaterialTheme.colorScheme.secondaryContainer
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = fileIconForMimeType(download.contentType),
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+            }
+
+            Spacer(Modifier.width(12.dp))
+
+            when (download.status) {
+                DownloadState.Status.INITIATED -> {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.download_this_file),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            text = download.fileName ?: urlToFileName(download.url),
+                            style = MaterialTheme.typography.bodyMediumEmphasized,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = { DownloadController.start(context, download) },
+                                shapes = ButtonDefaults.shapes(),
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Text(stringResource(R.string.download_action))
+                            }
+                            TextButton(
+                                onClick = {
+                                    context.components.store.dispatch(
+                                        DownloadAction.RemoveDownloadAction(download.id),
+                                    )
+                                },
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error,
+                                ),
+                            ) {
+                                Text(stringResource(R.string.cancel))
+                            }
+                        }
+                    }
+                }
+
+                DownloadState.Status.DOWNLOADING -> {
+                    val progress = if ((download.contentLength ?: 0L) > 0L) {
+                        (download.currentBytesCopied.toFloat() / download.contentLength!!.toFloat()).coerceIn(0f, 1f)
+                    } else -1f
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = download.fileName ?: urlToFileName(download.url),
+                            style = MaterialTheme.typography.bodyMediumEmphasized,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        if (progress >= 0f) {
+                            LinearProgressIndicator(
+                                progress = { progress },
+                                modifier = Modifier.fillMaxWidth(),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        } else {
+                            LinearProgressIndicator(
+                                modifier = Modifier.fillMaxWidth(),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        }
+                        Spacer(Modifier.height(2.dp))
+                        val sizeText = if ((download.contentLength ?: 0L) > 0L) {
+                            "${formatBytes(download.currentBytesCopied)} / ${formatBytes(download.contentLength!!)}"
+                        } else {
+                            formatBytes(download.currentBytesCopied)
+                        }
+                        Text(
+                            text = sizeText,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(Modifier.width(4.dp))
+                    IconButton(onClick = { DownloadController.pause(context, download.id) }) {
+                        Icon(
+                            imageVector = Icons.Default.Pause,
+                            contentDescription = stringResource(R.string.pause),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    if (onCancelClick != null) {
+                        TextButton(
+                            onClick = onCancelClick,
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            )
+                        ) {
+                            Text(stringResource(R.string.cancel), style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+                }
+
+                DownloadState.Status.COMPLETED -> {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = download.fileName ?: urlToFileName(download.url),
+                            style = MaterialTheme.typography.bodyMediumEmphasized,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        download.contentLength?.let { size ->
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                text = formatBytes(size),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = stringResource(R.string.completed),
+                        tint = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                else -> {
+                    // FAILED, PAUSED, CANCELLED — show status chip
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = download.fileName ?: urlToFileName(download.url),
+                            style = MaterialTheme.typography.bodyMediumEmphasized,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            download.contentLength?.let { size ->
+                                Text(
+                                    text = formatBytes(size),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(Modifier.width(8.dp))
+                            }
+                            StatusChip(status = download.status)
+                        }
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    when (download.status) {
+                        DownloadState.Status.FAILED -> Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = stringResource(R.string.retry),
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        DownloadState.Status.PAUSED -> {
+                            IconButton(onClick = { DownloadController.resume(context, download) }) {
+                                Icon(
+                                    imageVector = Icons.Default.PlayArrow,
+                                    contentDescription = stringResource(R.string.resume),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                            if (onCancelClick != null) {
+                                TextButton(
+                                    onClick = onCancelClick,
+                                    colors = ButtonDefaults.textButtonColors(
+                                        contentColor = MaterialTheme.colorScheme.error
+                                    )
+                                ) {
+                                    Text(stringResource(R.string.cancel), style = MaterialTheme.typography.labelMedium)
+                                }
+                            }
+                        }
+                        DownloadState.Status.CANCELLED -> Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = stringResource(R.string.retry),
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        else -> {}
+                    }
+                }
+            }
+
+            // Three-dot overflow menu — hidden while awaiting download confirmation
+            if (download.status != DownloadState.Status.INITIATED) {
+                Spacer(Modifier.width(4.dp))
+                Box {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = stringResource(R.string.more_options)
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.share)) },
+                            onClick = {
+                                showMenu = false
+                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "*/*"
+                                    putExtra(Intent.EXTRA_STREAM, Uri.parse(download.filePath ?: download.url))
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.share)))
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.rename_action)) },
+                            onClick = {
+                                showMenu = false
+                                showRenameDialog = true
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.copy_link)) },
+                            onClick = {
+                                showMenu = false
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                val clip = ClipData.newPlainText("Download URL", download.url)
+                                clipboard.setPrimaryClip(clip)
+                                Toast.makeText(context, context.getString(R.string.link_copied), Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.delete)) },
+                            onClick = {
+                                showMenu = false
+                                onDelete(download.id)
+                                download.filePath?.let { path ->
+                                    try { java.io.File(path).delete() } catch (e: Exception) { /* ignore */ }
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (showRenameDialog) {
+        NiraAlertDialog(
+            onDismissRequest = { showRenameDialog = false },
+            title = { Text(stringResource(R.string.rename_file)) },
+            text = {
+                OutlinedTextField(
+                    value = renameText,
+                    onValueChange = { renameText = it },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showRenameDialog = false
+                    download.filePath?.let { path ->
+                        try {
+                            val file = java.io.File(path)
+                            val newFile = java.io.File(file.parent, renameText)
+                            file.renameTo(newFile)
+                        } catch (e: Exception) { /* ignore */ }
+                    }
+                }) { Text(stringResource(R.string.rename_action)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRenameDialog = false }) { Text(stringResource(R.string.cancel)) }
+            }
+        )
+    }
+}
+
+@Composable
+fun StatusChip(status: DownloadState.Status) {
+    val (labelRes, containerColor, contentColor) = when (status) {
+        DownloadState.Status.DOWNLOADING -> Triple(
+            R.string.status_downloading,
+            MaterialTheme.colorScheme.primaryContainer,
+            MaterialTheme.colorScheme.onPrimaryContainer
+        )
+        DownloadState.Status.INITIATED -> Triple(
+            R.string.status_starting,
+            MaterialTheme.colorScheme.primaryContainer,
+            MaterialTheme.colorScheme.onPrimaryContainer
+        )
+        DownloadState.Status.FAILED -> Triple(
+            R.string.status_failed,
+            MaterialTheme.colorScheme.errorContainer,
+            MaterialTheme.colorScheme.error
+        )
+        DownloadState.Status.PAUSED -> Triple(
+            R.string.status_paused,
+            MaterialTheme.colorScheme.tertiaryContainer,
+            MaterialTheme.colorScheme.onTertiaryContainer
+        )
+        DownloadState.Status.CANCELLED -> Triple(
+            R.string.status_cancelled,
+            MaterialTheme.colorScheme.surfaceContainerHighest,
+            MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        else -> Triple(
+            null,
+            MaterialTheme.colorScheme.surfaceContainerHighest,
+            MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+
+    AssistChip(
+        onClick = {},
+        label = {
+            Text(
+                text = labelRes?.let { stringResource(it) } ?: status.name,
+                style = MaterialTheme.typography.labelSmall
+            )
+        },
+        colors = AssistChipDefaults.assistChipColors(
+            containerColor = containerColor,
+            labelColor = contentColor
+        ),
+        border = null,
+        modifier = Modifier.height(22.dp)
+    )
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+private fun fileIconForMimeType(mimeType: String?): ImageVector {
+    if (mimeType == null) return Icons.Default.InsertDriveFile
+    return when {
+        mimeType.startsWith("image/") -> Icons.Default.Image
+        mimeType.startsWith("video/") -> Icons.Default.VideoFile
+        mimeType.startsWith("audio/") -> Icons.Default.AudioFile
+        mimeType == "application/pdf" -> Icons.Default.PictureAsPdf
+        mimeType.contains("zip") || mimeType.contains("archive") ||
+                mimeType.contains("compressed") || mimeType.contains("tar") ||
+                mimeType.contains("gzip") || mimeType.contains("7z") ||
+                mimeType.contains("rar") -> Icons.Default.FolderZip
+        else -> Icons.Default.InsertDriveFile
+    }
+}
+
+private fun formatBytes(bytes: Long): String {
+    return when {
+        bytes >= 1_073_741_824L -> "%.1f GB".format(bytes / 1_073_741_824.0)
+        bytes >= 1_048_576L -> "%.1f MB".format(bytes / 1_048_576.0)
+        bytes >= 1_024L -> "%.0f KB".format(bytes / 1_024.0)
+        else -> "$bytes B"
+    }
+}
+
+private fun urlToFileName(url: String): String {
+    return url.substringAfterLast('/').substringBefore('?').ifBlank { "download" }
+}
+
+private fun openDownloadedFile(context: android.content.Context, download: DownloadState) {
+    context.components.downloadsUseCases.openAlreadyDownloadedFile(
+        download.sessionId ?: "",
+        download,
+        download.filePath
+    )
+}
