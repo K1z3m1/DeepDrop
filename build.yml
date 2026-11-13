@@ -1,0 +1,121 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write   # needed to publish a GitHub Release on tags
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK (accepts licenses)
+        uses: android-actions/setup-android@v3
+        with:
+          # The default is "tools platform-tools"; the legacy "tools" package
+          # no longer exists in the SDK repo and makes sdkmanager exit 1.
+          packages: platform-tools
+
+      - name: Set up Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' }}
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Build release APK (unsigned)
+        run: ./gradlew :app:assembleRelease --no-daemon --stacktrace
+
+      - name: Locate build-tools
+        id: bt
+        run: |
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)
+          echo "dir=$BT" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare signing key
+        id: key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "ks=$RUNNER_TEMP/release.jks" >> "$GITHUB_OUTPUT"
+            echo "alias=$KEY_ALIAS" >> "$GITHUB_OUTPUT"
+            echo "release_key=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::No KEYSTORE_BASE64 secret set - signing with a temporary key. The APK installs, but in-app updates will be rejected because the signature changes every build."
+            keytool -genkeypair -v -keystore "$RUNNER_TEMP/temp.jks" -alias temp \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass temppass -keypass temppass -dname "CN=LR CI"
+            echo "ks=$RUNNER_TEMP/temp.jks" >> "$GITHUB_OUTPUT"
+            echo "alias=temp" >> "$GITHUB_OUTPUT"
+            echo "release_key=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Align and sign APK
+        env:
+          BT: ${{ steps.bt.outputs.dir }}
+          KS: ${{ steps.key.outputs.ks }}
+          ALIAS: ${{ steps.key.outputs.alias }}
+          RELEASE_KEY: ${{ steps.key.outputs.release_key }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          IN=$(ls app/build/outputs/apk/release/*.apk | head -n 1)
+          VER=$(grep -oP 'versionName\s*=\s*"\K[^"]+' app/build.gradle | head -n 1)
+          NAME="LR-${VER}-arm64-v8a.apk"
+          mkdir -p dist
+          "$BT/zipalign" -p -f 4 "$IN" dist/aligned.apk
+          if [ "$RELEASE_KEY" = "true" ]; then
+            export KSP="$KEYSTORE_PASSWORD" KP="${KEY_PASSWORD:-$KEYSTORE_PASSWORD}"
+          else
+            export KSP=temppass KP=temppass
+          fi
+          "$BT/apksigner" sign --ks "$KS" --ks-key-alias "$ALIAS" \
+            --ks-pass env:KSP --key-pass env:KP \
+            --out "dist/$NAME" dist/aligned.apk
+          "$BT/apksigner" verify --verbose "dist/$NAME"
+          rm dist/aligned.apk dist/*.idsig 2>/dev/null || true
+          (cd dist && sha256sum "$NAME" > "$NAME.sha256")
+          echo "APK_NAME=$NAME" >> "$GITHUB_ENV"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APK_NAME }}
+          path: dist/*
+          if-no-files-found: error
+
+      - name: Publish GitHub Release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
