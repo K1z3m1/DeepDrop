@@ -16,6 +16,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateCentroid
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -38,6 +39,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
@@ -66,13 +68,16 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -93,6 +98,7 @@ import coil.size.Size
 import com.prirai.android.lr.R
 import com.prirai.android.lr.ui.theme.LRTheme
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -169,6 +175,10 @@ private const val KEY_HIDE_BANNERS = "hide_banners"
 /** Largest decode size: original resolution, bounded for memory safety. */
 private val ORIGINAL_SIZE = Size(Dimension.Pixels(4096), Dimension.Pixels(8192))
 private val THUMB_SIZE = Size(Dimension.Pixels(240), Dimension.Pixels(340))
+
+/** Zoom limits shared by the long-strip and single-page readers. */
+private const val MAX_ZOOM = 5f
+private const val DOUBLE_TAP_ZOOM = 2.5f
 
 /**
  * Drops obvious non-content images (ads, banners, icons): anything much
@@ -269,25 +279,26 @@ private fun ReaderScreen(
                 }) { Text(stringResource(R.string.image_reader_show_all)) }
             }
         } else if (mode == ReadMode.VERTICAL) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .pointerInput(Unit) {
-                        detectTapGestures(onTap = { chromeVisible = !chromeVisible })
-                    },
-            ) {
-                itemsIndexed(images, key = { index, _ -> index }) { _, image ->
-                    ReaderImageView(
-                        image = image,
-                        loader = loader,
-                        referer = payload.pageUrl,
-                        userAgent = payload.userAgent,
-                        targetSize = ORIGINAL_SIZE,
-                        contentScale = ContentScale.FillWidth,
-                        flowLayout = true,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+            VerticalZoomHost(
+                listState = listState,
+                onTap = { chromeVisible = !chromeVisible },
+            ) { zoomModifier ->
+                LazyColumn(
+                    state = listState,
+                    modifier = zoomModifier,
+                ) {
+                    itemsIndexed(images, key = { index, _ -> index }) { _, image ->
+                        ReaderImageView(
+                            image = image,
+                            loader = loader,
+                            referer = payload.pageUrl,
+                            userAgent = payload.userAgent,
+                            targetSize = ORIGINAL_SIZE,
+                            contentScale = ContentScale.FillWidth,
+                            flowLayout = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 }
             }
         } else {
@@ -651,9 +662,105 @@ private fun ReaderImageView(
 }
 
 /**
- * Pinch-to-zoom + pan + double-tap container for paged mode. Gestures are
- * only consumed while zoomed or pinching, so a one-finger swipe at 1x still
- * turns the page.
+ * Pinch-to-zoom for the long-strip reader.
+ *
+ * Instead of scaling a bitmap layer (which would blur), the list is laid out
+ * [scale] times wider than the screen, so every image is re-measured and
+ * decoded at the larger size. Horizontal panning moves the wide list;
+ * vertical movement is left to the LazyColumn's own scrolling.
+ *
+ * - two fingers: pinch around the fingers' centre (and drag)
+ * - double tap: toggle fit-width <-> [DOUBLE_TAP_ZOOM]x around the tap point
+ * - one finger while zoomed: horizontal pan, vertical scroll as usual
+ */
+@Composable
+private fun VerticalZoomHost(
+    listState: LazyListState,
+    onTap: () -> Unit,
+    content: @Composable (Modifier) -> Unit,
+) {
+    var scale by remember { mutableFloatStateOf(1f) }
+    var panX by remember { mutableFloatStateOf(0f) }
+    var viewWidth by remember { mutableIntStateOf(0) }
+
+    fun clampPan(x: Float, s: Float): Float = x.coerceIn(-(viewWidth * (s - 1f)), 0f)
+
+    /** Zoom to [target] keeping the content under [focus] where it is. */
+    fun zoomAround(focus: Offset, target: Float) {
+        val old = scale
+        val s = target.coerceIn(1f, MAX_ZOOM)
+        if (s == old || viewWidth == 0) return
+        val ratio = s / old
+        // Horizontal: keep the content point under the fingers fixed.
+        panX = clampPan((panX - focus.x) * ratio + focus.x, s)
+        // Vertical: every item grows by [ratio], so the distance from the
+        // first visible item's top to the focus point grows by [ratio] too.
+        val newOffset = ((listState.firstVisibleItemScrollOffset + focus.y) * ratio - focus.y)
+            .roundToInt().coerceAtLeast(0)
+        listState.requestScrollToItem(listState.firstVisibleItemIndex, newOffset)
+        scale = s
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .clipToBounds()
+            .onSizeChanged { viewWidth = it.width }
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = { onTap() },
+                    onDoubleTap = { pos ->
+                        zoomAround(pos, if (scale > 1.05f) 1f else DOUBLE_TAP_ZOOM)
+                    },
+                )
+            }
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    do {
+                        // Initial pass: we see the touches before the LazyColumn,
+                        // so a pinch is never mistaken for a scroll.
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        val fingers = event.changes.count { it.pressed }
+                        if (fingers >= 2) {
+                            val centroid = event.calculateCentroid(useCurrent = true)
+                            val pan = event.calculatePan()
+                            val zoom = event.calculateZoom()
+                            if (centroid.isSpecified) {
+                                zoomAround(centroid, scale * zoom)
+                                panX = clampPan(panX + pan.x, scale)
+                                listState.dispatchRawDelta(-pan.y)
+                            }
+                            event.changes.forEach { it.consume() }
+                        } else if (scale > 1f) {
+                            // Do not consume: vertical drags still scroll the list.
+                            val pan = event.calculatePan()
+                            if (pan.x != 0f) panX = clampPan(panX + pan.x, scale)
+                        }
+                    } while (event.changes.any { it.pressed })
+                }
+            },
+    ) {
+        content(
+            Modifier.layout { measurable, constraints ->
+                val width = (constraints.maxWidth * scale).roundToInt()
+                val placeable = measurable.measure(
+                    constraints.copy(minWidth = width, maxWidth = width)
+                )
+                layout(constraints.maxWidth, placeable.height) {
+                    placeable.placeRelative(panX.roundToInt(), 0)
+                }
+            }
+        )
+    }
+}
+
+/**
+ * Pinch-to-zoom + pan + double-tap container for paged mode.
+ *
+ * - pinch zooms around the fingers, double tap around the tap point
+ * - gestures are only consumed while pinching or while the image can still
+ *   move, so a swipe at 1x (or against an image edge) turns the page
  */
 @Composable
 private fun ZoomableBox(onTap: (Float) -> Unit, content: @Composable () -> Unit) {
@@ -667,6 +774,20 @@ private fun ZoomableBox(onTap: (Float) -> Unit, content: @Composable () -> Unit)
         return Offset(o.x.coerceIn(-maxX, maxX), o.y.coerceIn(-maxY, maxY))
     }
 
+    /** Zoom to [target] keeping the point under [focus] fixed, then pan by [pan]. */
+    fun transform(target: Float, focus: Offset, pan: Offset) {
+        val s = target.coerceIn(1f, MAX_ZOOM)
+        if (s <= 1f) {
+            scale = 1f
+            offset = Offset.Zero
+            return
+        }
+        val centre = Offset(size.width / 2f, size.height / 2f)
+        val ratio = s / scale
+        offset = clamp((offset - (focus - centre)) * ratio + (focus - centre) + pan, s)
+        scale = s
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -674,28 +795,37 @@ private fun ZoomableBox(onTap: (Float) -> Unit, content: @Composable () -> Unit)
             .pointerInput(Unit) {
                 detectTapGestures(
                     onTap = { pos -> onTap(if (size.width > 0) pos.x / size.width else 0.5f) },
-                    onDoubleTap = {
-                        if (scale > 1f) {
-                            scale = 1f
-                            offset = Offset.Zero
-                        } else {
-                            scale = 2.5f
-                        }
+                    onDoubleTap = { pos ->
+                        transform(if (scale > 1.05f) 1f else DOUBLE_TAP_ZOOM, pos, Offset.Zero)
                     },
                 )
             }
             .pointerInput(Unit) {
                 awaitEachGesture {
                     awaitFirstDown(requireUnconsumed = false)
+                    var handedToPager = false
                     do {
                         val event = awaitPointerEvent()
-                        val zoom = event.calculateZoom()
-                        val pan = event.calculatePan()
-                        if (event.changes.size >= 2 || scale > 1f) {
-                            val newScale = (scale * zoom).coerceIn(1f, 6f)
-                            scale = newScale
-                            offset = if (newScale > 1f) clamp(offset + pan, newScale) else Offset.Zero
-                            event.changes.forEach { if (it.positionChanged()) it.consume() }
+                        val multi = event.changes.count { it.pressed } >= 2
+                        if ((multi || scale > 1f) && !handedToPager) {
+                            val before = offset
+                            val centroid = event.calculateCentroid(useCurrent = true)
+                            transform(
+                                target = scale * event.calculateZoom(),
+                                focus = if (centroid.isSpecified) centroid
+                                else Offset(size.width / 2f, size.height / 2f),
+                                pan = event.calculatePan(),
+                            )
+                            val pan = event.calculatePan()
+                            val movedX = offset.x != before.x
+                            val movedY = offset.y != before.y
+                            val horizontalDrag = abs(pan.x) > abs(pan.y)
+                            if (!multi && horizontalDrag && !movedX) {
+                                // Image is against its edge: let the pager take over.
+                                handedToPager = true
+                            } else if (multi || movedX || movedY) {
+                                event.changes.forEach { if (it.positionChanged()) it.consume() }
+                            }
                         }
                     } while (event.changes.any { it.pressed })
                 }
