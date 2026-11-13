@@ -20,7 +20,7 @@ import mozilla.components.support.base.log.logger.Logger
  * 3. Upstream `BrowserIcons` - own cache + network fetch (~100-1000ms)
  *
  * A previous revision consulted `https://www.google.com/s2/favicons` as a
- * "fast CDN" fallback for PWAs. That path was removed: it leaked every PWA
+ * "fast CDN" fallback. That path was removed: it leaked every
  * URL to Google on first-fetch, which contradicts the privacy-focused
  * mission of the app. Upstream `BrowserIcons` has its own on-disk cache and
  * a generator fallback, so it's fast enough on its own; latency-sensitive
@@ -33,9 +33,6 @@ import mozilla.components.support.base.log.logger.Logger
  *
  * // Full async load (checks all levels, fetches if needed)
  * val favicon = FaviconLoader.loadFavicon(context, url)
- *
- * // PWA-specific load (same as loadFavicon; retained for source compat)
- * val favicon = FaviconLoader.loadFaviconForPwa(context, url)
  * ```
  */
 object FaviconLoader {
@@ -99,24 +96,6 @@ object FaviconLoader {
     }
 
     /**
-     * Load favicon for a PWA. Alias of [loadFavicon] - kept for source-compat
-     * with the 4 existing callsites (PwaSuggestionsAdapter, PwaSuggestionManager,
-     * WebAppActivity, UnifiedWebAppFragment) so they don't need to change.
-     *
-     * Historically this was a separate implementation that hit
-     * `https://www.google.com/s2/favicons` as a fast CDN. That path was
-     * removed for privacy - see the class kdoc.
-     *
-     * @param size retained for API compat; ignored (BrowserIcons picks its own size).
-     */
-    @Suppress("UNUSED_PARAMETER")
-    suspend fun loadFaviconForPwa(
-        context: Context,
-        url: String,
-        size: Int = 64,
-    ): Bitmap? = loadFavicon(context, url)
-
-    /**
      * Get favicon from memory cache only (SYNCHRONOUS - instant)
      *
      * Returns null if not in memory.
@@ -174,21 +153,6 @@ object FaviconLoader {
             result
         }
     }
-
-    /**
-     * Load PWA favicon with retry logic. Alias of [loadFaviconWithRetry] -
-     * kept for source-compat.
-     *
-     * @param size retained for API compat; ignored.
-     */
-    @Suppress("UNUSED_PARAMETER")
-    suspend fun loadFaviconForPwaWithRetry(
-        context: Context,
-        url: String,
-        size: Int = 64,
-        maxRetries: Int = 2,
-        retryDelayMs: Long = 300,
-    ): Bitmap? = loadFaviconWithRetry(context, url, maxRetries, retryDelayMs)
 
     /**
      * Preload favicon to memory from disk (warm-up cache)

@@ -67,55 +67,6 @@ class UserPreferences(appContext: Context) : mozilla.components.support.ktx.andr
      */
     var niraBgPlayStaleCheckDone by booleanPreference(NIRA_BG_PLAY_STALE_CHECK_DONE, false)
 
-    // --- Auto-updater (release-only; debug builds short-circuit) ----------
-    // Backing component: `com.prirai.android.nira.update`. See
-    // `UpdateChecker` / `UpdateScheduler` / `UpdateCheckWorker` for the
-    // full lifecycle. Debug builds have the whole subsystem no-op via
-    // BuildConfig.DEBUG checks at every entry point, so these prefs are
-    // meaningful only on release.
-
-    /**
-     * Master switch for the in-app auto-updater. Default **false** -
-     * the user opts in from the onboarding flow or Settings -> About.
-     * When flipped off, [com.prirai.android.nira.update.UpdateScheduler]
-     * cancels the periodic worker on the next launch and no network
-     * traffic leaves the device for update purposes.
-     */
-    var updateChecksEnabled by booleanPreference(NIRA_UPDATE_CHECKS_ENABLED, false)
-
-    /**
-     * JSON blob persisted by [com.prirai.android.nira.update.UpdateCheckWorker]
-     * when a newer release is detected. Empty string means "no
-     * pending manifest" - deliberately not using a nullable String
-     * because the AC pref helpers do not support `String?`. Consumers
-     * use [com.prirai.android.nira.update.UpdateManifest.fromCachedJson]
-     * to rehydrate.
-     */
-    var updatePendingManifestJson by stringPreference(NIRA_UPDATE_PENDING_MANIFEST_JSON, "")
-
-    /**
-     * Set true by the worker when a user-visible notify is due. The
-     * [com.prirai.android.nira.BrowserActivity] (release only) checks
-     * this on resume and shows the update bottom sheet. Flipped back
-     * to false by the sheet on dismiss / install / skip.
-     */
-    var updatePendingNotify by booleanPreference(NIRA_UPDATE_PENDING_NOTIFY, false)
-
-    /**
-     * Set by "Skip this version" in the update sheet. The worker
-     * declines to re-notify for any remote versionCode at or below
-     * this value. A newer release unblocks the notify flow.
-     */
-    var updateSkippedVersionCode by intPreference(NIRA_UPDATE_SKIPPED_VERSION_CODE, 0)
-
-    /**
-     * Epoch-ms timestamp of the last worker tick that successfully
-     * reached the HTTP call-site, independent of outcome. Used by
-     * Settings -> About to show a "Last checked: ..." row. Zero
-     * means "never".
-     */
-    var updateLastCheckTimestamp by longPreference(NIRA_UPDATE_LAST_CHECK_TIMESTAMP, 0L)
-
     // Preferences
     var javaScriptEnabled by booleanPreference(JAVA_SCRIPT_ENABLED, true)
     var searchEngineChoice by intPreference(SEARCH_ENGINE, 0)
@@ -255,7 +206,9 @@ class UserPreferences(appContext: Context) : mozilla.components.support.ktx.andr
     var amoledMode by booleanPreference(AMOLED_MODE, false)
     
     // Enable dynamic colors (Material You) on Android 12+
-    var dynamicColors by booleanPreference(DYNAMIC_COLORS, true)
+    // Default off so the app's own "Deep Teal" palette is what new users see;
+    // Settings -> Customization can still switch to wallpaper-based colors.
+    var dynamicColors by booleanPreference(DYNAMIC_COLORS, false)
     
     // Homepage wallpaper dimming
     var keepWallpaperDimmed by booleanPreference(KEEP_WALLPAPER_DIMMED, true)
@@ -375,11 +328,6 @@ class UserPreferences(appContext: Context) : mozilla.components.support.ktx.andr
             "nira.permissions.bgPlay.staleCheckDone"
 
         // Auto-updater prefs (see field kdoc above for semantics).
-        const val NIRA_UPDATE_CHECKS_ENABLED = "nira.update.checksEnabled"
-        const val NIRA_UPDATE_PENDING_MANIFEST_JSON = "nira.update.pendingManifestJson"
-        const val NIRA_UPDATE_PENDING_NOTIFY = "nira.update.pendingNotify"
-        const val NIRA_UPDATE_SKIPPED_VERSION_CODE = "nira.update.skippedVersionCode"
-        const val NIRA_UPDATE_LAST_CHECK_TIMESTAMP = "nira.update.lastCheckTimestamp"
 
         const val HTTPS_ONLY_OFF = 0
         const val HTTPS_ONLY_PRIVATE = 1

@@ -27,12 +27,6 @@
         android:title="@string/settings_customization"
         android:singleLineTitle="false"/>
 
-    <androidx.preference.Preference
-        android:fragment="com.prirai.android.nira.settings.fragment.UnifiedWebAppFragment"
-        android:icon="@drawable/mozac_ic_globe_24"
-        android:title="@string/web_apps_title"
-        android:singleLineTitle="false"/>
-    
     <!-- Extensions -->
     <androidx.preference.Preference
         android:key="addons_settings"

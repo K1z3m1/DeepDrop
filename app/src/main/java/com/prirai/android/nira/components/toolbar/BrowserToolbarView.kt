@@ -21,7 +21,6 @@ import mozilla.components.browser.toolbar.display.DisplayToolbar
 import mozilla.components.support.ktx.util.URLStringUtils.toDisplayUrl
 import mozilla.components.ui.widgets.behavior.EngineViewScrollingGesturesBehavior
 import java.lang.ref.WeakReference
-import mozilla.components.ui.widgets.behavior.DependencyGravity as MozacToolbarPosition
 import androidx.core.net.toUri
 
 interface BrowserToolbarViewInteractor {
@@ -84,10 +83,6 @@ class BrowserToolbarView(
 
     val toolbarIntegration: ToolbarIntegration
 
-    @VisibleForTesting
-    internal val isPwaTabOrTwaTab: Boolean
-        get() = false
-
     init {
         view.display.setOnUrlLongClickListener {
             ToolbarPopupWindow.show(
@@ -100,7 +95,7 @@ class BrowserToolbarView(
         }
 
         with(container.context) {
-            val isPinningSupported = components.webAppUseCases.isPinningSupported()
+            val isPinningSupported = androidx.core.content.pm.ShortcutManagerCompat.isRequestPinShortcutSupported(this)
 
             view.apply {
                 setToolbarBehavior()
@@ -219,11 +214,6 @@ class BrowserToolbarView(
     }
 
     fun expand() {
-        // expand only for normal tabs and custom tabs not for PWA or TWA
-        if (isPwaTabOrTwaTab) {
-            return
-        }
-
         val targetView = if (toolbarLayout == R.layout.component_bottom_browser_toolbar) {
             toolbarContainer ?: layout
         } else {
@@ -236,11 +226,6 @@ class BrowserToolbarView(
     }
 
     fun collapse() {
-        // collapse only for normal tabs and custom tabs not for PWA or TWA. Mirror expand()
-        if (isPwaTabOrTwaTab) {
-            return
-        }
-
         val targetView = if (toolbarLayout == R.layout.component_bottom_browser_toolbar) {
             toolbarContainer ?: layout
         } else {

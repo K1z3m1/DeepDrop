@@ -1,13 +1,9 @@
 package com.prirai.android.nira.components.toolbar
 
-import android.content.Context
-import android.view.LayoutInflater
 import android.view.View
 import android.widget.CheckBox
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.annotation.DrawableRes
-import androidx.core.content.ContextCompat
 import mozilla.components.browser.menu.BrowserMenu
 import mozilla.components.browser.menu.BrowserMenuItem
 import com.prirai.android.nira.R

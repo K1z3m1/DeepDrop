@@ -131,7 +131,6 @@ class BrowserMenu(
             BrowserMenuDivider(),
             printItem,
             saveAsPdfItem,
-            installWebApp,
             addToHomescreen.apply { visible = ::canAddToHomescreen },
             externalAppItem,
             desktopMode,
@@ -176,17 +175,6 @@ class BrowserMenu(
         visible = {
             UserPreferences(context).translationsEnabled &&
                 selectedSession?.content?.url?.startsWith("http") == true
-        }
-    }
-
-    private val installWebApp = ThemedBrowserMenuImageText(
-        label = context.getString(R.string.install_web_app),
-        imageResource = mozilla.components.ui.icons.R.drawable.mozac_ic_device_mobile_24
-    ) {
-        onItemTapped.invoke(ToolbarMenu.Item.InstallWebApp)
-    }.apply {
-        visible = {
-            context.components.webAppUseCases.isInstallable()
         }
     }
 

@@ -32,7 +32,6 @@ class SettingsFragment : BaseSettingsFragment() {
             "com.prirai.android.nira.settings.fragment.GeneralSettingsFragment" to R.color.settings_icon_general,
             "com.prirai.android.nira.settings.fragment.PrivacyAndSecuritySettingsFragment" to R.color.settings_icon_privacy,
             "com.prirai.android.nira.settings.fragment.CustomizationSettingsFragment" to R.color.settings_icon_customization,
-            "com.prirai.android.nira.settings.fragment.UnifiedWebAppFragment" to R.color.settings_icon_webapps,
             "addons_settings" to R.color.settings_icon_addons,
             "com.prirai.android.nira.settings.fragment.ImportExportSettingsFragment" to R.color.settings_icon_import_export,
             "com.prirai.android.nira.settings.fragment.AdvancedSettingsFragment" to R.color.settings_icon_advanced,

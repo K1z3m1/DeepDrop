@@ -25,20 +25,11 @@ import java.lang.ref.WeakReference
 class AppRequestInterceptor(val context: Context) : RequestInterceptor {
 
     private var navController: WeakReference<NavController>? = null
-    private val webappSessions = mutableMapOf<EngineSession, Pair<String, String>>() // session -> (domain, profileId)
 
     fun setNavController(navController: NavController) {
         this.navController = WeakReference(navController)
     }
     
-    fun registerWebAppSession(session: EngineSession, domain: String, profileId: String) {
-        webappSessions[session] = domain to profileId
-    }
-    
-    fun unregisterWebAppSession(session: EngineSession) {
-        webappSessions.remove(session)
-    }
-
     override fun onLoadRequest(
         engineSession: EngineSession,
         uri: String,
@@ -72,28 +63,10 @@ class AppRequestInterceptor(val context: Context) : RequestInterceptor {
             }
         }
         
-        // Check if this is a webapp session
-        webappSessions[engineSession]?.let { (webappDomain, profileId) ->
-            // Handle webapp external navigation
-            // Only block if it's NOT a subframe (like iframes, ads, etc)
-            if (!isSubframeRequest) {
-                val newDomain = try {
-                    java.net.URL(uri).host
-                } catch (e: Exception) {
-                    null
-                }
-                
-                // If navigating to different domain, open in browser
-                if (newDomain != null && newDomain != webappDomain) {
-                    openInBrowser(uri, profileId)
-                    return InterceptionResponse.Deny
-                }
-            }
-        }
-        
-        // Handle custom nira:// scheme for homepage interactions
-        if (uri.startsWith("nira://")) {
-            handleCustomScheme(uri)
+        // SECURITY: nira:// is not a scheme any in-app page emits (the
+        // homepage is native Compose). It used to mutate shortcuts and open
+        // tabs for ANY web page that navigated to it, so it is now dropped.
+        if (uri.startsWith("nira://", ignoreCase = true)) {
             return InterceptionResponse.Deny
         }
         
@@ -101,117 +74,14 @@ class AppRequestInterceptor(val context: Context) : RequestInterceptor {
             return response
         }
 
-       var response = context.components.appLinksInterceptor.onLoadRequest(
+       val response = context.components.appLinksInterceptor.onLoadRequest(
            engineSession, uri, lastUri, hasUserGesture, isSameDomain, isRedirect,
            isDirectNavigation, isSubframeRequest
        )
 
-        if (response == null && !isDirectNavigation) {
-            response = context.components.webAppInterceptor.onLoadRequest(
-                engineSession, uri, lastUri, hasUserGesture, isSameDomain, isRedirect,
-                false, isSubframeRequest
-            )
-        }
-
         return response
     }
     
-    private fun handleCustomScheme(uri: String) {
-        when {
-            uri.startsWith("nira://search?q=") -> {
-                val query = uri.substringAfter("q=")
-                val decodedQuery = java.net.URLDecoder.decode(query, "UTF-8")
-                // BUG FIX: The previous implementation called
-                //   tabsUseCases.addTab(decodedQuery, selectTab = true)
-                // which treats `decodedQuery` as a URL. When the query is a
-                // free-form phrase like "how to bake bread", GeckoView normalises
-                // it to "http://how%20to%20bake%20bread/", records that garbage
-                // URL as a VisitInfo in PlacesHistoryStorage, then fails to
-                // load. Route through the search use cases instead,
-                // which resolve the current default engine (with correct
-                // `{searchTerms}` template - see SearchEngineList) and only
-                // loads a real result URL.
-                //
-                // Chrome parity: the new tab is created at the new tab page
-                // first (about:homepage), so it becomes the tab's first
-                // engine history entry - the long-press back popup then
-                // lists "New Tab" and back gestures walk down to it as a
-                // real navigation (with the tab pill staying in sync).
-                val isPrivate =
-                    context.components.store.state.selectedTab?.content?.private ?: false
-                com.prirai.android.nira.browser.tabs.NewTabCreator.createHomeTabAndLoad(
-                    context, isPrivate
-                ) {
-                    context.components.searchUseCases.defaultSearch.invoke(decodedQuery)
-                }
-            }
-            uri == "nira://focus-search" -> {
-                // Navigation to search dialog will be handled by navController
-                navController?.get()?.let { nav ->
-                    try {
-                        // Import necessary navigation directions if available
-                        // This would need to be adjusted based on your navigation setup
-                    } catch (e: Exception) {
-                        // Fallback: do nothing
-                    }
-                }
-            }
-            uri.startsWith("nira://delete-shortcut?") -> {
-                // Parse URL parameter
-                val params = uri.toUri()
-                val shortcutId = params.getQueryParameter("id")?.toIntOrNull()
-                
-                if (shortcutId != null) {
-                    // Delete shortcut from database via the process-wide singleton
-                    // (ShortcutDatabase.getInstance owns the migrations).
-                    CoroutineScope(Dispatchers.IO).launch {
-                        try {
-                            val shortcutDao = com.prirai.android.nira.browser.shortcuts.ShortcutDatabase
-                                .getInstance(context)
-                                .shortcutDao()
-                            val shortcut = shortcutDao.loadAllByIds(intArrayOf(shortcutId)).firstOrNull()
-                            if (shortcut != null) {
-                                shortcutDao.delete(shortcut)
-                            }
-
-                            // Reload the page to reflect changes
-                            CoroutineScope(Dispatchers.Main).launch {
-                                context.components.sessionUseCases.reload()
-                            }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    }
-                }
-            }
-            uri.startsWith("nira://add-shortcut?") -> {
-                // Parse URL parameters
-                val params = uri.toUri()
-                val url = params.getQueryParameter("url")
-                val title = params.getQueryParameter("title")
-                
-                if (url != null && title != null) {
-                    // Save shortcut to database via the process-wide singleton
-                    // (ShortcutDatabase.getInstance owns the migrations).
-                    CoroutineScope(Dispatchers.IO).launch {
-                        try {
-                            val entity = com.prirai.android.nira.browser.shortcuts.ShortcutEntity(
-                                url = url,
-                                title = title,
-                            )
-                            com.prirai.android.nira.browser.shortcuts.ShortcutDatabase
-                                .getInstance(context)
-                                .shortcutDao()
-                                .insertAll(entity)
-                        } catch (e: Exception) {
-                            // Ignore errors
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     override fun onErrorRequest(
         session: EngineSession,
         errorType: ErrorType,
@@ -234,26 +104,6 @@ class AppRequestInterceptor(val context: Context) : RequestInterceptor {
         return RequestInterceptor.ErrorResponse(errorPageUri)
     }
     
-    private fun openInBrowser(url: String, profileId: String) {
-        try {
-            // Open URL in a new tab in the main browser
-            // Profile switching needs to be done through the BrowserActivity's browsingModeManager
-            CoroutineScope(Dispatchers.Main).launch {
-                val contextId = com.prirai.android.nira.browser.profile.BrowserProfile
-                    .contextIdFor(profileId, isPrivate = false)
-                context.components.tabsUseCases.addTab(url, selectTab = true, contextId = contextId)
-                
-                // Bring the main browser to foreground
-                val intent = Intent(context, com.prirai.android.nira.BrowserActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-                }
-                context.startActivity(intent)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
     private fun interceptXpiUrl(
         uri: String,
         hasUserGesture: Boolean

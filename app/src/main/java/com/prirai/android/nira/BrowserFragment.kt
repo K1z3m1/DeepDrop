@@ -1,13 +1,9 @@
 package com.prirai.android.nira
 
-import android.view.View
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import android.view.View
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.prirai.android.nira.browser.history.TabHistoryBottomSheet
@@ -767,8 +763,6 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
      * Follows Mozilla's pattern from Fenix.
      */
     private fun collapseBrowserViewFromFullscreen() {
-        if (!webAppToolbarShouldBeVisible) return
-
         // Show and expand unified toolbar
         unifiedToolbar?.apply {
             isVisible = true
@@ -933,31 +927,18 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
 
         menuItems.add(com.prirai.android.nira.components.menu.Material3BrowserMenu.MenuItem.Divider)
 
-        // Add to Homescreen/Install (conditional)
-        if (requireContext().components.webAppUseCases.isPinningSupported()) {
-            if (requireContext().components.webAppUseCases.isInstallable()) {
-                menuItems.add(
-                    com.prirai.android.nira.components.menu.Material3BrowserMenu.MenuItem.Action(
-                        id = "install_webapp",
-                        title = getString(R.string.install_web_app),
-                        iconRes = mozilla.components.ui.icons.R.drawable.mozac_ic_device_mobile_24,
-                        onClick = {
-                            browserInteractor.onBrowserToolbarMenuItemTapped(ToolbarMenu.Item.InstallWebApp)
-                        }
-                    )
+        // Add to Homescreen (conditional)
+        if (androidx.core.content.pm.ShortcutManagerCompat.isRequestPinShortcutSupported(requireContext())) {
+            menuItems.add(
+                com.prirai.android.nira.components.menu.Material3BrowserMenu.MenuItem.Action(
+                    id = "add_to_homescreen",
+                    title = getString(R.string.action_add_to_homescreen),
+                    iconRes = mozilla.components.ui.icons.R.drawable.mozac_ic_device_mobile_24,
+                    onClick = {
+                        browserInteractor.onBrowserToolbarMenuItemTapped(ToolbarMenu.Item.AddToHomeScreen)
+                    }
                 )
-            } else {
-                menuItems.add(
-                    com.prirai.android.nira.components.menu.Material3BrowserMenu.MenuItem.Action(
-                        id = "add_to_homescreen",
-                        title = getString(R.string.action_add_to_homescreen),
-                        iconRes = mozilla.components.ui.icons.R.drawable.mozac_ic_device_mobile_24,
-                        onClick = {
-                            browserInteractor.onBrowserToolbarMenuItemTapped(ToolbarMenu.Item.AddToHomeScreen)
-                        }
-                    )
-                )
-            }
+            )
         }
 
         // Open in App (conditional)

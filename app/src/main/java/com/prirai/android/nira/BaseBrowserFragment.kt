@@ -6,7 +6,6 @@ import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -147,7 +146,6 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
     @VisibleForTesting
     internal var browserInitialized: Boolean = false
     private var initUIJob: Job? = null
-    protected var webAppToolbarShouldBeVisible = true
 
     private val sharedViewModel: SharedViewModel by activityViewModels()
 
@@ -1060,12 +1058,10 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
             )
             (view as? SwipeGestureLayout)?.isSwipeEnabled = true
 
-            if (webAppToolbarShouldBeVisible) {
-                unifiedToolbar?.visibility = View.VISIBLE
-                val toolbarHeight = resources.getDimensionPixelSize(R.dimen.browser_toolbar_height)
-                initializeEngineView(toolbarHeight)
-                unifiedToolbar?.expand()
-            }
+            unifiedToolbar?.visibility = View.VISIBLE
+            val toolbarHeight = resources.getDimensionPixelSize(R.dimen.browser_toolbar_height)
+            initializeEngineView(toolbarHeight)
+            unifiedToolbar?.expand()
             
             // Restore window insets padding to swipeRefresh
             binding.swipeRefresh.requestApplyInsets()

@@ -1,10 +1,8 @@
 package com.prirai.android.nira.browser.profile
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Brush
-import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Paid
 import androidx.compose.material.icons.filled.Person
@@ -13,7 +11,6 @@ import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material.icons.outlined.Brush
-import androidx.compose.material.icons.outlined.Business
 import androidx.compose.material.icons.outlined.EmojiEvents
 import androidx.compose.material.icons.outlined.Paid
 import androidx.compose.material.icons.outlined.Person

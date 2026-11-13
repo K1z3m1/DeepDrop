@@ -1,6 +1,5 @@
 package com.prirai.android.nira.browser.tabs.compose
 
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 

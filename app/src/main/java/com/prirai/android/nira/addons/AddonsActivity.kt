@@ -3,8 +3,6 @@ package com.prirai.android.nira.addons
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentManager
 import com.prirai.android.nira.R
 import com.prirai.android.nira.ext.enableEdgeToEdgeMode

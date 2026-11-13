@@ -50,10 +50,10 @@ open class ExternalAppBrowserActivity : BrowserActivity() {
             if (processor.process(intent)) {
                 val sessionId = SafeIntent(intent).getStringExtra(EXTRA_SESSION_ID)
                 
-                // After the session is created, update its contextId to match the PWA profile.
+                // After the session is created, update its contextId to match the requested profile.
                 // EngineDelegateMiddleware.loadUrl() runs in a coroutine, so patching the store
                 // state here (on the main thread) is guaranteed to happen before the engine
-                // session is created - preserving cookie / login state across the PWA and tab.
+                // session is created - preserving cookie / login state across the profile and tab.
                 //
                 // Mapping goes through BrowserProfile.contextIdFor so the default profile
                 // resolves to `null` (Gecko's default partition, shared with normal custom

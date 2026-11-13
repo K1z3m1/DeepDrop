@@ -13,7 +13,6 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.prirai.android.nira.components.toolbar.BrowserToolbarView
 import com.prirai.android.nira.components.toolbar.BrowserToolbarViewInteractor
-import com.prirai.android.nira.components.toolbar.ToolbarIntegration
 import com.prirai.android.nira.components.toolbar.ToolbarPosition
 import com.prirai.android.nira.components.toolbar.modern.ModernToolbarSystem
 import com.prirai.android.nira.components.toolbar.modern.ComposeTabBarWithProfileSwitcher
@@ -22,7 +21,6 @@ import com.prirai.android.nira.preferences.UserPreferences
 import com.prirai.android.nira.toolbar.ContextualBottomToolbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.state.CustomTabSessionState
 import mozilla.components.browser.state.state.TabSessionState
 import mozilla.components.browser.state.store.BrowserStore
@@ -32,7 +30,6 @@ import mozilla.components.concept.toolbar.ScrollableToolbar
 import mozilla.components.lib.state.ext.flowScoped
 import mozilla.components.support.ktx.android.content.res.resolveAttribute
 import com.prirai.android.nira.components.toolbar.modern.ModernScrollBehavior
-import androidx.core.view.isNotEmpty
 
 /**
  * UnifiedToolbar - Centralized toolbar component that unifies tab bar, address bar, and contextual toolbar.

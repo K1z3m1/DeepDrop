@@ -2,6 +2,8 @@
 
 package com.prirai.android.nira.onboarding
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
@@ -48,8 +50,6 @@ import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.SettingsBrightness
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Star
-import androidx.compose.material.icons.rounded.SystemUpdate
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -64,15 +64,12 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -124,12 +121,7 @@ fun OnboardingScreen(
     userPreferences: UserPreferences,
     onComplete: () -> Unit
 ) {
-    // The Updates page is release-only - debug builds short-circuit the
-    // whole auto-updater subsystem (see `com.prirai.android.nira.update`
-    // kdocs) so there is nothing meaningful to show. Pager length flexes
-    // to accommodate.
-    val includeUpdatesPage = !com.prirai.android.nira.BuildConfig.DEBUG
-    val pageCount = if (includeUpdatesPage) 9 else 8
+    val pageCount = 8
     val pagerState = rememberPagerState(pageCount = { pageCount })
     val scope = rememberCoroutineScope()
 
@@ -143,7 +135,6 @@ fun OnboardingScreen(
     var trackingProtection by remember { mutableStateOf(userPreferences.trackingProtection) }
     var safeBrowsing by remember { mutableStateOf(userPreferences.safeBrowsing) }
     var searchSuggestions by remember { mutableStateOf(userPreferences.searchSuggestionsEnabled) }
-    var updateChecksEnabled by remember { mutableStateOf(userPreferences.updateChecksEnabled) }
 
     val isLastPage = pagerState.currentPage == pageCount - 1
 
@@ -231,23 +222,7 @@ fun OnboardingScreen(
                         userPreferences.searchSuggestionsEnabled = v
                     }
                 )
-                7 -> if (includeUpdatesPage) {
-                    UpdatesPage(
-                        updateChecksEnabled = updateChecksEnabled,
-                        onUpdateChecksChanged = { enabled ->
-                            updateChecksEnabled = enabled
-                            userPreferences.updateChecksEnabled = enabled
-                        },
-                    )
-                } else {
-                    GetStartedPage(
-                        appThemeChoice = appThemeChoice,
-                        searchEngineIndex = searchEngineChoice,
-                        trackingProtection = trackingProtection,
-                        onStart = onComplete,
-                    )
-                }
-                8 -> GetStartedPage(
+                7 -> GetStartedPage(
                     appThemeChoice = appThemeChoice,
                     searchEngineIndex = searchEngineChoice,
                     trackingProtection = trackingProtection,
@@ -758,113 +733,6 @@ private fun PrivacyPage(
                 trailing = {
                     Switch(checked = searchSuggestions, onCheckedChange = onSearchSuggestionsChanged)
                 }
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-    }
-}
-
-// ─── Page 5: Updates (release only) ─────────────────────────────────────────
-
-/**
- * Opt-in page for the in-app auto-updater. Mirrors [PrivacyPage]'s
- * visual language (hero header + feature card + toggle row) so the
- * flow is coherent. The toggle writes directly to
- * [UserPreferences.updateChecksEnabled]; a later call site
- * ([com.prirai.android.nira.update.UpdateScheduler.ensureScheduled])
- * picks that pref up on the next BrowserActivity cold start and
- * enqueues the periodic worker.
- *
- * Default is **off** - the user has to actively flip the switch to
- * grant Nira network access for update checks. The accompanying copy
- * is deliberate about what gets fetched (version metadata from
- * `github.com/prirai/nira-browser` only; no telemetry).
- */
-@Composable
-private fun UpdatesPage(
-    updateChecksEnabled: Boolean,
-    onUpdateChecksChanged: (Boolean) -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Spacer(modifier = Modifier.height(32.dp))
-
-        OnboardingPageHeader(
-            icon = Icons.Rounded.SystemUpdate,
-            title = stringResource(R.string.stay_up_to_date),
-            subtitle = stringResource(R.string.nira_check_github),
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-            ),
-        ) {
-            Column(modifier = Modifier.padding(20.dp)) {
-                listOf(
-                    stringResource(R.string.update_bullet_wifi),
-                    stringResource(R.string.update_bullet_metadata),
-                    stringResource(R.string.update_bullet_decide),
-                    stringResource(R.string.update_bullet_off),
-                ).forEach { text ->
-                    Row(
-                        modifier = Modifier.padding(vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.CheckCircle,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp),
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = text,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        OnboardingOptionGroup {
-            OnboardingOptionItem(
-                icon = {
-                    Icon(
-                        imageVector = Icons.Rounded.SystemUpdate,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(24.dp),
-                    )
-                },
-                title = stringResource(R.string.check_for_updates),
-                subtitle = if (updateChecksEnabled) {
-                    stringResource(R.string.updates_on_subtitle)
-                } else {
-                    stringResource(R.string.updates_off_subtitle)
-                },
-                selected = updateChecksEnabled,
-                highlightIcon = false,
-                onClick = { onUpdateChecksChanged(!updateChecksEnabled) },
-                trailing = {
-                    Switch(
-                        checked = updateChecksEnabled,
-                        onCheckedChange = onUpdateChecksChanged,
-                    )
-                },
             )
         }
 

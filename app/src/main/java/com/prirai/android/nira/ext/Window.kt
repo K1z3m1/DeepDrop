@@ -2,7 +2,6 @@ package com.prirai.android.nira.ext
 
 import android.graphics.Color
 import android.view.View
-import android.view.Window
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge

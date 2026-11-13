@@ -23,22 +23,9 @@
         tools:ignore="ScopedStorage"
     />
   <uses-permission android:name="android.permission.BLUETOOTH" />
-  <uses-permission
-        android:name="com.android.launcher.permission.INSTALL_SHORTCUT"
-    />
   <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
   <uses-permission android:name="android.permission.VIBRATE" />
-  <!--
-      Required so the in-app auto-updater can hand a downloaded APK
-      to the system package installer via ACTION_VIEW. Android shows
-      a one-time per-app "Allow this source" sheet the first time
-      the user taps Install; after that no additional prompt. Only
-      the system installer actually swaps the APK bytes; this
-      permission just allows us to initiate the request.
-  -->
-  <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
-
   <application
         android:name=".BrowserApp"
         android:allowBackup="true"
@@ -164,7 +151,6 @@
 
         <category android:name="android.intent.category.DEFAULT" />
         <category android:name="android.intent.category.BROWSABLE" />
-        <category android:name="mozilla.components.pwa.category.SHORTCUT" />
         <data android:scheme="http" />
         <data android:scheme="https" />
       </intent-filter>
@@ -196,12 +182,6 @@
       <intent-filter>
         <action android:name="android.intent.action.WEB_SEARCH" />
         <category android:name="android.intent.category.DEFAULT" />
-      </intent-filter>
-
-      <intent-filter>
-        <action android:name="mozilla.components.feature.pwa.VIEW_PWA" />
-        <category android:name="android.intent.category.DEFAULT" />
-        <data android:scheme="https" />
       </intent-filter>
 
       <intent-filter>
@@ -258,30 +238,6 @@
       </intent-filter>
     </service>
 
-    <!-- WebApp Activity for PWAs - Fullscreen, no browser chrome -->
-    <activity
-            android:name=".webapp.WebAppActivity"
-            android:configChanges="orientation|screenSize|keyboard|keyboardHidden"
-            android:exported="true"
-            android:launchMode="singleTop"
-            android:excludeFromRecents="false"
-            android:documentLaunchMode="intoExisting"
-            android:theme="@style/WebAppTheme"
-        >
-
-      <!-- Handle PWA shortcuts created by webAppUseCases.addToHomescreen() -->
-      <!-- Removed LAUNCHER category to prevent showing in app drawer -->
-      <intent-filter>
-        <action android:name="android.intent.action.MAIN" />
-      </intent-filter>
-
-      <!-- Handle Mozilla PWA launches -->
-      <intent-filter>
-        <action android:name="mozilla.components.feature.pwa.VIEW_PWA" />
-        <category android:name="android.intent.category.DEFAULT" />
-      </intent-filter>
-    </activity>
-
     <!-- FileProvider for sharing exported profile ZIP files -->
     <provider
             android:name="androidx.core.content.FileProvider"
@@ -292,25 +248,6 @@
       <meta-data
               android:name="android.support.FILE_PROVIDER_PATHS"
               android:resource="@xml/file_paths"
-          />
-    </provider>
-
-    <!--
-        Dedicated FileProvider for the in-app auto-updater's downloaded
-        APKs under cacheDir/updates/. Scoped to its own authority so the
-        existing `${applicationId}.fileprovider` entry doesn't need its
-        paths file broadened; keeps the trust surface small.
-        See `com.prirai.android.nira.update.UpdateInstaller`.
-    -->
-    <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.updateprovider"
-            android:exported="false"
-            android:grantUriPermissions="true"
-        >
-      <meta-data
-              android:name="android.support.FILE_PROVIDER_PATHS"
-              android:resource="@xml/file_provider_paths_update"
           />
     </provider>
 

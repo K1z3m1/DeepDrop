@@ -3,7 +3,6 @@ package com.prirai.android.nira.browser.home
 import android.content.Context
 import android.webkit.JavascriptInterface
 import com.prirai.android.nira.browser.bookmark.items.BookmarkFolderItem
-import com.prirai.android.nira.browser.bookmark.items.BookmarkItem
 import com.prirai.android.nira.browser.bookmark.items.BookmarkSiteItem
 import com.prirai.android.nira.browser.bookmark.repository.BookmarkManager
 import com.prirai.android.nira.browser.shortcuts.ShortcutDatabase

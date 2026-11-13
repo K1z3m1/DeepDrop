@@ -15,7 +15,6 @@ interface ToolbarMenu {
         data class Reload(val bypassCache: Boolean) : Item()
         data object Stop : Item()
         data object AddToHomeScreen : Item()
-        data object InstallWebApp : Item()
         data object NewTab : Item()
         data object NewPrivateTab : Item()
         data object OpenInApp : Item()

@@ -101,7 +101,6 @@ feature-intent = { group = "org.mozilla.components", name = "feature-intent", ve
 feature-media = { group = "org.mozilla.components", name = "feature-media", version.ref = "components" }
 feature-privatemode = { group = "org.mozilla.components", name = "feature-privatemode", version.ref = "components" }
 feature-prompts = { group = "org.mozilla.components", name = "feature-prompts", version.ref = "components" }
-feature-pwa = { group = "org.mozilla.components", name = "feature-pwa", version.ref = "components" }
 feature-recentlyclosed = { group = "org.mozilla.components", name = "feature-recentlyclosed", version.ref = "components" }
 feature-search = { group = "org.mozilla.components", name = "feature-search", version.ref = "components" }
 feature-session = { group = "org.mozilla.components", name = "feature-session", version.ref = "components" }

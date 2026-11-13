@@ -22,7 +22,6 @@ import com.prirai.android.nira.utils.Utils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import mozilla.components.browser.engine.gecko.GeckoEngine
 import mozilla.components.browser.engine.gecko.ext.toContentBlockingSetting
 import mozilla.components.browser.engine.gecko.fetch.GeckoViewFetchClient
@@ -63,10 +62,6 @@ import mozilla.components.feature.media.MediaSessionFeature
 import mozilla.components.feature.media.middleware.RecordingDevicesMiddleware
 import mozilla.components.feature.prompts.PromptMiddleware
 import mozilla.components.feature.prompts.file.FileUploadsDirCleaner
-import mozilla.components.feature.pwa.ManifestStorage
-import mozilla.components.feature.pwa.WebAppInterceptor
-import mozilla.components.feature.pwa.WebAppShortcutManager
-import mozilla.components.feature.pwa.WebAppUseCases
 import mozilla.components.feature.recentlyclosed.RecentlyClosedMiddleware
 import mozilla.components.feature.recentlyclosed.RecentlyClosedTabsStorage
 import mozilla.components.feature.search.SearchApplicationName
@@ -635,13 +630,6 @@ open class Components(private val applicationContext: Context) {
         )
     }
 
-    val webAppInterceptor by lazy {
-        WebAppInterceptor(
-                applicationContext,
-                webAppManifestStorage
-        )
-    }
-
     val fileUploadsDirCleaner: FileUploadsDirCleaner by lazy {
         FileUploadsDirCleaner { applicationContext.cacheDir }
     }
@@ -734,16 +722,6 @@ open class Components(private val applicationContext: Context) {
         if(UserPreferences(applicationContext).safeBrowsing) ContentBlocking.SafeBrowsing.DEFAULT
         else ContentBlocking.SafeBrowsing.NONE
     }
-
-    val webAppManifestStorage by lazy { ManifestStorage(applicationContext) }
-    private val webAppShortcutManager by lazy { WebAppShortcutManager(
-            applicationContext,
-            client,
-            webAppManifestStorage
-    ) }
-    val webAppUseCases by lazy { WebAppUseCases(applicationContext, store, webAppShortcutManager) }
-    val webAppManager by lazy { com.prirai.android.nira.webapp.WebAppManager(applicationContext) }
-    val pwaSuggestionManager by lazy { com.prirai.android.nira.webapp.PwaSuggestionManager(applicationContext) }
 
     val tabsUseCases: TabsUseCases by lazy { TabsUseCases(store) }
     val downloadsUseCases: DownloadsUseCases by lazy {

@@ -28,8 +28,7 @@ class MenuPresenter(
                     arrayOf(
                         tab.content.loading,
                         tab.content.canGoBack,
-                        tab.content.canGoForward,
-                        tab.content.webAppManifest
+                        tab.content.canGoForward
                     )
                 }
                 .collect {

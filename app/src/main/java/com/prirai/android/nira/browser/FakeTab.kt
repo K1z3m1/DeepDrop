@@ -9,7 +9,6 @@ import androidx.core.view.doOnNextLayout
 import androidx.core.view.updateLayoutParams
 import com.prirai.android.nira.ext.components
 import com.prirai.android.nira.preferences.UserPreferences
-import mozilla.components.browser.thumbnails.loader.ThumbnailLoader
 import mozilla.components.concept.base.images.ImageLoadRequest
 import com.prirai.android.nira.components.toolbar.ToolbarPosition
 import android.view.View

@@ -173,7 +173,6 @@ dependencies {
     implementation libs.feature.downloads
     // Kept: adds screenshot protection & privacy features
     implementation libs.feature.customtabs
-    implementation libs.feature.pwa
     implementation libs.feature.prompts
     implementation libs.feature.sitepermissions
     // Removed: feature-webauthn - replaced with androidx.credentials Credential Manager API

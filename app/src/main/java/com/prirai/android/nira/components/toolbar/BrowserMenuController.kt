@@ -129,56 +129,6 @@ class DefaultBrowserToolbarMenuController(
                 }
             }
 
-            is ToolbarMenu.Item.InstallWebApp -> {
-                currentSession?.let { session ->
-                    // Get current profile as default
-                    val currentProfileId = activity.getCurrentProfileId()
-                    
-                    // Show Material 3 dialog with profile selection
-                    val dialog = com.prirai.android.nira.webapp.WebAppInstallDialog(
-                        context = activity,
-                        lifecycleOwner = activity,
-                        appName = session.content.title ?: session.content.url,
-                        appUrl = session.content.url,
-                        defaultProfileId = currentProfileId
-                    ) { selectedProfileId ->
-                        MainScope().launch {
-                            // Load icon for installation
-                            val icon = activity.components.icons.loadIcon(
-                                mozilla.components.browser.icons.IconRequest(
-                                    url = session.content.url
-                                )
-                            ).await()?.bitmap
-                            
-                            // Install with selected profile
-                            val installed = com.prirai.android.nira.webapp.WebAppInstaller.installPwa(
-                                activity,
-                                session,
-                                null,
-                                icon,
-                                selectedProfileId
-                            )
-                            
-                            if (installed) {
-                                android.widget.Toast.makeText(
-                                    activity,
-                                    activity.getString(R.string.app_installed),
-                                    android.widget.Toast.LENGTH_SHORT
-                                ).show()
-                            } else {
-                                android.widget.Toast.makeText(
-                                    activity,
-                                    activity.getString(R.string.web_app_already_installed),
-                                    android.widget.Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        }
-                    }
-                    
-                    dialog.show()
-                }
-            }
-
             is ToolbarMenu.Item.Print -> {
                 store.state.selectedTab?.let {
                     store.dispatch(EngineAction.PrintContentAction(it.id))
@@ -200,7 +150,7 @@ class DefaultBrowserToolbarMenuController(
                         ).await()?.bitmap
                         
                         // Add regular shortcut using our custom installer
-                        com.prirai.android.nira.webapp.WebAppInstaller.addToHomescreen(
+                        com.prirai.android.nira.utils.HomescreenShortcut.add(
                             activity,
                             session,
                             icon

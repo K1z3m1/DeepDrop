@@ -17,7 +17,7 @@
             app:title="Dynamic colors"
             app:summary="Use colors from your wallpaper (Android 12+)"
             app:singleLineTitle="false"
-            app:defaultValue="true" />
+            app:defaultValue="false" />
 
         <com.prirai.android.nira.settings.MaterialSwitchPreference
             app:key="amoled_mode"

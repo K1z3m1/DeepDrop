@@ -104,8 +104,30 @@ object UserJsPreferences {
     private val performancePrefs = mapOf<String, Any>(
         // Reduce layout notification bursts for smoother rendering
         "content.notify.interval" to 100000,
-        // Disable session-history content-viewer cache to reduce memory usage
-        "browser.sessionhistory.max_total_viewers" to 0,
+        // Keep up to 2 pages in the back/forward cache so Back/Forward is
+        // instant instead of a full reload. (Was 0 = bfcache disabled, which
+        // made every history navigation re-fetch and re-render the page.)
+        // Capped at 2 to bound memory on low-RAM devices.
+        "browser.sessionhistory.max_total_viewers" to 2,
+        // Do not throttle request starts: lets the browser fire parallel
+        // sub-resource requests immediately (faster page load on fast links).
+        "network.http.pacing.requests.enabled" to false,
+        // TLS 1.3 session resumption tickets: skips full handshakes on
+        // repeat visits. No cross-site identifier is exposed (tickets are
+        // partitioned per top-level site).
+        "network.ssl_tokens_cache_enabled" to true,
+        // Honour 103 Early Hints so CSS/JS preloads start before the
+        // main response finishes.
+        "network.early-hints.enabled" to true,
+        // HTTP/3 (QUIC): fewer round trips on supporting servers.
+        "network.http.http3.enable" to true,
+        // Larger resolver cache; entries still expire (10 min) so stale DNS
+        // is bounded. Purely local - no extra network traffic.
+        "network.dnsCacheEntries" to 1000,
+        "network.dnsCacheExpiration" to 600,
+        // Bigger socket buffers improve throughput on large responses.
+        "network.buffer.cache.size" to 262144,
+        "network.buffer.cache.count" to 128,
         // ── Best WebGL support ──
         // Never silently disable WebGL on blocklisted drivers - attempt
         // hardware WebGL everywhere rather than falling back to "no WebGL"

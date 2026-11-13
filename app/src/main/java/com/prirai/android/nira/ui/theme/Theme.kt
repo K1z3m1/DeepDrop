@@ -9,6 +9,9 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MotionScheme
+import androidx.compose.material3.Shapes
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
@@ -22,21 +25,68 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = hex(0x006A6A),
+    onPrimary = hex(0xFFFFFF),
+    primaryContainer = hex(0x9CF1F0),
+    onPrimaryContainer = hex(0x002020),
+    secondary = hex(0x4A6363),
+    onSecondary = hex(0xFFFFFF),
+    secondaryContainer = hex(0xCCE8E7),
+    onSecondaryContainer = hex(0x051F1F),
+    tertiary = hex(0x4B607C),
+    onTertiary = hex(0xFFFFFF),
+    tertiaryContainer = hex(0xD3E4FF),
+    onTertiaryContainer = hex(0x041C35),
+    error = hex(0xBA1A1A),
+    onError = hex(0xFFFFFF),
+    errorContainer = hex(0xFFDAD6),
+    onErrorContainer = hex(0x410002),
+    surface = hex(0xF4FBFA),
+    onSurface = hex(0x161D1D),
+    surfaceVariant = hex(0xDAE5E4),
+    onSurfaceVariant = hex(0x3F4948),
+    surfaceContainerLow = hex(0xEEF5F4),
+    surfaceContainer = hex(0xE8EFEE),
+    surfaceContainerHigh = hex(0xE3E9E9),
+    surfaceContainerHighest = hex(0xDDE4E3),
+    background = hex(0xF4FBFA),
+    onBackground = hex(0x161D1D),
+    outline = hex(0x6F7979),
+    outlineVariant = hex(0xBEC9C8),
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = hex(0x80D5D4),
+    onPrimary = hex(0x003737),
+    primaryContainer = hex(0x004F50),
+    onPrimaryContainer = hex(0x9CF1F0),
+    secondary = hex(0xB0CCCB),
+    onSecondary = hex(0x1B3534),
+    secondaryContainer = hex(0x324B4B),
+    onSecondaryContainer = hex(0xCCE8E7),
+    tertiary = hex(0xB3C8E8),
+    onTertiary = hex(0x1C314B),
+    tertiaryContainer = hex(0x334863),
+    onTertiaryContainer = hex(0xD3E4FF),
+    error = hex(0xFFB4AB),
+    onError = hex(0x690005),
+    errorContainer = hex(0x93000A),
+    onErrorContainer = hex(0xFFDAD6),
+    surface = hex(0x0E1514),
+    onSurface = hex(0xDDE4E3),
+    surfaceVariant = hex(0x3F4948),
+    onSurfaceVariant = hex(0xBEC9C8),
+    surfaceContainerLow = hex(0x161D1D),
+    surfaceContainer = hex(0x1A2121),
+    surfaceContainerHigh = hex(0x252B2B),
+    surfaceContainerHighest = hex(0x303636),
+    background = hex(0x0E1514),
+    onBackground = hex(0xDDE4E3),
+    outline = hex(0x899392),
+    outlineVariant = hex(0x3F4948),
 )
 
-private val AmoledDarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80,
+private val AmoledDarkColorScheme = DarkColorScheme.copy(
     surface = AmoledBlack,
     background = AmoledBlack,
     surfaceVariant = AmoledSurfaceVariant,
@@ -182,10 +232,20 @@ fun NiraTheme(
     MaterialExpressiveTheme(
         colorScheme = colorScheme,
         motionScheme = MotionScheme.expressive(),
+        shapes = NiraShapes,
         typography = Typography,
         content = content
     )
 }
+
+/** Rounder than the Material default (4/8/12/16/28): softer cards, sheets and dialogs. */
+private val NiraShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(24.dp),
+    extraLarge = RoundedCornerShape(32.dp),
+)
 
 private fun Context.findActivity(): Activity? {
     var current: Context? = this

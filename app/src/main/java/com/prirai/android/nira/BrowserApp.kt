@@ -220,15 +220,6 @@ class BrowserApp : Application(), coil.ImageLoaderFactory {
             }
         }
 
-        // Auto-updater: idempotent reconcile between the user pref
-        // and the WorkManager periodic request. ensureScheduled is a
-        // no-op on debug builds and on opted-out installs, so this
-        // call is cheap unconditionally.
-        try {
-            com.prirai.android.nira.update.UpdateScheduler.ensureScheduled(this@BrowserApp)
-        } catch (t: Throwable) {
-            android.util.Log.w("NiraUpdate", "UpdateScheduler.ensureScheduled failed", t)
-        }
 
         // Schedule the periodic per-site cookie sweeper. Idempotent -
         // existing periodic work is KEPT, so this call is a no-op on
@@ -246,11 +237,6 @@ class BrowserApp : Application(), coil.ImageLoaderFactory {
         // Queue storage warming for after visual completeness
         queueStorageWarmup()
         
-        // Warm up web app manifest storage in background
-        applicationScope.launch(Dispatchers.IO) {
-            components.webAppManifestStorage.warmUpScopes(System.currentTimeMillis())
-        }
-
         // Warm the Public Suffix List once per process on IO. Previously this
         // was done per-Activity-start on the main thread via view.post, which
         // forced the ~200 KB PSL parse into the first-frame budget.
