@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Image reader mode -->
+<resources>
+    <string name="image_reader">Image reader</string>
+    <string name="image_reader_scanning">Collecting images from this page…</string>
+    <string name="image_reader_failed">Couldn\'t read images from this page</string>
+    <string name="image_reader_unavailable">Image reader works on web pages only</string>
+    <string name="image_reader_none_found">No images found on this page</string>
+    <string name="image_reader_mode_vertical">Scroll</string>
+    <string name="image_reader_mode_ltr">Pages →</string>
+    <string name="image_reader_mode_rtl">Pages ←</string>
+    <string name="image_reader_show_all">Show all images</string>
+    <string name="image_reader_close">Close reader</string>
+    <string name="image_reader_hide_banners">Hide banners</string>
+    <string name="image_reader_tap_retry">Couldn\'t load this image. Tap to retry</string>
+</resources>
