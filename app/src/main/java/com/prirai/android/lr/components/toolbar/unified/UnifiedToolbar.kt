@@ -274,15 +274,11 @@ class UnifiedToolbar @JvmOverloads constructor(
                 addAddressBar(parent, lifecycleOwner, interactor, customTabSession, store)
                 // Create bottom components (they will be retrieved separately)
                 addBottomComponentsForTopToolbar(store, lifecycleOwner)
-                // Menu button always lives on the address bar
-                addBrowserActionsToAddressBar()
             }
             ModernToolbarSystem.ToolbarPosition.BOTTOM -> {
                 // BOTTOM: Address Bar -> Tab Bar (all together)
                 addAddressBar(parent, lifecycleOwner, interactor, customTabSession, store)
                 addTabGroupBar(store, lifecycleOwner)
-                // Menu button always lives on the address bar
-                addBrowserActionsToAddressBar()
             }
         }
 
@@ -290,6 +286,10 @@ class UnifiedToolbar @JvmOverloads constructor(
         // the menu button - regardless of whether the contextual toolbar is
         // enabled (it no longer carries the count).
         addTabCountBadgeToAddressBar()
+
+        // Menu button always lives on the address bar, rightmost (added after
+        // the tab count so the badge sits just left of it).
+        addBrowserActionsToAddressBar()
 
         // Always setup scroll behavior (always enabled now)
         setupScrollBehavior(parent)
@@ -562,32 +562,29 @@ class UnifiedToolbar @JvmOverloads constructor(
         val toolbar = browserToolbar ?: return
         val density = context.resources.displayMetrics.density
 
-        val menuButton = android.widget.ImageButton(context).apply {
-            layoutParams = ViewGroup.LayoutParams(
-                (48 * density).toInt(),
-                (48 * density).toInt()
-            )
-            val outValue = android.util.TypedValue()
-            context.theme.resolveAttribute(
-                android.R.attr.selectableItemBackgroundBorderless, outValue, true
-            )
-            setBackgroundResource(outValue.resourceId)
-            setImageDrawable(
-                ContextCompat.getDrawable(context, com.prirai.android.lr.R.drawable.ic_more_vert)
-            )
-            scaleType = android.widget.ImageView.ScaleType.CENTER
-            contentDescription = context.getString(com.prirai.android.lr.R.string.menu)
-            setOnClickListener {
-                contextualToolbarListener?.onMenuClicked()
+        toolbar.addBrowserAction(object : mozilla.components.concept.toolbar.Toolbar.Action {
+            override fun createView(parent: ViewGroup): View {
+                return android.widget.ImageButton(parent.context).apply {
+                    layoutParams = ViewGroup.LayoutParams(
+                        (48 * density).toInt(),
+                        (48 * density).toInt()
+                    )
+                    val outValue = android.util.TypedValue()
+                    context.theme.resolveAttribute(
+                        android.R.attr.selectableItemBackgroundBorderless, outValue, true
+                    )
+                    setBackgroundResource(outValue.resourceId)
+                    setImageDrawable(
+                        ContextCompat.getDrawable(context, com.prirai.android.lr.R.drawable.ic_more_vert)
+                    )
+                    scaleType = android.widget.ImageView.ScaleType.CENTER
+                    contentDescription = context.getString(com.prirai.android.lr.R.string.menu)
+                    setOnClickListener { contextualToolbarListener?.onMenuClicked() }
+                }
             }
-        }
 
-        toolbar.asView().post {
-            val browserActions = toolbar.asView().findViewById<ViewGroup>(
-                mozilla.components.browser.toolbar.R.id.mozac_browser_toolbar_browser_actions
-            )
-            browserActions?.addView(menuButton)
-        }
+            override fun bind(view: View) = Unit
+        })
     }
 
     /**
@@ -659,17 +656,16 @@ class UnifiedToolbar @JvmOverloads constructor(
         }
         tabCountBadgeContainer = tabCountContainer
 
-        // Add at the beginning of the browser actions container, so the
-        // badge appears leftmost of the cluster - immediately left of the
-        // menu button at the rightmost of the address bar.
-        toolbar.asView().post {
-            val browserActions = toolbar.asView().findViewById<ViewGroup>(
-                mozilla.components.browser.toolbar.R.id.mozac_browser_toolbar_browser_actions
-            )
-            if (browserActions != null) {
-                browserActions.addView(tabCountContainer, 0)
+        // Registered as a browser action (public toolbar API) so it renders
+        // on the right of the address bar, left of the menu button.
+        toolbar.addBrowserAction(object : mozilla.components.concept.toolbar.Toolbar.Action {
+            override fun createView(parent: ViewGroup): View {
+                (tabCountContainer.parent as? ViewGroup)?.removeView(tabCountContainer)
+                return tabCountContainer
             }
-        }
+
+            override fun bind(view: View) = Unit
+        })
 
         // Start observing tab count to update the text
         observeTabCountForBadge()
