@@ -21,42 +21,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import mozilla.components.browser.state.state.TabSessionState
 
-/**
- * Unified Tab Menu System
- *
- * This file provides a comprehensive, reusable menu system for tabs and groups.
- * It includes:
- * - TabContextMenu: Menu for individual tabs (grouped or ungrouped)
- * - GroupContextMenu: Menu for group containers
- * - Reusable dialogs: RenameGroupDialog, ColorPickerDialog, ProfilePickerDialog
- * - Helper components: TabMenuHeader, TabMenuItem
- *
- * Usage:
- * - For tabs: Call TabContextMenu with isInGroup parameter
- * - For groups: Call GroupContextMenu
- */
-
-// ============================================================================
-// TAB CONTEXT MENU
-// ============================================================================
-
-/**
- * Context menu for individual tabs.
- * Shows different options based on whether the tab is in a group.
- *
- * Options for ungrouped tabs:
- * - Duplicate, Close
- *
- * Options for grouped tabs:
- * - Duplicate, Remove from Island, Close
- *
- * @param tab The tab to show menu for
- * @param isInGroup Whether this tab is currently in a group
- * @param onDismiss Callback when menu is dismissed
- * @param viewModel The TabViewModel for performing actions
- * @param scope CoroutineScope for launching coroutines
- */
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TabContextMenu(
@@ -129,30 +93,6 @@ fun TabContextMenu(
     }
 }
 
-// ============================================================================
-// GROUP CONTEXT MENU
-// ============================================================================
-
-/**
- * Context menu for group containers.
- * Provides group-specific operations like rename, color change, ungroup, etc.
- *
- * Available options:
- * - New Tab in Island: Creates a new tab in this group
- * - Rename Island: Shows dialog to rename the group
- * - Change Color: Shows color picker to change group color
- * - Collapse/Expand: Toggles group expansion state
- * - Pin Island: Pins/unpins the group
- * - Ungroup All Tabs: Removes all tabs from the group
- * - Close All Tabs: Closes all tabs in the group
- * - Move to Profile: Shows profile picker to move group
- *
- * @param groupId The ID of the group
- * @param groupName The display name of the group
- * @param onDismiss Callback when menu is dismissed
- * @param viewModel The TabViewModel for performing actions
- * @param scope CoroutineScope for launching coroutines
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupContextMenu(
@@ -181,7 +121,6 @@ fun GroupContextMenu(
                 .fillMaxWidth()
                 .padding(bottom = 16.dp)
         ) {
-            // Inline rename field at the top
             var editedName by remember { mutableStateOf(groupName) }
 
             Row(
@@ -210,7 +149,6 @@ fun GroupContextMenu(
                     )
                 )
 
-                // Accept button (rounded right end)
                 Surface(
                     modifier = Modifier.size(56.dp),
                     shape = RoundedCornerShape(
@@ -323,7 +261,6 @@ fun GroupContextMenu(
         }
     }
 
-    // Show dialogs
     if (showRenameDialog && currentGroup != null) {
         RenameGroupDialog(
             currentName = currentGroup.name,
@@ -375,13 +312,6 @@ fun GroupContextMenu(
     }
 }
 
-// ============================================================================
-// REUSABLE MENU COMPONENTS
-// ============================================================================
-
-/**
- * Header component for tab menus showing favicon, title, and URL.
- */
 @Composable
 private fun TabMenuHeader(tab: TabSessionState) {
     Row(
@@ -414,10 +344,6 @@ private fun TabMenuHeader(tab: TabSessionState) {
     }
 }
 
-/**
- * Reusable menu item component using Material3 ListItem for consistent styling.
- * Supports optional content color override for destructive actions.
- */
 @Composable
 private fun TabMenuItem(
     icon: @Composable () -> Unit,
@@ -443,17 +369,3 @@ private fun TabMenuItem(
         modifier = modifier.clickable(onClick = onClick)
     )
 }
-
-// ============================================================================
-// NOTE: Dialog components have been moved to TabMenuDialogs.kt
-// ============================================================================
-
-/**
- * The following dialog components are now in TabMenuDialogs.kt:
- * - RenameGroupDialog
- * - ColorPickerDialog
- * - ProfilePickerDialog
- *
- * They are still imported and available for use in this file.
- * This separation improves code organization and reusability.
- */

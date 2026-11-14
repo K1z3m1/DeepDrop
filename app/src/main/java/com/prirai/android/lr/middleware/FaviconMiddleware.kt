@@ -10,35 +10,27 @@ import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 import com.prirai.android.lr.utils.FaviconCache
 
-/**
- * Middleware that automatically saves favicons when they are loaded
- */
 class FaviconMiddleware(
     private val faviconCache: FaviconCache,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO)
 ) : Middleware<BrowserState, BrowserAction> {
-
     override fun invoke(
         store: Store<BrowserState, BrowserAction>,
         next: (BrowserAction) -> Unit,
         action: BrowserAction
     ) {
-        // Process the action first
         next(action)
         
-        // Handle favicon updates
         when (action) {
             is ContentAction.UpdateIconAction -> {
                 val tab = store.state.tabs.find { it.id == action.sessionId }
                 if (tab != null && action.icon != null) {
-                    // Save the favicon asynchronously
                     scope.launch {
                         faviconCache.saveFavicon(tab.content.url, action.icon)
                     }
                 }
             }
             else -> {
-                // No action needed for other actions
             }
         }
     }

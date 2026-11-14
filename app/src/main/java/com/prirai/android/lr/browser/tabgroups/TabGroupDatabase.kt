@@ -21,14 +21,12 @@ abstract class TabGroupDatabase : RoomDatabase() {
         
         private val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(database: SupportSQLiteDatabase) {
-                // Add contextId column to tab_groups table
                 database.execSQL("ALTER TABLE tab_groups ADD COLUMN contextId TEXT DEFAULT NULL")
             }
         }
         
         private val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(database: SupportSQLiteDatabase) {
-                // Add isCollapsed column to tab_groups table
                 database.execSQL("ALTER TABLE tab_groups ADD COLUMN isCollapsed INTEGER NOT NULL DEFAULT 0")
             }
         }

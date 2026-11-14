@@ -20,20 +20,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-/**
- * One row of a grouped card list — the idiom every LR list surface shares:
- * rows stack edge-to-edge inside one `surfaceContainerHigh` card, only the
- * first and last rows keep the corner radius, and a divider is drawn between
- * rows. The direction-agnostic [isTopRow]/[isBottomRow] carry the VISUAL
- * position, so a reversed layout (rendered bottom-up) maps its last adapter
- * position to the top row.
- *
- * The awesome bar's suggestion rows and the tab-history chart both render
- * with this composable so the two list surfaces read as one design.
- *
- * @param onClick when null the row renders disabled (the current-page row of
- *   the history chart); a row that acts carries the ripple.
- */
 @Composable
 fun LRCardRow(
     title: String,

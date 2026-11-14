@@ -13,9 +13,6 @@ import mozilla.components.lib.state.Action
 import mozilla.components.lib.state.State
 import mozilla.components.lib.state.Store
 
-/**
- * The [Store] for holding the [SearchFragmentState] and applying [SearchFragmentAction]s.
- */
 class SearchFragmentStore(
     initialState: SearchFragmentState
 ) : Store<SearchFragmentState, SearchFragmentAction>(
@@ -23,9 +20,6 @@ class SearchFragmentStore(
     ::searchStateReducer
 )
 
-/**
- * Wraps a `SearchEngine` to give consumers the context that it was selected as a shortcut
- */
 sealed class SearchEngineSource {
     abstract val searchEngine: SearchEngine?
 
@@ -37,27 +31,6 @@ sealed class SearchEngineSource {
     data class Shortcut(override val searchEngine: SearchEngine) : SearchEngineSource()
 }
 
-/**
- * The state for the Search Screen
- *
- * @property query The current search query string
- * @property url The current URL of the tab (if this fragment is shown for an already existing tab)
- * @property searchTerms The search terms used to search previously in this tab (if this fragment is shown
- * for an already existing tab)
- * @property searchEngineSource The current selected search engine with the context of how it was selected
- * @property defaultEngine The current default search engine (or null if none is available yet)
- * @property showSearchSuggestions Whether or not to show search suggestions from the search engine in the AwesomeBar
- * @property showSearchSuggestionsHint Whether or not to show search suggestions in private hint panel
- * @property showSearchShortcuts Whether or not to show search shortcuts in the AwesomeBar
- * @property areShortcutsAvailable Whether or not there are >=2 search engines installed
- * so to know to present users with certain options or not.
- * @property showSearchShortcutsSetting Whether the setting for showing search shortcuts is enabled
- * or disabled.
- * @property showClipboardSuggestions Whether or not to show clipboard suggestion in the AwesomeBar
- * @property showHistorySuggestions Whether or not to show history suggestions in the AwesomeBar
- * @property showBookmarkSuggestions Whether or not to show the bookmark suggestion in the AwesomeBar
- * @property pastedText The text pasted from the long press toolbar menu
- */
 data class SearchFragmentState(
     val query: String,
     val url: String,
@@ -120,9 +93,6 @@ fun createInitialSearchFragmentState(
     )
 }
 
-/**
- * Actions to dispatch through the `SearchStore` to modify `SearchState` through the reducer.
- */
 sealed class SearchFragmentAction : Action {
     data class SetShowSearchSuggestions(val show: Boolean) : SearchFragmentAction()
     data class SearchShortcutEngineSelected(val engine: SearchEngine) : SearchFragmentAction()
@@ -130,15 +100,9 @@ sealed class SearchFragmentAction : Action {
     data class AllowSearchSuggestionsInPrivateModePrompt(val show: Boolean) : SearchFragmentAction()
     data class UpdateQuery(val query: String) : SearchFragmentAction()
 
-    /**
-     * Updates the local `SearchFragmentState` from the global `SearchState` in `BrowserStore`.
-     */
     data class UpdateSearchState(val search: SearchState) : SearchFragmentAction()
 }
 
-/**
- * The SearchState Reducer.
- */
 private fun searchStateReducer(state: SearchFragmentState, action: SearchFragmentAction): SearchFragmentState {
     return when (action) {
         is SearchFragmentAction.SearchShortcutEngineSelected ->

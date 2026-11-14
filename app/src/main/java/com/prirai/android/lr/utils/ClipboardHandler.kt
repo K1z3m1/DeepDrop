@@ -42,7 +42,6 @@ class ClipboardHandler(val context: Context) {
     internal fun containsURL(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val description = clipboard.primaryClipDescription
-            // An IllegalStateException is thrown if the url is too long.
             val score =
                 try {
                     description?.getConfidenceScore(TextClassifier.TYPE_URL) ?: 0F

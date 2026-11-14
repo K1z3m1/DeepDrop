@@ -24,10 +24,6 @@ import androidx.compose.ui.unit.dp
 private val StateIconContainerSize = 96.dp
 private val StateIconSize = 44.dp
 
-/**
- * Empty state for any surface. [icon] and [subtitle] are optional so a bare
- * "nothing here yet" line stays a one-liner at the call site.
- */
 @Composable
 fun LREmptyState(
     title: String,
@@ -67,11 +63,6 @@ fun LREmptyState(
     }
 }
 
-/**
- * The icon of an empty, error or message state, on the state container shape
- * (a MaterialShapes cookie, distinct from the theme's rounded rectangles so it
- * reads as a container, not a card).
- */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun LRStateIcon(

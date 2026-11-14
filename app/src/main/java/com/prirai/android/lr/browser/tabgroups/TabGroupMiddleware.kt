@@ -11,24 +11,9 @@ import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 
-/**
- * Middleware that monitors tab creation and applies cross-domain grouping logic.
- *
- * The [UnifiedTabGroupManager] is injected as a [Lazy] so that merely adding
- * this middleware to the [mozilla.components.browser.state.store.BrowserStore]
- * middleware chain does not force construction of the manager. The manager
- * opens a Room database (`TabGroupDatabase.getInstance`) on construction;
- * resolving it eagerly during `BrowserStore` build - which runs on whichever
- * thread first touches `components.store` - would pull Room's class graph
- * onto the main thread during cold start.
- *
- * Instead, we resolve the lazy on the first action-dispatch that actually
- * needs grouping (via [groupManager]), which happens well after startup.
- */
 class TabGroupMiddleware(
     private val lazyTabGroupManager: Lazy<UnifiedTabGroupManager>
 ) : Middleware<BrowserState, BrowserAction> {
-
     companion object {
         private const val TAG = "TabGroupMiddleware"
     }
@@ -36,7 +21,6 @@ class TabGroupMiddleware(
     private val tabGroupManager: UnifiedTabGroupManager
         get() = lazyTabGroupManager.value
 
-    // Track tabs pending grouping (tab ID -> parent ID)
     private val pendingGrouping = mutableMapOf<String, String?>()
     
     override fun invoke(
@@ -44,10 +28,8 @@ class TabGroupMiddleware(
         next: (BrowserAction) -> Unit,
         action: BrowserAction
     ) {
-        // Process the action first
         next(action)
         
-        // Handle post-action state changes
         when (action) {
             is TabListAction.AddTabAction -> {
                 handleNewTab(store.state, action)
@@ -59,48 +41,17 @@ class TabGroupMiddleware(
                 handleTabSelection(store.state, action)
             }
             else -> {
-                // No action needed for other types
             }
         }
     }
     
-    /**
-     * Handles new tab creation to determine if it should be auto-grouped.
-     *
-     * This method analyzes newly created tabs to detect if they were opened from
-     * a link in another tab. If so, it automatically groups them together to
-     * maintain browsing context.
-     *
-     * Detection logic:
-     * - Checks if tab has a parentId (set by context menu "open in new tab")
-     * - Falls back to using currently selected tab as source
-     * - Skips tabs with blank URLs (waiting for actual URL to load)
-     * - Skips system URLs (about:, chrome:)
-     *
-     * Grouping triggers:
-     * - Any tab opened from another tab with a valid URL
-     * - Both same-domain and cross-domain links
-     * - Delegates actual grouping to UnifiedTabGroupManager.handleNewTabFromLink()
-     *
-     * Logging:
-     * - All decisions are logged with tag "TabGroupMiddleware"
-     * - Useful for debugging why tabs are/aren't grouped
-     * - Use: adb logcat | grep TabGroupMiddleware
-     *
-     * @param state Current browser state containing all tabs
-     * @param action The AddTabAction containing the new tab
-     */
     private fun handleNewTab(state: BrowserState, action: TabListAction.AddTabAction) {
         val newTab = action.tab
         val newTabUrl = newTab.content.url
-        // Check both the URL in the tab and the URL being loaded
         val effectiveUrl = if (newTabUrl.isBlank() || newTabUrl == "about:blank") {
-            // If the tab has no URL yet, track it for later when URL is loaded
-            // Store parent ID for later grouping when URL is loaded
             if (newTab.parentId != null) {
                 pendingGrouping[newTab.id] = newTab.parentId
             } else {
-                // Use current selected tab as parent
                 val selectedTab = state.tabs.find { it.id == state.selectedTabId && it.id != newTab.id }
                 if (selectedTab != null) {
                     pendingGrouping[newTab.id] = selectedTab.id
@@ -111,22 +62,17 @@ class TabGroupMiddleware(
             newTabUrl
         }
 
-        // Don't auto-group tabs with about: or chrome: URLs except about:homepage
         if ((effectiveUrl.startsWith("about:") && effectiveUrl != "about:homepage") || effectiveUrl.startsWith("chrome:")) {
             return
         }
 
-        // Find the currently selected tab or the tab with parentId
         val sourceTab = if (newTab.parentId != null) {
-            // If tab has a parent, use that as the source
             state.tabs.find { it.id == newTab.parentId }
         } else {
-            // Otherwise use the currently selected tab
             state.selectedTabId?.let { selectedId ->
                 if (selectedId != newTab.id) {
                     state.tabs.find { it.id == selectedId }
                 } else {
-                    // If the new tab is already selected, find the previous one
                     state.tabs.filter { it.id != newTab.id }
                         .maxByOrNull { it.lastAccess }
                 }
@@ -135,9 +81,7 @@ class TabGroupMiddleware(
         if (sourceTab != null) {
             val sourceUrl = sourceTab.content.url
 
-            // Group all links opened from another tab (both same-domain and cross-domain)
             if (sourceUrl.isNotBlank() && sourceUrl != "about:blank") {
-                // Group the new tab with the source tab
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
                         tabGroupManager.handleNewTabFromLink(
@@ -155,22 +99,15 @@ class TabGroupMiddleware(
         }
     }
     
-    /**
-     * Handles URL updates for tabs that were created with blank URLs.
-     * This catches tabs opened from context menu that initially have no URL.
-     */
     private fun handleUrlUpdate(state: BrowserState, action: ContentAction.UpdateUrlAction) {
         val tabId = action.sessionId
         val newUrl = action.url
         
-        // Check if this tab is pending grouping
         val parentId = pendingGrouping.remove(tabId) ?: return
-        // Skip system URLs
         if ((newUrl.startsWith("about:") && newUrl != "about:homepage") || newUrl.startsWith("chrome:")) {
             return
         }
         
-        // Find the parent tab
         val parentTab = state.tabs.find { it.id == parentId }
         if (parentTab == null) {
             return
@@ -180,7 +117,6 @@ class TabGroupMiddleware(
         if (parentUrl.isBlank() || parentUrl == "about:blank") {
             return
         }
-        // Group the tabs
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 tabGroupManager.handleNewTabFromLink(
@@ -196,8 +132,5 @@ class TabGroupMiddleware(
     }
     
     private fun handleTabSelection(state: BrowserState, action: TabListAction.SelectTabAction) {
-        // UnifiedTabGroupManager handles state updates automatically via StateFlow
-        // No manual refresh needed
     }
-
 }

@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TabGroupDao {
-
     @Query("SELECT * FROM tab_groups WHERE isActive = 1 ORDER BY createdAt DESC")
     fun getAllActiveGroups(): Flow<List<TabGroup>>
 
@@ -29,7 +28,6 @@ interface TabGroupDao {
     @Query("UPDATE tab_groups SET isActive = 0 WHERE id = :groupId")
     suspend fun markGroupAsInactive(groupId: String)
 
-    // Tab group membership operations
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTabGroupMember(member: TabGroupMember)
 
@@ -42,13 +40,6 @@ interface TabGroupDao {
     @Query("SELECT tabId FROM tab_group_members WHERE groupId = :groupId ORDER BY position")
     suspend fun getTabIdsInGroup(groupId: String): List<String>
 
-    /**
-     * One-time migration helper: rewrite all rows whose `contextId == :from` to
-     * `:to`. Used by
-     * `com.prirai.android.lr.browser.profile.DefaultProfileTabMigration` to
-     * flip legacy `"profile_default"` rows to `null`. Pass `to = null` to clear.
-     * Returns the number of rows updated.
-     */
     @Query("UPDATE tab_groups SET contextId = :to WHERE contextId = :from")
     suspend fun reassignContextIdGroups(from: String, to: String?): Int
 }

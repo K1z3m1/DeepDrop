@@ -10,7 +10,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,7 +56,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import com.prirai.android.lr.ui.components.mutedAdaptive
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -66,14 +64,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
+import com.prirai.android.lr.ui.components.RemoteImage
 import com.prirai.android.lr.R
 import com.prirai.android.lr.browser.tabs.compose.FaviconImageFromUrl
 import com.prirai.android.lr.settings.HomepageChoice
 import com.prirai.android.lr.ui.components.LRAlertDialog
 import com.prirai.android.lr.ui.components.pressScale
 import mozilla.components.browser.state.state.BrowserState
+import com.prirai.android.lr.browser.profile.ProfileIcons
+import java.net.URL
 
 data class ProfileInfo(
     val id: String,
@@ -167,27 +166,20 @@ fun HomeScreen(
 ) {
     val backgroundColor = MaterialTheme.colorScheme.background
 
-    // Get window insets for edge-to-edge support
     val windowInsets = WindowInsets.systemBars
     val topPadding = with(LocalDensity.current) { windowInsets.getTop(this).toDp() }
     val bottomPadding = with(LocalDensity.current) { windowInsets.getBottom(this).toDp() }
 
-    // Add toolbar height when toolbar is at top (approximately 56dp for toolbar)
     val toolbarHeight = if (isToolbarAtTop) 56.dp else 0.dp
 
     Box(modifier = modifier.fillMaxSize()) {
-        // Background image layer
         if (backgroundImageUrl != null && backgroundImageUrl.isNotEmpty()) {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(backgroundImageUrl)
-                    .crossfade(true)
-                    .build(),
+            RemoteImage(
+ model = backgroundImageUrl,
                 contentDescription = stringResource(R.string.homepage_background),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
-            // Add semi-transparent overlay for better content readability (controlled by preference)
             if (wallpaperDimmed) {
                 Box(
                     modifier = Modifier
@@ -215,7 +207,6 @@ fun HomeScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(28.dp)
         ) {
-            // Logo section with profile switcher (hide for BLANK_PAGE)
             if (homepageType != HomepageChoice.BLANK_PAGE.ordinal) {
                 item(key = "logo") {
                     LogoSection(
@@ -226,14 +217,12 @@ fun HomeScreen(
                 }
             }
 
-            // Centered search bar (hide for BLANK_PAGE)
             if (homepageType != HomepageChoice.BLANK_PAGE.ordinal) {
                 item(key = "search") {
                     SearchBar(onSearchClick = onSearchClick)
                 }
             }
 
-            // Show shortcuts, bookmarks, and recents only for default VIEW mode and in normal mode
             if (!isPrivateMode && homepageType == HomepageChoice.VIEW.ordinal) {
                 if (jumpBackInItems.isNotEmpty() || recentlyClosedItems.isNotEmpty()) {
                     item(key = "recent_activity") {
@@ -246,7 +235,6 @@ fun HomeScreen(
                     }
                 }
 
-                // Shortcuts section
                 item(key = "shortcuts") {
                     ShortcutsSection(
                         shortcuts = shortcuts,
@@ -263,7 +251,6 @@ fun HomeScreen(
                     )
                 }
             } else if (isPrivateMode && homepageType != HomepageChoice.BLANK_PAGE.ordinal) {
-                // Private browsing info (only if not blank page)
                 item(key = "private") {
                     PrivateBrowsingInfo()
                 }
@@ -279,10 +266,6 @@ fun LogoSection(
     onProfileClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Profile avatar selector (clickable) - Material icon, not emoji.
-    // The container is the muted, theme-adaptive variant of the profile
-    // color; the icon tint follows the container's luminance so it stays
-    // legible for every palette entry.
     val avatarColor = if (currentProfile.color != 0) {
         Color(currentProfile.color).mutedAdaptive()
     } else {
@@ -290,8 +273,6 @@ fun LogoSection(
     }
 
     Box(modifier = modifier.fillMaxWidth()) {
-        // Brand lockup, centred: icon over name, so a long app name can
-        // never push the profile button off-screen.
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -313,7 +294,6 @@ fun LogoSection(
                 overflow = TextOverflow.Ellipsis
             )
 
-            // Private badge
             if (isPrivateMode) {
                 Spacer(Modifier.height(4.dp))
                 Surface(
@@ -341,7 +321,6 @@ fun LogoSection(
             }
         }
 
-        // Profile button pinned to the top-end corner.
         Surface(
             shape = CircleShape,
             color = avatarColor,
@@ -352,7 +331,7 @@ fun LogoSection(
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
-                    imageVector = com.prirai.android.lr.browser.profile.ProfileIcons.iconFor(currentProfile.emoji),
+                    imageVector = ProfileIcons.iconFor(currentProfile.emoji),
                     contentDescription = currentProfile.name,
                     tint = if (avatarColor.luminance() > 0.5f) {
                         MaterialTheme.colorScheme.onSurface
@@ -376,8 +355,6 @@ fun SearchBar(
         modifier = modifier
             .fillMaxWidth()
             .pressScale(interactionSource, pressedScale = 0.98f),
-        // The same pill the real search fields wear, so the homepage affordance
-        // reads as the same control as LRSearchField before it is tapped.
         shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerHigh
     ) {
@@ -412,7 +389,6 @@ fun ShortcutsSection(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
-        // Section header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -507,7 +483,6 @@ fun ShortcutItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Favicon or letter
         Surface(
             shape = RoundedCornerShape(18.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -518,16 +493,12 @@ fun ShortcutItem(
                 contentAlignment = Alignment.Center
             ) {
                 if (shortcut.icon != null) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(shortcut.icon)
-                            .crossfade(true)
-                            .build(),
+                    RemoteImage(
+ model = shortcut.icon,
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize()
                     )
                 } else {
-                    // Use FaviconImageFromUrl for loading favicons
                     FaviconImageFromUrl(
                         url = shortcut.url,
                         title = shortcut.title,
@@ -619,7 +590,6 @@ private fun HomeSectionHeader(title: String, modifier: Modifier = Modifier) {
     )
 }
 
-/** One rounded container holding a divided list of site rows. */
 @Composable
 private fun SiteListCard(
     entries: List<Triple<String, String, () -> Unit>>, // url, title, onClick
@@ -855,10 +825,9 @@ fun AddShortcutDialog(
                         return@TextButton
                     }
 
-                    // Validate URL
                     val validUrl = try {
                         val finalUrl = if (url.startsWith("http")) url else "https://$url"
-                        java.net.URL(finalUrl)
+                        URL(finalUrl)
                         finalUrl
                     } catch (e: Exception) {
                         return@TextButton
@@ -866,7 +835,7 @@ fun AddShortcutDialog(
 
                     val finalTitle = title.ifBlank {
                         try {
-                            java.net.URL(validUrl).host.replace("www.", "")
+                            URL(validUrl).host.replace("www.", "")
                         } catch (e: Exception) {
                             untitledLabel
                         }

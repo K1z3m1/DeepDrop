@@ -68,12 +68,7 @@ private data class ConnectionInfoUi(
     val origin: String?,
 )
 
-/**
- * Bottom sheet dialog fragment for displaying connection/security information
- * Similar to Firefox's QuickSettings panel
- */
 class ConnectionInfoBottomSheet : BottomSheetDialogFragment() {
-
     private val uiState = mutableStateOf<ConnectionInfoUi?>(null)
     private val etpEnabled = mutableStateOf(false)
     private val summaryIconsState = mutableStateOf<List<Int>>(emptyList())
@@ -148,8 +143,6 @@ class ConnectionInfoBottomSheet : BottomSheetDialogFragment() {
         etpEnabled.value = UserPreferences(context).trackingProtection
 
         if (origin != null) {
-            // Glanceable summary of the stored AC permissions in a
-            // non-default state, rendered next to the site-permissions row.
             viewLifecycleOwner.lifecycleScope.launch {
                 val stored = withContext(Dispatchers.IO) {
                     context.components.permissionStorage.findSitePermissionsBy(
@@ -167,7 +160,6 @@ class ConnectionInfoBottomSheet : BottomSheetDialogFragment() {
         etpEnabled.value = enabled
         UserPreferences(context).trackingProtection = enabled
 
-        // Reload the page to apply changes
         context.components.sessionUseCases.reload()
 
         Toast.makeText(
@@ -183,17 +175,6 @@ class ConnectionInfoBottomSheet : BottomSheetDialogFragment() {
         ).show()
     }
 
-    /**
-     * Always-visible "Site permissions" entry row. Opens
-     * [SitePermissionsBottomSheet] regardless of whether the current origin
-     * has any stored permission decisions, so the user can grant / revoke /
-     * clear-cookies without having to make a decision first (the
-     * "always visible" behaviour requested post-v0.5.14).
-     *
-     * Only hidden when the URL has no origin (chrome:// / about:); the
-     * [ConnectionInfoUi.origin] guard doubles the caller's internal-page
-     * short-circuit as a defence-in-depth check.
-     */
     private fun openSitePermissions() {
         SitePermissionsBottomSheet.newInstance()
             .show(parentFragmentManager, SitePermissionsBottomSheet.TAG)
@@ -216,12 +197,6 @@ class ConnectionInfoBottomSheet : BottomSheetDialogFragment() {
     }
 }
 
-/**
- * The Compose body of the connection-info sheet: the security status, the
- * page title/URL, the certificate of a secure page and the privacy section
- * (Enhanced Tracking Protection toggle + the site-permissions entry row),
- * rendered with the shared grouped-card idiom.
- */
 @Composable
 private fun ConnectionInfoSheetContent(
     state: ConnectionInfoUi?,
@@ -237,8 +212,6 @@ private fun ConnectionInfoSheetContent(
         SecurityStatus.INSECURE -> R.string.connection_is_not_secure
         SecurityStatus.INTERNAL -> R.string.connection_internal_page
     }
-    // Tertiary reads as "secure" (the old sheet used a green indicator),
-    // error as "not secure"; internal pages carry the neutral-secure look.
     val statusColor = when (info.status) {
         SecurityStatus.INSECURE -> MaterialTheme.colorScheme.error
         else -> MaterialTheme.colorScheme.tertiary

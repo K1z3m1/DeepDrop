@@ -69,11 +69,9 @@ import com.prirai.android.lr.R
 import mozilla.components.browser.state.state.TabSessionState
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import androidx.compose.foundation.layout.Column
+import kotlinx.coroutines.CoroutineScope
 
-/**
- * Horizontal tab bar with Chromium-style drag & drop support
- * Uses two-layer rendering: static layer + floating drag layer
- */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TabBarCompose(
@@ -90,14 +88,12 @@ fun TabBarCompose(
     val order by orderManager.currentOrder.collectAsState()
     val listState = rememberLazyListState()
 
-    // Create drag coordinator
     val coordinator = rememberDragCoordinator(
         scope = scope,
         viewModel = viewModel,
         orderManager = orderManager
     )
 
-    // Build items from order
     val items = remember(order, tabs) {
         buildBarItems(order, tabs)
     }
@@ -111,10 +107,6 @@ fun TabBarCompose(
         }
     }
 
-    // Scroll to selected tab once on initial composition (e.g. app open).
-    // Grouped tabs only ensure the group is visible; the selected tab pill
-    // inside the group is aligned by its own BringIntoViewRequester.
-    // Ungrouped tabs are centered in the viewport when possible.
     var hasInitialScrolled by remember { mutableStateOf(false) }
     LaunchedEffect(order, selectedTabId, listState.layoutInfo.viewportSize) {
         if (!hasInitialScrolled && order != null && selectedTabId != null) {
@@ -127,10 +119,8 @@ fun TabBarCompose(
                     }
                     hasInitialScrolled = true
                 } else {
-                    // Wait for layout to be ready
                     val viewportSize = listState.layoutInfo.viewportSize.width
                     if (viewportSize > 0) {
-                        // Negative offset moves the item towards the center
                         val averageItemSize = 180 // Approximate tab width in pixels (150dp + spacing)
                         val scrollOffset = -(viewportSize / 2 - averageItemSize / 2)
                         listState.scrollToItem(selectedLocation.itemIndex, scrollOffset.coerceAtLeast(-viewportSize))
@@ -172,10 +162,6 @@ fun TabBarCompose(
         lastSelectedTabId = currentTabId
     }
 
-    // Auto-scroll to selected tab when explicitly triggered (tab sheet dismissed,
-    // new tab created, etc.). Only fires when autoScrollTrigger changes, so it
-    // never interrupts the user while they are manually scrolling the tab bar.
-    // Grouped tabs keep intra-group alignment handled by BringIntoViewRequester.
     LaunchedEffect(autoScrollTrigger, order) {
         if (autoScrollTrigger > 0L && System.currentTimeMillis() - autoScrollTrigger < 2000L) {
             val currentOrder = order ?: return@LaunchedEffect
@@ -200,13 +186,12 @@ fun TabBarCompose(
     }
 
     Box(modifier = modifier.fillMaxWidth()) {
-        // Static layer - main tab bar
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.surfaceContainerLow,
             tonalElevation = 0.dp
         ) {
-          androidx.compose.foundation.layout.Column {
+          Column {
             HorizontalDivider(
                 thickness = 0.5.dp,
                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
@@ -253,10 +238,8 @@ fun TabBarCompose(
                                             onDragEnd = {
                                                 if (abs(offsetY) > 50) {
                                                     if (offsetY < 0) {
-                                                        // Swipe up - delete
                                                         onTabClose(item.tab.id)
                                                     } else {
-                                                        // Swipe down - menu
                                                         showMenu = true
                                                     }
                                                 }
@@ -281,7 +264,6 @@ fun TabBarCompose(
                                         .zIndex(1f)
                                 )
 
-                                // Swipe feedback
                                 if (abs(offsetY) > 10) {
                                     Box(
                                         modifier = Modifier
@@ -342,10 +324,8 @@ fun TabBarCompose(
                                             onDragEnd = {
                                                 if (abs(offsetY) > 50) {
                                                     if (offsetY < 0) {
-                                                        // Swipe up - ungroup all
                                                         viewModel.ungroupAll(item.groupId)
                                                     } else {
-                                                        // Swipe down - menu
                                                         showMenu = true
                                                     }
                                                 }
@@ -375,7 +355,6 @@ fun TabBarCompose(
                                         .zIndex(1f)
                                 )
 
-                                // Swipe feedback
                                 if (abs(offsetY) > 10) {
                                     Box(
                                         modifier = Modifier
@@ -412,7 +391,6 @@ fun TabBarCompose(
                         }
                     }
 
-                    // Add invisible divider after each item for drag-and-drop (except the last one)
                     if (index < uniqueItems.size - 1) {
                         TabDivider(
                             id = "divider_${index + 1}",
@@ -425,13 +403,11 @@ fun TabBarCompose(
           }
         }
 
-        // Drag layer - floating item that follows pointer
         DragLayer(coordinator = coordinator) { draggedItem ->
             when (draggedItem) {
                 is DraggableItemType.Tab -> {
                     val tab = tabs.find { it.id == draggedItem.tabId }
                     if (tab != null) {
-                        // Glass-morphic dragged tab with pill shape
                         Surface(
                             modifier = Modifier
                                 .height(36.dp)
@@ -476,9 +452,6 @@ fun TabBarCompose(
     }
 }
 
-/**
- * Build bar items from order
- */
 private fun buildBarItems(order: UnifiedTabOrder?, tabs: List<TabSessionState>): List<BarItem> {
     if (order == null) return tabs.map { BarItem.SingleTab(it) }
 
@@ -508,9 +481,6 @@ private fun buildBarItems(order: UnifiedTabOrder?, tabs: List<TabSessionState>):
     }
 }
 
-/**
- * Sealed class for bar items
- */
 sealed class BarItem {
     abstract val id: String
 
@@ -550,9 +520,6 @@ private fun findSelectedTabLocation(order: UnifiedTabOrder, tabId: String): Sele
     )
 }
 
-/**
- * Tab pill composable - matches grouped tab pill appearance
- */
 @Composable
 private fun TabPill(
     tab: TabSessionState,
@@ -563,9 +530,6 @@ private fun TabPill(
     isDragging: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    // Redesigned pill: resting tabs are soft tonal chips (clear tap target),
-    // the focused tab is a primaryContainer chip with a primary outline and an
-    // inline close button.
     Surface(
         modifier = modifier
             .height(36.dp)
@@ -590,14 +554,12 @@ private fun TabPill(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            // Favicon
             FaviconImage(
                 tab = tab,
                 size = 16.dp,
                 modifier = Modifier
             )
 
-            // Title
             Text(
                 text = getTabDisplayTitle(tab, stringResource(R.string.tab_history_new_tab)),
                 style =
@@ -636,10 +598,6 @@ private fun TabPill(
     }
 }
 
-/**
- * Invisible divider that acts as a drop target for reordering
- * Used for drag-and-drop but not visually rendered
- */
 @Composable
 private fun TabDivider(
     id: String,
@@ -658,13 +616,9 @@ private fun TabDivider(
                 metadata = mapOf("position" to position)
             )
     ) {
-        // No visual divider - just an invisible drop target
     }
 }
 
-/**
- * Reusable tab context menu wrapper - used by tab bar
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ShowTabMenu(
@@ -672,10 +626,10 @@ private fun ShowTabMenu(
     isInGroup: Boolean,
     onDismiss: () -> Unit,
     viewModel: TabViewModel,
-    scope: kotlinx.coroutines.CoroutineScope,
+    scope: CoroutineScope,
     modifier: Modifier = Modifier
 ) {
-    com.prirai.android.lr.browser.tabs.compose.TabContextMenu(
+    TabContextMenu(
         tab = tab,
         isInGroup = isInGroup,
         onDismiss = onDismiss,
@@ -685,9 +639,6 @@ private fun ShowTabMenu(
     )
 }
 
-/**
- * Reusable group context menu wrapper - used by tab bar
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ShowGroupMenu(
@@ -695,10 +646,10 @@ private fun ShowGroupMenu(
     groupName: String,
     onDismiss: () -> Unit,
     viewModel: TabViewModel,
-    scope: kotlinx.coroutines.CoroutineScope,
+    scope: CoroutineScope,
     modifier: Modifier = Modifier
 ) {
-    com.prirai.android.lr.browser.tabs.compose.GroupContextMenu(
+    GroupContextMenu(
         groupId = groupId,
         groupName = groupName,
         onDismiss = onDismiss,
@@ -708,9 +659,6 @@ private fun ShowGroupMenu(
     )
 }
 
-/**
- * Group pill composable - solid background with dividers between tabs
- */
 @Composable
 private fun GroupPill(
     group: BarItem.Group,
@@ -724,7 +672,6 @@ private fun GroupPill(
     isDragging: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    // Get expanded state from centralized group manager
     val groupData = viewModel.getGroup(group.groupId)
     val expanded = groupData?.let { !it.isCollapsed } ?: true
     
@@ -733,8 +680,6 @@ private fun GroupPill(
 
     val groupColor = Color(group.color)
     val onGroupColor = if (groupColor.luminance() > 0.5f) Color.Black else Color.White
-    // Group container: neutral surface lightly washed with the group's color
-    // and outlined with it, so a group reads as one coloured "folder" shape.
     val groupContainer = groupColor.copy(alpha = 0.12f)
         .compositeOver(MaterialTheme.colorScheme.surfaceContainerHighest)
 
@@ -767,8 +712,6 @@ private fun GroupPill(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            // Header chip: solid group colour with collapse/expand arrow,
-            // name and tab count
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = groupColor
@@ -799,19 +742,12 @@ private fun GroupPill(
             }
 
             if (expanded) {
-                // Show tab pills in group with dividers
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     group.tabs.forEachIndexed { index, tab ->
-                        // Key each pill by tab id so its remembered state (drag offset,
-                        // BringIntoViewRequester) travels with the tab across insertions
-                        // and removals instead of being reused by whichever tab now sits
-                        // in the same slot. Without this, closing a tab caused the next
-                        // pill to inherit the closed pill's transient state and disappear.
                         key(tab.id) {
                             if (index > 0) {
-                                // Divider between tabs
                                 Box(
                                     modifier = Modifier
                                         .width(1.dp)
@@ -820,7 +756,6 @@ private fun GroupPill(
                                 )
                             }
 
-                            // Wrap SwipeableTabPill with draggable and drop target for individual tab reordering
                             val isTabSelected = selectedTabId == tab.id
                             val bringIntoViewRequester = remember { BringIntoViewRequester() }
                             LaunchedEffect(isTabSelected) {
@@ -863,7 +798,6 @@ private fun GroupPill(
                         }
                     }
 
-                    // Divider before add button
                     Box(
                         modifier = Modifier
                             .width(1.dp)
@@ -871,12 +805,8 @@ private fun GroupPill(
                             .background(Color(group.color).copy(alpha = 0.3f))
                     )
 
-                    // Add tab button
                     IconButton(
                         onClick = {
-                            // Create new tab and add to this group. Default-profile
-                            // groups now carry contextId == null (shared with
-                            // custom tabs' Gecko partition).
                             viewModel.createNewTabInGroup(group.groupId, group.contextId)
                         },
                         modifier = Modifier
@@ -896,7 +826,6 @@ private fun GroupPill(
         }
     }
 
-    // Show tab menu when triggered
     if (showTabMenu && menuTab != null) {
         ShowTabMenu(
             tab = menuTab!!,

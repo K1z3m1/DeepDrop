@@ -16,7 +16,6 @@ class LRHistorySuggestionProvider(
     private val maxNumberOfSuggestions: Int = 20,
     private val suggestionsHeader: String? = null,
 ) : AwesomeBar.SuggestionProvider {
-
     override val id: String = UUID.randomUUID().toString()
 
     override fun groupTitle(): String? = suggestionsHeader

@@ -12,7 +12,6 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.prirai.android.lr.BrowserActivity
@@ -40,16 +39,33 @@ import com.prirai.android.lr.ui.theme.LRTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import mozilla.components.browser.state.selector.getNormalOrPrivateTabs
 import mozilla.components.browser.state.selector.normalTabs
 import mozilla.components.browser.state.selector.privateTabs
 import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.lib.state.ext.flowScoped
 import mozilla.components.lib.state.ext.observeAsComposableState
+import android.content.Intent
+import android.view.Gravity
+import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import com.prirai.android.lr.addons.ExtensionsBottomSheetFragment
+import com.prirai.android.lr.browser.FakeTab
+import com.prirai.android.lr.browser.SwipeGestureCoordinatorLayout
+import com.prirai.android.lr.browser.profile.BrowserProfile
+import com.prirai.android.lr.browser.profile.ProfileManager
+import com.prirai.android.lr.browser.tabs.TabsBottomSheetFragment
+import com.prirai.android.lr.browser.tabs.compose.TabSheetStateManager
+import com.prirai.android.lr.browser.toolbar.HomeToolbarGestureHandler
+import com.prirai.android.lr.components.menu.Material3BrowserMenu
+import com.prirai.android.lr.history.HistoryActivity
+import com.prirai.android.lr.settings.activity.SettingsActivity
+import com.prirai.android.lr.theme.ThemeManager
+import com.prirai.android.lr.toolbar.ToolbarActionsListener
 
 class ComposeHomeFragment : Fragment() {
-
     private val browsingModeManager get() = (activity as BrowserActivity).browsingModeManager
     private val components get() = requireContext().components
 
@@ -57,7 +73,6 @@ class ComposeHomeFragment : Fragment() {
     private var unifiedToolbar: UnifiedToolbar? = null
     
     companion object {
-        // Flag to prevent automatic navigation back to browser when explicitly navigating to home
         private var shouldPreventAutoNavigation = false
         
         fun navigateToHome() {
@@ -68,7 +83,6 @@ class ComposeHomeFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Shortcut DB schema + migrations live in ShortcutDatabase.getInstance.
         val database = ShortcutDatabase.getInstance(requireContext())
 
         val factory = HomeViewModelFactory(
@@ -85,26 +99,15 @@ class ComposeHomeFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        // Create the swipe-intercepting CoordinatorLayout as root container
-        // for the homepage. It hosts the tab-switch swipe gesture the same
-        // way BrowserFragment's SwipeGestureLayout does: interception at the
-        // ancestor lets the swipe start on the toolbar's address bar even
-        // though tapping it opens edit mode (a clickable child).
-        val coordinatorLayout = com.prirai.android.lr.browser.SwipeGestureCoordinatorLayout(requireContext()).apply {
+        val coordinatorLayout = SwipeGestureCoordinatorLayout(requireContext()).apply {
             id = View.generateViewId()
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
-            // IMPORTANT: Don't use fitsSystemWindows here!
-            // UnifiedToolbar handles window insets directly via its own WindowInsetsListener.
-            // Setting fitsSystemWindows=true here would add extra padding at the bottom
-            // (for navigation bar), causing inconsistent spacing compared to BrowserFragment
-            // which doesn't use fitsSystemWindows in its layout XML.
             fitsSystemWindows = false
         }
 
-        // Create ComposeView for the main content
         val composeView = ComposeView(requireContext()).apply {
             id = View.generateViewId()
             layoutParams = CoordinatorLayout.LayoutParams(
@@ -115,7 +118,6 @@ class ComposeHomeFragment : Fragment() {
             setContent {
                 val store = requireContext().components.store
                 
-                // Observe selected tab to trigger recomposition when it changes (which happens during profile switch)
                 val selectedTabId by store.observeAsComposableState { state -> state.selectedTabId }
                 
                 val selectedTab = selectedTabId?.let { id ->
@@ -148,7 +150,7 @@ class ComposeHomeFragment : Fragment() {
                 }
 
                 val profileManager =
-                    com.prirai.android.lr.browser.profile.ProfileManager.getInstance(requireContext())
+                    ProfileManager.getInstance(requireContext())
                 val currentProfile = run {
                     val tabContextId = selectedTab?.contextId
                     when {
@@ -178,13 +180,10 @@ class ComposeHomeFragment : Fragment() {
                     else -> null
                 }
                 
-                // Check if toolbar is at top
                 val isToolbarAtTop = prefs.toolbarPosition == ToolbarPosition.TOP.ordinal
                 
-                // Get homepage type
                 val homepageType = prefs.homepageType
                 
-                // Get wallpaper dimming preference
                 val wallpaperDimmed = prefs.keepWallpaperDimmed
 
                 LRTheme(
@@ -203,11 +202,9 @@ class ComposeHomeFragment : Fragment() {
                         wallpaperDimmed = wallpaperDimmed,
                         onShortcutClick = { shortcut ->
                             components.sessionUseCases.loadUrl(shortcut.url)
-                            // Navigate to browser to show the loaded page
                             try {
                                 findNavController().navigate(R.id.browserFragment)
                             } catch (e: Exception) {
-                                // Ignore navigation errors
                             }
                         },
                         onShortcutDelete = { shortcut ->
@@ -223,9 +220,9 @@ class ComposeHomeFragment : Fragment() {
                         onShortcutAdd = { viewModel.showAddShortcutDialog() },
                         onHistoryClick = {
                             startActivity(
-                                android.content.Intent(
+                                Intent(
                                     requireContext(),
-                                    com.prirai.android.lr.history.HistoryActivity::class.java
+                                    HistoryActivity::class.java
                                 )
                             )
                         },
@@ -244,19 +241,9 @@ class ComposeHomeFragment : Fragment() {
                             }
                         },
                         onRecentlyClosedClick = { item ->
-                            val tab = store.state.closedTabs.find { it.id == item.id } ?: return@HomeScreen
-                            viewLifecycleOwner.lifecycleScope.launch {
-                                components.tabsUseCases.restore(
-                                    tab,
-                                    components.recentlyClosedTabsStorage.engineStateStorage(),
-                                )
-                                store.dispatch(
-                                    mozilla.components.browser.state.action.RecentlyClosedAction.RemoveClosedTabAction(tab)
-                                )
-                            }
+                            components.sessionUseCases.loadUrl(item.url)
                         },
                         onSearchClick = {
-                            // Pass current selected tab ID for proper context
                             val sessionId = components.store.state.selectedTabId
                             val directions = NavGraphDirections.actionGlobalSearchDialog(sessionId = sessionId)
                             findNavController().navigate(directions)
@@ -275,10 +262,8 @@ class ComposeHomeFragment : Fragment() {
             }
         }
 
-        // Add compose view to coordinator layout
         coordinatorLayout.addView(composeView)
 
-        // Setup UnifiedToolbar in the same coordinatorLayout
         setupUnifiedToolbar(coordinatorLayout)
 
         return coordinatorLayout
@@ -288,10 +273,8 @@ class ComposeHomeFragment : Fragment() {
         val prefs = UserPreferences(requireContext())
         requireContext().components.tabGroupManager
 
-        // Create toolbar interactor
         val toolbarInteractor = object : BrowserToolbarViewInteractor {
             override fun onBrowserToolbarPaste(text: String) {
-                // Pass current selected tab ID so search dialog knows the context
                 val sessionId = components.store.state.selectedTabId
                 val directions = NavGraphDirections.actionGlobalSearchDialog(sessionId = sessionId)
                 findNavController().navigate(directions)
@@ -302,28 +285,24 @@ class ComposeHomeFragment : Fragment() {
             }
 
             override fun onBrowserToolbarClicked() {
-                // Pass current selected tab ID so search dialog knows the context
                 val sessionId = components.store.state.selectedTabId
                 val directions = NavGraphDirections.actionGlobalSearchDialog(sessionId = sessionId)
                 findNavController().navigate(directions)
             }
 
             override fun onBrowserToolbarMenuItemTapped(item: ToolbarMenu.Item) {
-                // Handle menu items if needed
             }
 
             override fun onTabCounterClicked() {
                 val tabsBottomSheet =
-                    com.prirai.android.lr.browser.tabs.TabsBottomSheetFragment.newInstance()
-                tabsBottomSheet.show(parentFragmentManager, com.prirai.android.lr.browser.tabs.TabsBottomSheetFragment.TAG)
+                    TabsBottomSheetFragment.newInstance()
+                tabsBottomSheet.show(parentFragmentManager, TabsBottomSheetFragment.TAG)
             }
 
             override fun onScrolled(offset: Int) {
-                // Handle scroll if needed
             }
         }
 
-        // Create UnifiedToolbar in the coordinatorLayout (not fragment container)
         unifiedToolbar = UnifiedToolbar.create(
             context = requireContext(),
             parent = coordinatorLayout,
@@ -333,10 +312,8 @@ class ComposeHomeFragment : Fragment() {
             store = components.store
         )
         
-        // Add swipe gesture support to toolbar for tab switching
         setupToolbarGestureHandler(coordinatorLayout)
         
-        // For TOP toolbar mode, add bottom components directly to fragment layout
         if (prefs.toolbarPosition == ToolbarPosition.TOP.ordinal) {
             val bottomContainer = unifiedToolbar?.getBottomComponentsContainer()
             
@@ -345,12 +322,11 @@ class ComposeHomeFragment : Fragment() {
                     CoordinatorLayout.LayoutParams.MATCH_PARENT,
                     CoordinatorLayout.LayoutParams.WRAP_CONTENT
                 ).apply {
-                    gravity = android.view.Gravity.BOTTOM
+                    gravity = Gravity.BOTTOM
                 }
                 
-                // Apply window insets to avoid navigation bar
-                androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(container) { view, insets ->
-                    val systemBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+                ViewCompat.setOnApplyWindowInsetsListener(container) { view, insets ->
+                    val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
                     view.setPadding(0, 0, 0, systemBars.bottom)
                     insets
                 }
@@ -358,19 +334,15 @@ class ComposeHomeFragment : Fragment() {
                 coordinatorLayout.addView(container, layoutParams)
                 container.visibility = View.VISIBLE
                 
-                // Request insets to be applied
-                androidx.core.view.ViewCompat.requestApplyInsets(container)
+                ViewCompat.requestApplyInsets(container)
             }
         }
 
-        // Set tab selection listener - using EXACT same approach as TabsBottomSheetFragment
         unifiedToolbar?.setOnTabSelectedListener { tabId ->
             components.tabsUseCases.selectTab(tabId)
             
-            // Navigate to browser if the selected tab is not homepage
             val selectedTab = components.store.state.tabs.find { it.id == tabId }
             if (selectedTab?.content?.url != "about:homepage" && selectedTab?.content?.url?.isNotBlank() == true) {
-                // Use activity's openToBrowser method like TabsBottomSheetFragment does
                 (requireActivity() as BrowserActivity).openToBrowser(
                     from = com.prirai.android.lr.BrowserDirection.FromHome,
                     customTabSessionId = tabId
@@ -378,9 +350,8 @@ class ComposeHomeFragment : Fragment() {
             }
         }
 
-        // Setup contextual toolbar listener
         unifiedToolbar?.setContextualToolbarListener(object :
-            com.prirai.android.lr.toolbar.ToolbarActionsListener {
+            ToolbarActionsListener {
             override fun onBackClicked() {
                 handleTabSwipe(false, components.store.state.selectedTab?.content?.private ?: false)
             }
@@ -390,25 +361,21 @@ class ComposeHomeFragment : Fragment() {
             }
 
             override fun onShareClicked() {
-                // Not applicable for homepage
             }
 
             override fun onSearchClicked() {
-                // Pass current selected tab ID for proper context
                 val sessionId = components.store.state.selectedTabId
                 val directions = NavGraphDirections.actionGlobalSearchDialog(sessionId = sessionId)
                 findNavController().navigate(directions)
             }
 
             override fun onNewTabClicked() {
-                // Get current profile info for contextId
-                val profileManager = com.prirai.android.lr.browser.profile.ProfileManager.getInstance(requireContext())
+                val profileManager = ProfileManager.getInstance(requireContext())
                 val isPrivateMode = components.store.state.selectedTab?.content?.private ?: browsingModeManager.mode.isPrivate
                 val currentProfile = profileManager.getActiveProfile()
-                val contextId = com.prirai.android.lr.browser.profile.BrowserProfile
+                val contextId = BrowserProfile
                     .contextIdFor(currentProfile, isPrivateMode)
 
-                // Create new tab with about:homepage
                 components.tabsUseCases.addTab(
                     url = "about:homepage",
                     selectTab = true,
@@ -416,28 +383,26 @@ class ComposeHomeFragment : Fragment() {
                     contextId = contextId
                 )
                 
-                // Trigger autofocus on the newly created tab
-                com.prirai.android.lr.browser.tabs.compose.TabSheetStateManager.notifyTabSheetDismissed()
+                TabSheetStateManager.notifyTabSheetDismissed()
                 
-                // Navigate to browser fragment to show the new tab
                 findNavController().navigate(R.id.browserFragment)
             }
 
             override fun onTabCountClicked() {
                 val tabsBottomSheet =
-                    com.prirai.android.lr.browser.tabs.TabsBottomSheetFragment.newInstance()
+                    TabsBottomSheetFragment.newInstance()
                 tabsBottomSheet.show(
                     parentFragmentManager,
-                    com.prirai.android.lr.browser.tabs.TabsBottomSheetFragment.TAG
+                    TabsBottomSheetFragment.TAG
                 )
             }
 
             override fun onExtensionsClicked() {
                 val extensionsBottomSheet =
-                    com.prirai.android.lr.addons.ExtensionsBottomSheetFragment.newInstance()
+                    ExtensionsBottomSheetFragment.newInstance()
                 extensionsBottomSheet.show(
                     parentFragmentManager,
-                    com.prirai.android.lr.addons.ExtensionsBottomSheetFragment.TAG
+                    ExtensionsBottomSheetFragment.TAG
                 )
             }
 
@@ -451,13 +416,9 @@ class ComposeHomeFragment : Fragment() {
             }
         })
 
-
-        // Apply private mode if needed
         val isPrivate = components.store.state.selectedTab?.content?.private ?: browsingModeManager.mode.isPrivate
         unifiedToolbar?.applyPrivateMode(isPrivate)
         
-        // Force tab bar to update with current profile's tabs
-        // This ensures the tab bar shows the correct profile immediately when fragment loads
         forceTabBarUpdate()
     }
 
@@ -467,17 +428,9 @@ class ComposeHomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Previously tried `view.findViewById<CoordinatorLayout>(R.id.homeLayout)
-        // ?.setLayerType(LAYER_TYPE_HARDWARE, null)` to "prevent rendering
-        // artifacts", but the host view is a `ComposeView` with no legacy
-        // homeLayout child, so the lookup always returned null and the
-        // safe-call did nothing. The call-site + its layout dependency
-        // are both removed.
-
         updateToolbarStyling()
         restoreLastMode()
 
-        // Observe tab state changes - only navigate when URL actually changes to non-homepage
         val store = components.store
         store.flowScoped(viewLifecycleOwner, Dispatchers.Main) { flow ->
             flow.map { state -> 
@@ -487,56 +440,44 @@ class ComposeHomeFragment : Fragment() {
                 }
             }.distinctUntilChanged()
             .collect { url ->
-                // Don't auto-navigate if we explicitly navigated to home from browser
                 if (shouldPreventAutoNavigation) {
                     shouldPreventAutoNavigation = false
                     return@collect
                 }
                 
-                // Only navigate to browser when URL changes to a non-homepage URL
-                // This prevents automatic navigation back when user explicitly navigates to home
                 if (url != null && url != "about:homepage" && url != "about:privatebrowsing") {
-                    // Navigate to browser fragment to show the tab
                     if (isAdded && view != null) {
                         try {
                             findNavController().navigate(R.id.browserFragment)
                         } catch (e: Exception) {
-                            // Navigation failed, ignore
                         }
                     }
                 }
             }
         }
         
-        // Observe selected tab changes to update tab bar filtering
         store.flowScoped(viewLifecycleOwner, Dispatchers.Main) { flow ->
             flow.map { state -> state.selectedTabId }
                 .distinctUntilChanged()
                 .collect { _ ->
-                    // Check if fragment is still attached before accessing context
                     if (!isAdded || context == null) return@collect
                     
-                    
-                    // Also update private mode state
                     val isPrivate = store.state.selectedTab?.content?.private ?: browsingModeManager.mode.isPrivate
                     unifiedToolbar?.applyPrivateMode(isPrivate)
                 }
         }
 
-        // Handle double back press to exit app
-        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : androidx.activity.OnBackPressedCallback(true) {
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 val currentTime = System.currentTimeMillis()
                 if (currentTime - lastBackPressTime < BACK_PRESS_TIMEOUT) {
-                    // Second press within timeout - close app
                     requireActivity().finish()
                 } else {
-                    // First press - show message
                     lastBackPressTime = currentTime
-                    android.widget.Toast.makeText(
+                    Toast.makeText(
                         requireContext(),
                         "Perform back gesture again to close app",
-                        android.widget.Toast.LENGTH_SHORT
+                        Toast.LENGTH_SHORT
                     ).show()
                 }
             }
@@ -556,11 +497,9 @@ class ComposeHomeFragment : Fragment() {
             return
         }
 
-        // Check the actual selected tab's private state, not the global browsing mode
         val isPrivate = components.store.state.selectedTab?.content?.private ?: browsingModeManager.mode.isPrivate
         
-        // Use ThemeManager to apply system bars theme
-        com.prirai.android.lr.theme.ThemeManager.applySystemBarsTheme(
+        ThemeManager.applySystemBarsTheme(
             requireActivity(),
             isPrivate
         )
@@ -574,9 +513,8 @@ class ComposeHomeFragment : Fragment() {
     }
 
     private fun restoreDefaultStyling() {
-        // Use ThemeManager to restore system bars based on actual tab state
         val isPrivate = components.store.state.selectedTab?.content?.private ?: browsingModeManager.mode.isPrivate
-        com.prirai.android.lr.theme.ThemeManager.applySystemBarsTheme(
+        ThemeManager.applySystemBarsTheme(
             requireActivity(),
             isPrivate
         )
@@ -601,54 +539,25 @@ class ComposeHomeFragment : Fragment() {
         }
     }
 
-    private fun saveLastMode(isPrivate: Boolean, profileId: String?) {
-        val prefs = requireContext().getSharedPreferences("home_prefs", android.content.Context.MODE_PRIVATE)
-        prefs.edit().apply {
-            putBoolean("last_was_private", isPrivate)
-            putString("last_profile_id", profileId)
-            apply()
-        }
-    }
-    
-    private fun updateProfileUI() {
-        // Update toolbar styling to reflect the new mode (private/normal)
-        updateToolbarStyling()
-        
-        // The Compose UI is reactive and observes store.state.selectedTabId
-        // When we select/create a tab with the new profile context above,
-        // the Compose HomeScreen will automatically recompose and show the correct profile info
-        // because it reads from store.state.selectedTab?.contextId in its setContent block
-        
-        // Update the unified toolbar's tab count and private mode state
-        val isPrivate = components.store.state.selectedTab?.content?.private ?: browsingModeManager.mode.isPrivate
-        unifiedToolbar?.applyPrivateMode(isPrivate)
-    }
-
     private fun restoreLastMode() {
-        val profileManager = com.prirai.android.lr.browser.profile.ProfileManager.getInstance(requireContext())
+        val profileManager = ProfileManager.getInstance(requireContext())
         val isPrivate = profileManager.isPrivateMode()
         
-        // Sync browsing mode with ProfileManager's state
         if (isPrivate) {
             browsingModeManager.mode = BrowsingMode.Private
         } else {
             browsingModeManager.mode = BrowsingMode.Normal
         }
-        
-        // ProfileManager already persists the active profile, so we just use it directly
-        // No need to maintain separate SharedPreferences for profile state
     }
 
     private fun setupToolbarGestureHandler(coordinatorLayout: CoordinatorLayout) {
         val toolbar = unifiedToolbar?.getBrowserToolbar() ?: return
 
-        // Create a fake tab for preview (will not be visible on homepage)
-        val fakeTab = com.prirai.android.lr.browser.FakeTab(requireContext())
+        val fakeTab = FakeTab(requireContext())
         fakeTab.visibility = View.GONE
         coordinatorLayout.addView(fakeTab)
         
-        // Create gesture handler for home page
-        val gestureHandler = com.prirai.android.lr.browser.toolbar.HomeToolbarGestureHandler(
+        val gestureHandler = HomeToolbarGestureHandler(
             activity = requireActivity(),
             contentLayout = coordinatorLayout,
             tabPreview = fakeTab,
@@ -657,29 +566,22 @@ class ComposeHomeFragment : Fragment() {
             selectTabUseCase = components.tabsUseCases.selectTab
         )
         
-        // The root SwipeGestureCoordinatorLayout intercepts the swipe before
-        // the toolbar's clickable children (URL display, buttons) can
-        // consume it - the same hosting model as BrowserFragment's
-        // SwipeGestureLayout. The old toolbar OnTouchListener never saw
-        // swipes that started on the address bar for exactly that reason.
-        (coordinatorLayout as? com.prirai.android.lr.browser.SwipeGestureCoordinatorLayout)
+        (coordinatorLayout as? SwipeGestureCoordinatorLayout)
             ?.addGestureListener(gestureHandler)
     }
 
     private fun showNativeMenu() {
-        val profileManager = com.prirai.android.lr.browser.profile.ProfileManager.getInstance(requireContext())
+        val profileManager = ProfileManager.getInstance(requireContext())
         val currentProfile = profileManager.getActiveProfile()
         
-        // Create menu items using custom Material 3 menu
         val menuItems = listOf(
-            com.prirai.android.lr.components.menu.Material3BrowserMenu.MenuItem.Action(
+            Material3BrowserMenu.MenuItem.Action(
                 id = "new_tab",
                 title = getString(R.string.mozac_browser_menu_new_tab),
                 iconRes = R.drawable.mozac_ic_tab_new_24,
                 onClick = {
-                    // Ensure we're using the current active profile
                     val activeProfile = profileManager.getActiveProfile()
-                    val contextId = com.prirai.android.lr.browser.profile.BrowserProfile
+                    val contextId = BrowserProfile
                         .contextIdFor(activeProfile, isPrivate = false)
                     components.tabsUseCases.addTab(
                         url = "about:homepage",
@@ -689,7 +591,7 @@ class ComposeHomeFragment : Fragment() {
                     )
                 }
             ),
-            com.prirai.android.lr.components.menu.Material3BrowserMenu.MenuItem.Action(
+            Material3BrowserMenu.MenuItem.Action(
                 id = "new_private_tab",
                 title = getString(R.string.mozac_browser_menu_new_private_tab),
                 iconRes = mozilla.components.ui.icons.R.drawable.mozac_ic_private_mode_24,
@@ -703,21 +605,21 @@ class ComposeHomeFragment : Fragment() {
                     )
                 }
             ),
-            com.prirai.android.lr.components.menu.Material3BrowserMenu.MenuItem.Divider,
-            com.prirai.android.lr.components.menu.Material3BrowserMenu.MenuItem.Action(
+            Material3BrowserMenu.MenuItem.Divider,
+            Material3BrowserMenu.MenuItem.Action(
                 id = "history",
                 title = getString(R.string.action_history),
                 iconRes = mozilla.components.ui.icons.R.drawable.mozac_ic_history_24,
                 onClick = {
-                    startActivity(android.content.Intent(
+                    startActivity(Intent(
                         requireContext(),
-                        com.prirai.android.lr.history.HistoryActivity::class.java
+                        HistoryActivity::class.java
                     ).apply {
-                        flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
                     })
                 }
             ),
-            com.prirai.android.lr.components.menu.Material3BrowserMenu.MenuItem.Action(
+            Material3BrowserMenu.MenuItem.Action(
                 id = "bookmarks",
                 title = getString(R.string.action_bookmarks),
                 iconRes = mozilla.components.ui.icons.R.drawable.mozac_ic_bookmark_24,
@@ -726,102 +628,56 @@ class ComposeHomeFragment : Fragment() {
                     bookmarksBottomSheet.show(parentFragmentManager, "BookmarksBottomSheet")
                 }
             ),
-            com.prirai.android.lr.components.menu.Material3BrowserMenu.MenuItem.Divider,
-            com.prirai.android.lr.components.menu.Material3BrowserMenu.MenuItem.Action(
+            Material3BrowserMenu.MenuItem.Divider,
+            Material3BrowserMenu.MenuItem.Action(
                 id = "settings",
                 title = getString(R.string.settings),
                 iconRes = mozilla.components.ui.icons.R.drawable.mozac_ic_settings_24,
                 onClick = {
-                    startActivity(android.content.Intent(
+                    startActivity(Intent(
                         requireContext(),
-                        com.prirai.android.lr.settings.activity.SettingsActivity::class.java
+                        SettingsActivity::class.java
                     ).apply {
-                        flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
                     })
                 }
             ),
-            com.prirai.android.lr.components.menu.Material3BrowserMenu.MenuItem.Action(
+            Material3BrowserMenu.MenuItem.Action(
                 id = "addons",
                 title = getString(R.string.extensions),
                 iconRes = R.drawable.mozac_ic_extension_24,
                 onClick = {
-                    val extensionsBottomSheet = com.prirai.android.lr.addons.ExtensionsBottomSheetFragment.newInstance()
-                    extensionsBottomSheet.show(parentFragmentManager, com.prirai.android.lr.addons.ExtensionsBottomSheetFragment.TAG)
+                    val extensionsBottomSheet = ExtensionsBottomSheetFragment.newInstance()
+                    extensionsBottomSheet.show(parentFragmentManager, ExtensionsBottomSheetFragment.TAG)
                 }
             )
         )
         
-        // Show menu from UnifiedToolbar's menu button
         unifiedToolbar?.showMenu(menuItems)
     }
     
-    /**
-     * Force the tab bar to update with the current profile's tabs.
-     * Called when ComposeHomeFragment loads to ensure correct filtering immediately.
-     */
     private fun forceTabBarUpdate() {
         if (!isAdded || context == null) return
         
-        val profileManager = com.prirai.android.lr.browser.profile.ProfileManager.getInstance(requireContext())
+        val profileManager = ProfileManager.getInstance(requireContext())
         val store = components.store.state
         val isPrivateMode = profileManager.isPrivateMode()
         val currentProfile = profileManager.getActiveProfile()
         
-        // Determine expected contextId based on current browsing mode
         val expectedContextId = if (isPrivateMode) {
             "private"
         } else {
             "profile_${currentProfile.id}"
         }
         
-        // Filter tabs to only show those belonging to current profile/mode
         val filteredTabs = store.tabs.filter { tab ->
             if (tab.contextId == null) {
-                // Guest tabs from custom tabs - show in normal mode only
                 !isPrivateMode && !tab.content.private
             } else {
-                // Regular profile tabs
                 tab.content.private == isPrivateMode && tab.contextId == expectedContextId
             }
         }
         
-        // Force update the tab bar
         unifiedToolbar?.forceUpdateTabBar(filteredTabs, store.selectedTabId)
-    }
-    
-    /**
-     * Get tab count filtered by current profile + guest tabs (null contextId)
-     * Uses the same logic as the tab bar to ensure consistency
-     */
-    private fun getFilteredTabCount(): Int {
-        // Safety check - return 0 if fragment is not attached
-        if (!isAdded || context == null) return 0
-        
-        val store = components.store.state
-        val selectedTab = store.selectedTab
-        
-        // Determine expected contextId using both selected tab AND active profile
-        val profileManager = com.prirai.android.lr.browser.profile.ProfileManager.getInstance(requireContext())
-        val isPrivateMode = selectedTab?.content?.private ?: browsingModeManager.mode.isPrivate
-        val currentProfile = profileManager.getActiveProfile()
-        
-        val expectedContextId: String? = com.prirai.android.lr.browser.profile.BrowserProfile
-            .contextIdFor(currentProfile, isPrivateMode)
-
-        return store.tabs.count { tab ->
-            val tabIsPrivate = tab.content.private
-
-            if (tabIsPrivate != isPrivateMode) {
-                false
-            } else if (isPrivateMode) {
-                tab.contextId == "private"
-            } else {
-                // Default profile (expectedContextId == null) also matches the
-                // legacy "profile_default" sentinel for installs that still
-                // have un-migrated tabs mid-session.
-                tab.contextId == expectedContextId ||
-                    (expectedContextId == null && tab.contextId == "profile_default")
-            }
-        }
     }
 }

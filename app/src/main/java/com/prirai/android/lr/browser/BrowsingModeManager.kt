@@ -25,7 +25,6 @@ class DefaultBrowsingModeManager(
     private val modeDidChange: (BrowsingMode) -> Unit,
     private val profileDidChange: (BrowserProfile) -> Unit
 ) : BrowsingModeManager {
-
     override var mode: BrowsingMode
         get() = _mode
         set(value) {

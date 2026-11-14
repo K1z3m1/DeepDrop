@@ -15,15 +15,7 @@ interface SwipeGestureListener {
     fun onSwipeFinished(velocityX: Float, velocityY: Float)
 }
 
-/**
- * The touch-interception behavior every swipe host shares: a scroll that a
- * registered listener claims (via [SwipeGestureListener.onSwipeStarted])
- * is intercepted away from the children - which is what lets a swipe start
- * on the toolbar's own clickable children (the URL display opens edit mode
- * on tap) and still reach the tab-switch gesture.
- */
 internal class SwipeGestureHost(context: Context) {
-
     private val gestureListener = object : GestureDetector.SimpleOnGestureListener() {
         override fun onDown(e: MotionEvent): Boolean {
             return true
@@ -84,7 +76,6 @@ internal class SwipeGestureHost(context: Context) {
             }
             MotionEvent.ACTION_MOVE -> {
                 val shouldIntercept = gestureDetector.onTouchEvent(event)
-                // Return true to intercept if we have an active listener
                 shouldIntercept && activeListener != null
             }
             else -> gestureDetector.onTouchEvent(event)
@@ -112,7 +103,6 @@ class SwipeGestureLayout @JvmOverloads constructor(
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
-
     var isSwipeEnabled = true
 
     private val host = SwipeGestureHost(context)
@@ -138,19 +128,11 @@ class SwipeGestureLayout @JvmOverloads constructor(
     }
 }
 
-/**
- * A [CoordinatorLayout] with [SwipeGestureLayout]'s interception behavior.
- * The home fragment builds its view tree programmatically with a
- * CoordinatorLayout root; hosting the interception at that root lets the
- * tab-switch swipe start on the toolbar's address bar, whose tap opens
- * edit mode and would otherwise consume the gesture.
- */
 class SwipeGestureCoordinatorLayout @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
 ) : CoordinatorLayout(context, attrs, defStyleAttr) {
-
     private val host = SwipeGestureHost(context)
 
     fun addGestureListener(listener: SwipeGestureListener) {

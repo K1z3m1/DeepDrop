@@ -29,7 +29,6 @@ import mozilla.components.support.base.feature.UserInteractionHandler
 import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
 import mozilla.components.support.utils.ext.requestInPlacePermissions
 
-
 class WebExtensionPopupFragment : BottomSheetDialogFragment(), UserInteractionHandler, EngineSession.Observer {
     private val promptsFeature = ViewBoundFeatureWrapper<PromptFeature>()
 
@@ -184,7 +183,6 @@ class WebExtensionPopupFragment : BottomSheetDialogFragment(), UserInteractionHa
     override fun onNavigationStateChange(canGoBack: Boolean?, canGoForward: Boolean?) {
         canGoBack?.let { this.canGoBack = canGoBack }
     }
-
 
     override fun onRequestPermissionsResult(
             requestCode: Int,

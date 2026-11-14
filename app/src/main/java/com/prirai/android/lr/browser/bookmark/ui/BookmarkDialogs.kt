@@ -62,17 +62,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-/**
- * The add/edit bookmark dialog of both the bookmarks sheet and the legacy
- * [AddBookmarkSiteDialog] entry point: a [LRAlertDialog] with title/URL
- * fields, and — when creating a new bookmark — the target folder picker and
- * the "add at top of list" option of the original View dialog.
- *
- * Editing mutates the item in place; creating adds a fresh [BookmarkSiteItem]
- * to the (preference-defaulted, user-changeable) target folder. On a
- * successful save the bookmark is also mirrored to the Gecko places storage,
- * exactly as the old View-based dialog did.
- */
 @Composable
 internal fun BookmarkSiteEditDialog(
     manager: BookmarkManager,
@@ -232,11 +221,6 @@ internal fun BookmarkSiteEditDialog(
     }
 }
 
-/**
- * The add/edit folder dialog: a [LRAlertDialog] with the folder name field
- * and the "add at top of list" option (create only), ported from the old
- * View-based add-folder dialog.
- */
 @Composable
 internal fun FolderEditDialog(
     manager: BookmarkManager,
@@ -336,13 +320,6 @@ internal fun FolderEditDialog(
     )
 }
 
-/**
- * The folder picker of the original View-based folder-selection sheet as a
- * [LRAlertDialog]: navigate the folder tree (up button, folder rows), create
- * a subfolder in place, and confirm the folder currently displayed. Folders
- * matching [excludeItems] (or descendants of an excluded folder) are hidden,
- * which is what kept a move target from being the moved folder itself.
- */
 @Composable
 internal fun FolderPickerDialog(
     manager: BookmarkManager,
@@ -461,10 +438,6 @@ internal fun FolderPickerDialog(
     }
 }
 
-/**
- * Confirmation dialog for deleting bookmark items, with the destructive
- * confirm button tinted from the error role.
- */
 @Composable
 internal fun ConfirmBookmarksDeleteDialog(
     message: String,
@@ -493,9 +466,6 @@ internal fun ConfirmBookmarksDeleteDialog(
     )
 }
 
-/**
- * Confirmation dialog for flattening a folder.
- */
 @Composable
 internal fun ConfirmFlattenFolderDialog(
     folderTitle: String,
@@ -521,12 +491,6 @@ internal fun ConfirmFlattenFolderDialog(
     )
 }
 
-/**
- * The sort dialog of the original sheet. All three options perform the same
- * title-ascending sort: the View implementation mapped every entry to
- * `BookmarkSortType.A_Z` (URL and date ordering were never implemented), and
- * that behavior is preserved verbatim.
- */
 @Composable
 internal fun SortBookmarksDialog(
     onDismiss: () -> Unit,
@@ -559,11 +523,6 @@ private fun SortOption(
     }
 }
 
-/**
- * The default folder for a newly added bookmark: the folder pinned in
- * preferences when set, otherwise the root. Port of the old dialog's
- * `getRootPosition()`.
- */
 internal fun defaultBookmarkFolder(context: Context, manager: BookmarkManager): BookmarkFolderItem {
     val prefs = UserPreferences(context)
     if (prefs.bookmarkFolder) {
@@ -575,10 +534,6 @@ internal fun defaultBookmarkFolder(context: Context, manager: BookmarkManager): 
     return manager.root
 }
 
-/**
- * Mirrors a saved bookmark into the Gecko places storage, as the original
- * add-bookmark dialog did after every successful save.
- */
 internal fun syncBookmarkToPlaces(context: Context, url: String, title: String?) {
     CoroutineScope(Dispatchers.IO).launch {
         try {
@@ -609,10 +564,6 @@ internal fun folderDisplayName(context: Context, manager: BookmarkManager, folde
         folder.title ?: context.getString(R.string.bookmark_unnamed_folder)
     }
 
-/**
- * Shares a bookmark URL through the system chooser, as the old popup menu's
- * share action did.
- */
 internal fun shareBookmarkUrl(context: Context, url: String) {
     val shareIntent = Intent().apply {
         action = Intent.ACTION_SEND

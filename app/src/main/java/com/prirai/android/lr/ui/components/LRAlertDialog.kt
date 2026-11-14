@@ -26,26 +26,14 @@ import androidx.compose.ui.window.DialogProperties
 private val HeaderSpacing = 16.dp
 private val ButtonSpacing = 8.dp
 
-/** The spacing every LR dialog shares, including the ones that lay out their own content. */
 object LRDialogDefaults {
-    /** Around the dialog's content, on every side but the bottom. */
     val ContentPadding = 24.dp
 
-    /** Below the row of actions, whose buttons already carry their own touch padding. */
     val BottomPadding = 16.dp
 
-    /** Between the content and the row of actions. */
     val ActionsSpacing = 8.dp
 }
 
-/**
- * LR's alert dialog: Material 3's `AlertDialog`, the same slots, tokens and button order, with
- * a tighter gap above the actions.
- *
- * Hand-rolled on [BasicAlertDialog] because `AlertDialog` fixes that gap at 24 dp through the
- * internal `AlertDialogDefaults.textPadding`, with no parameter to change it; together with a
- * text button's own padding it left a band of empty space above every row of actions.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LRAlertDialog(
@@ -107,7 +95,6 @@ fun LRAlertDialog(
     }
 }
 
-/** Confirm trails dismiss in a row, but leads it when the row wraps, as `AlertDialog` does. */
 @Composable
 private fun DialogButtons(
     confirmButton: @Composable () -> Unit,

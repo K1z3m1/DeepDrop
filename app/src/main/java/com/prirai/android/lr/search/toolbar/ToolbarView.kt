@@ -14,6 +14,8 @@ import mozilla.components.support.ktx.android.view.hideKeyboard
 import com.prirai.android.lr.search.SearchFragmentState
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.graphics.scale
+import mozilla.components.browser.state.search.SearchEngine
+import mozilla.components.concept.toolbar.Toolbar
 
 interface ToolbarInteractor {
     fun onUrlCommitted(url: String)
@@ -23,9 +25,6 @@ interface ToolbarInteractor {
     fun onTextChanged(text: String)
 }
 
-/**
- * View that contains and configures the BrowserToolbar to only be used in its editing mode.
- */
 class ToolbarView(
     private val context: Context,
     private val interactor: ToolbarInteractor,
@@ -34,18 +33,11 @@ class ToolbarView(
     val view: BrowserToolbar,
     engine: Engine
 ) {
-
     @VisibleForTesting
     internal var isInitialized = false
 
-    /**
-     * The engine whose icon was last scaled and installed. Scaling the
-     * engine icon bitmap is real main-thread work; doing it per keystroke
-     * (update() runs on every store emission) contributed to address-bar
-     * typing lag. The icon only changes when the engine does.
-     */
     @VisibleForTesting
-    internal var lastIconEngine: mozilla.components.browser.state.search.SearchEngine? = null
+    internal var lastIconEngine: SearchEngine? = null
 
     init {
         view.apply {
@@ -79,7 +71,7 @@ class ToolbarView(
 
             private = isPrivate
 
-            setOnEditListener(object : mozilla.components.concept.toolbar.Toolbar.OnEditListener {
+            setOnEditListener(object : Toolbar.OnEditListener {
                 override fun onCancelEditing(): Boolean {
                     interactor.onEditingCanceled()
                     return false

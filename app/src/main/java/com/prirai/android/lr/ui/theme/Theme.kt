@@ -137,10 +137,6 @@ private val PrivateAmoledColorScheme = darkColorScheme(
     surfaceContainerHighest = AmoledSurfaceDim
 )
 
-/**
- * The single source of truth for the color scheme the app shows, shared by every
- * [LRTheme] so all surfaces render in the exact palette the user selected.
- */
 @Composable
 private fun resolveLRColorScheme(
     darkTheme: Boolean,
@@ -148,12 +144,9 @@ private fun resolveLRColorScheme(
     amoledMode: Boolean,
     dynamicColor: Boolean
 ) = when {
-    // Private mode with AMOLED
     isPrivateMode && darkTheme && amoledMode -> PrivateAmoledColorScheme
-    // Private mode without AMOLED
     isPrivateMode && darkTheme -> PrivateDarkColorScheme
     isPrivateMode && !darkTheme -> PrivateLightColorScheme
-    // Dynamic colors (Android 12+)
     dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
         val context = LocalContext.current
         if (darkTheme) {
@@ -167,18 +160,11 @@ private fun resolveLRColorScheme(
             dynamicLightColorScheme(context)
         }
     }
-    // Static colors with AMOLED
     darkTheme && amoledMode -> AmoledDarkColorScheme
     darkTheme -> DarkColorScheme
     else -> LightColorScheme
 }
 
-/**
- * The dynamic scheme is already a complete, tuned Material 3 scheme, so it is used
- * as the system delivers it. Only the AMOLED variant changes it, taking the surface
- * ladder to the same near-black steps every static AMOLED palette uses, while
- * keeping the dynamic accents and containers.
- */
 private fun ColorScheme.withBlackSurfaces() =
     copy(
         background = AmoledBlack,
@@ -190,11 +176,6 @@ private fun ColorScheme.withBlackSurfaces() =
         surfaceContainerHighest = AmoledSurfaceDim,
     )
 
-/**
- * LR's Material 3 Expressive theme: [MaterialExpressiveTheme] with the expressive
- * motion scheme, so every component that reads [MotionScheme] specs moves the way
- * Material 3 Expressive defines. All UI surfaces must be wrapped in this theme.
- */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun LRTheme(
@@ -210,21 +191,16 @@ fun LRTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = view.context.findActivity()?.window ?: return@SideEffect
-            // Set status bar and navigation bar colors
             if (isPrivateMode) {
-                // Purple for private mode
                 window.statusBarColor = colorScheme.primary.toArgb()
                 window.navigationBarColor = colorScheme.primary.toArgb()
             } else if (darkTheme && amoledMode) {
-                // Pure black for AMOLED mode
                 window.statusBarColor = AmoledBlack.toArgb()
                 window.navigationBarColor = AmoledBlack.toArgb()
             } else if (darkTheme) {
-                // Dark surface for normal dark mode
                 window.statusBarColor = colorScheme.surface.toArgb()
                 window.navigationBarColor = colorScheme.surface.toArgb()
             }
-            // Set light/dark status bar icons
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme && !isPrivateMode
         }
     }
@@ -238,7 +214,6 @@ fun LRTheme(
     )
 }
 
-/** Rounder than the Material default (4/8/12/16/28): softer cards, sheets and dialogs. */
 private val LRShapes = Shapes(
     extraSmall = RoundedCornerShape(8.dp),
     small = RoundedCornerShape(12.dp),

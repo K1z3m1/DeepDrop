@@ -8,7 +8,6 @@ interface ToolbarMenu {
         data object Settings : Item()
         data class RequestDesktop(val isChecked: Boolean) : Item()
         data object Translate : Item()
-        data object FindInPage : Item()
         data object Share : Item()
         data class Back(val viewHistory: Boolean) : Item()
         data class Forward(val viewHistory: Boolean) : Item()

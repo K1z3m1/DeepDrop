@@ -7,7 +7,6 @@ import java.io.IOException
 import java.io.Serializable
 
 class BookmarkFolderItem(title: String?, var parent: BookmarkFolderItem?, id: Long) : BookmarkItem(title, id), Serializable {
-
     internal val list: ArrayList<BookmarkItem> = ArrayList()
 
     val itemList: MutableList<BookmarkItem>

@@ -1,29 +1,22 @@
 package com.prirai.android.lr.request
 
-// import com.prirai.android.lr.browser.home.HomeFragmentDirections // Removed - using BrowserFragment for homepage
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import androidx.core.content.ContextCompat.startActivity
 import androidx.core.net.toUri
 import androidx.navigation.NavController
 import com.prirai.android.lr.addons.AddonsActivity
 import com.prirai.android.lr.ext.components
 import com.prirai.android.lr.preferences.UserPreferences
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import mozilla.components.browser.errorpages.ErrorPages
 import mozilla.components.browser.errorpages.ErrorType
 import mozilla.components.concept.engine.EngineSession
 import mozilla.components.concept.engine.request.RequestInterceptor
 import mozilla.components.concept.engine.request.RequestInterceptor.InterceptionResponse
-import mozilla.components.browser.state.selector.selectedTab
 import java.lang.ref.WeakReference
-
+import com.prirai.android.lr.settings.HomepageChoice
 
 class AppRequestInterceptor(val context: Context) : RequestInterceptor {
-
     private var navController: WeakReference<NavController>? = null
 
     fun setNavController(navController: NavController) {
@@ -40,12 +33,10 @@ class AppRequestInterceptor(val context: Context) : RequestInterceptor {
         isDirectNavigation: Boolean,
         isSubframeRequest: Boolean
     ): InterceptionResponse? {
-        // Handle homepage type preference
         if (uri == "about:homepage" || uri == "about:blank") {
             val prefs = UserPreferences(context)
             return when (prefs.homepageType) {
-                com.prirai.android.lr.settings.HomepageChoice.BLANK_PAGE.ordinal -> {
-                    // Blank page - load about:blank
+                HomepageChoice.BLANK_PAGE.ordinal -> {
                     if (uri != "about:blank") {
                         InterceptionResponse.Url("about:blank")
                     } else {
@@ -53,7 +44,6 @@ class AppRequestInterceptor(val context: Context) : RequestInterceptor {
                     }
                 }
                 else -> {
-                    // VIEW and ONLY_SEARCH_BAR modes - use about:homepage (default)
                     if (uri == "about:blank") {
                         InterceptionResponse.Url("about:homepage")
                     } else {
@@ -63,9 +53,6 @@ class AppRequestInterceptor(val context: Context) : RequestInterceptor {
             }
         }
         
-        // SECURITY: lr:// is not a scheme any in-app page emits (the
-        // homepage is native Compose). It used to mutate shortcuts and open
-        // tabs for ANY web page that navigated to it, so it is now dropped.
         if (uri.startsWith("lr://", ignoreCase = true)) {
             return InterceptionResponse.Deny
         }
@@ -89,7 +76,6 @@ class AppRequestInterceptor(val context: Context) : RequestInterceptor {
     ): RequestInterceptor.ErrorResponse {
         val riskLevel = getErrorCategory(errorType)
 
-        // Skip interception for about:homepage - just return the default error page
         if (uri == "about:homepage") {
             return RequestInterceptor.ErrorResponse(uri)
         }
@@ -111,10 +97,8 @@ class AppRequestInterceptor(val context: Context) : RequestInterceptor {
         if (hasUserGesture && uri.startsWith("https://addons.mozilla.org") && !UserPreferences(
                 context
             ).customAddonCollection) {
-
             val matchResult = "https://addons.mozilla.org/firefox/downloads/file/([^\\s]+)/([^\\s]+\\.xpi)".toRegex().matchEntire(uri)
             if (matchResult != null) {
-
                 matchResult.groupValues.getOrNull(1)?.let { addonId ->
                     val intent = Intent(context, AddonsActivity::class.java)
                     intent.putExtra("ADDON_ID", addonId)
@@ -127,7 +111,6 @@ class AppRequestInterceptor(val context: Context) : RequestInterceptor {
             }
         }
 
-        // In all other case we let the original request proceed.
         return null
     }
 
@@ -173,94 +156,6 @@ class AppRequestInterceptor(val context: Context) : RequestInterceptor {
         Malware(MALWARE_ERROR_PAGE),
     }
 
-
-    // REMOVED: generateHomepageHtml() - Replaced by homepage.html in assets
-    // This function is no longer used - about:homepage now loads from assets/homepage.html
-
-    
-
-    /**
-     * Handles cross-domain link clicks by creating new tabs instead of navigating current tab.
-     * Same-domain links navigate in current tab, cross-domain links create new grouped tabs.
-     */
-    private fun handleCrossDomainLinkInterception(
-        engineSession: EngineSession,
-        newUri: String,
-        lastUri: String?
-    ): Boolean {
-        // Skip internal URLs
-        if (newUri.startsWith("about:") || 
-            newUri.startsWith("chrome:") || 
-            newUri.startsWith("file:") ||
-            newUri.isBlank() ||
-            lastUri.isNullOrBlank()) {
-            return false
-        }
-        
-        try {
-            val store = context.components.store
-            val currentTab = store.state.tabs.find { tab ->
-                tab.engineState.engineSession == engineSession
-            }
-            
-            if (currentTab != null) {
-                val currentDomain = extractDomain(lastUri)
-                val targetDomain = extractDomain(newUri)
-                
-                
-                // If domains are different, open in new tab and group
-                if (currentDomain != targetDomain && 
-                    currentDomain != "unknown" && 
-                    targetDomain != "unknown") {
-                    
-                    
-                    // Create new tab for cross-domain link
-                    CoroutineScope(Dispatchers.Main).launch {
-                        try {
-                            val tabsUseCases = context.components.tabsUseCases
-                            val tabGroupManager = context.components.tabGroupManager
-                            
-                            val newTabId = tabsUseCases.addTab.invoke(
-                                url = newUri,
-                                selectTab = true,
-                                source = mozilla.components.browser.state.state.SessionState.Source.Internal.UserEntered
-                            )
-                            
-                            // Group with source tab
-                            tabGroupManager.handleNewTabFromLink(
-                                newTabId = newTabId,
-                                newTabUrl = newUri,
-                                sourceTabId = currentTab.id,
-                                sourceTabUrl = lastUri
-                            )
-
-                        } catch (e: Exception) {
-                            // Non-fatal: auto-grouping the newly opened cross-
-                            // domain tab failed. The tab itself is still open
-                            // and usable.
-                            android.util.Log.w("AppRequestInterceptor", "Cross-domain auto-group failed", e)
-                        }
-                    }
-
-                    // Return true to deny the original navigation (prevent same-tab navigation)
-                    return true
-                } else {
-                    // Same domain - allow normal navigation in current tab
-                    return false
-                }
-            }
-        } catch (e: Exception) {
-            // If the cross-domain heuristic itself throws, fall back to letting
-            // the engine handle the navigation normally.
-            android.util.Log.w("AppRequestInterceptor", "Cross-domain heuristic failed", e)
-        }
-
-        return false
-    }
-
-    /**
-     * Extract domain from URL for comparison.
-     */
     private fun extractDomain(url: String): String {
         return try {
             url.toUri().host?.replace("www.", "") ?: "unknown"

@@ -10,6 +10,7 @@ import com.prirai.android.lr.ext.enableEdgeToEdgeMode
 import com.prirai.android.lr.ext.applyPersistentInsets
 import com.prirai.android.lr.settings.fragment.SettingsFragment
 import com.prirai.android.lr.theme.applyCompleteTheme
+import com.prirai.android.lr.theme.ThemeManager
 
 class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -18,13 +19,11 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
 
         applyCompleteTheme(this)
         
-        // Enable edge-to-edge with standardized approach
         enableEdgeToEdgeMode()
         
-        // Apply background color for AMOLED mode
-        val bgColor = com.prirai.android.lr.theme.ThemeManager.getBackgroundColor(this)
+        val bgColor = ThemeManager.getBackgroundColor(this)
         window.decorView.setBackgroundColor(bgColor)
-        findViewById<android.view.View>(R.id.container)?.setBackgroundColor(bgColor)
+        findViewById<View>(R.id.container)?.setBackgroundColor(bgColor)
 
         if (savedInstanceState == null) {
             supportFragmentManager
@@ -33,13 +32,11 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
                 .commit()
         }
 
-        // add back arrow to toolbar
         if (supportActionBar != null) {
             supportActionBar!!.setDisplayHomeAsUpEnabled(true)
             supportActionBar!!.setDisplayShowHomeEnabled(true)
         }
 
-        // Apply insets to container
         findViewById<View>(R.id.container)?.applyPersistentInsets()
         
         supportActionBar?.elevation = 0f
@@ -65,11 +62,9 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
         caller: PreferenceFragmentCompat,
         pref: Preference
     ): Boolean {
-        // SECURITY: only instantiate our own settings fragments (blocks fragment injection).
         val target = pref.fragment ?: return false
         if (!target.startsWith("com.prirai.android.lr.settings.fragment.")) return false
 
-        // Instantiate the new Fragment
         val args = pref.extras
         val fragment = supportFragmentManager.fragmentFactory.instantiate(
             classLoader,
@@ -79,13 +74,11 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
             setTargetFragment(caller, 0)
         }
 
-        // Replace the existing Fragment with the new Fragment
         supportFragmentManager.beginTransaction()
             .replace(R.id.container, fragment)
             .addToBackStack(null)
             .commit()
         
-        // Update the title to the preference title
         title = pref.title
         
         return true

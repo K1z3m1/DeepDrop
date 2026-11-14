@@ -21,6 +21,7 @@ import mozilla.components.feature.contextmenu.ContextMenuUseCases
 import mozilla.components.feature.tabs.TabsUseCases
 import mozilla.components.support.base.feature.LifecycleAwareFeature
 import mozilla.components.ui.widgets.DefaultSnackbarDelegate
+import android.os.Environment
 
 class ContextMenuIntegration(
     context: Context,
@@ -32,7 +33,6 @@ class ContextMenuIntegration(
     sessionId: String? = null,
     engineView: EngineView? = null
 ) : LifecycleAwareFeature {
-
     val candidates = run {
         if (sessionId != null) {
             val snackbarDelegate = DefaultSnackbarDelegate()
@@ -45,8 +45,8 @@ class ContextMenuIntegration(
                     context,
                     contextMenuUseCases,
                     downloadsLocation = {
-                        android.os.Environment.getExternalStoragePublicDirectory(
-                            android.os.Environment.DIRECTORY_DOWNLOADS
+                        Environment.getExternalStoragePublicDirectory(
+                            Environment.DIRECTORY_DOWNLOADS
                         ).path
                     }
                 ),
@@ -70,8 +70,8 @@ class ContextMenuIntegration(
                 contextMenuUseCases,
                 parentView,
                 downloadsLocation = {
-                    android.os.Environment.getExternalStoragePublicDirectory(
-                        android.os.Environment.DIRECTORY_DOWNLOADS
+                    Environment.getExternalStoragePublicDirectory(
+                        Environment.DIRECTORY_DOWNLOADS
                     ).path
                 }
             ) + appLinksCandidate + createCopyLinkTextCandidate(context, parentView, snackbarDelegate)

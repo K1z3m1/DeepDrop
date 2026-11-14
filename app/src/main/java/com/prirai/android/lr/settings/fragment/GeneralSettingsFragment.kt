@@ -40,9 +40,7 @@ import com.prirai.android.lr.utils.Utils
 import kotlinx.coroutines.launch
 import mozilla.components.browser.state.action.DefaultDesktopModeAction
 
-
 class GeneralSettingsFragment : BaseSettingsFragment() {
-
     override fun onCreatePreferences(savedInstanceState: Bundle?, s: String?) {
         addPreferencesFromResource(R.xml.preferences_general)
 
@@ -89,14 +87,6 @@ class GeneralSettingsFragment : BaseSettingsFragment() {
                 }
         )
 
-        // "Background audio on YouTube" global toggle used to live here;
-        // it has been replaced by a per-site "Background playback"
-        // permission managed from the Connection Info -> Site Permissions
-        // sheet. See BackgroundPlaybackAllowlist for storage, and the
-        // migration in BrowserApp.initializeAfterFirstFrame that seeds
-        // the allow-list with YouTube origins when the legacy global
-        // pref was previously enabled.
-
         switchPreference(
                 preference = requireContext().resources.getString(R.string.key_search_suggestions_enabled),
                 isChecked = UserPreferences(requireContext()).searchSuggestionsEnabled,
@@ -118,7 +108,6 @@ class GeneralSettingsFragment : BaseSettingsFragment() {
                 preference = resources.getString(R.string.key_homepage_type),
                 onClick = { pickHomepage() }
         )
-
     }
 
     private fun pickHomepage() {

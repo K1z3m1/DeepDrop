@@ -1,6 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 package com.prirai.android.lr.addons
 
 import android.app.AlertDialog
@@ -33,9 +30,6 @@ import mozilla.components.support.base.feature.LifecycleAwareFeature
 import mozilla.components.support.ktx.android.content.appVersionName
 import mozilla.components.ui.widgets.withCenterAlignedButtons
 
-/**
- * Feature implementation for handling [WebExtensionPromptRequest] and showing the respective UI.
- */
 class WebExtensionPromptFeature(
     private val store: BrowserStore,
     private val provideAddons: suspend () -> List<Addon>,
@@ -45,17 +39,9 @@ class WebExtensionPromptFeature(
     private val onLinkClicked: (String, Boolean) -> Unit,
     private val addonManager: AddonManager = context.components.addonManager
 ) : LifecycleAwareFeature {
-
-    /**
-     * Whether or not an add-on installation is in progress.
-     */
     private var isInstallationInProgress = false
     private var scope: CoroutineScope? = null
 
-    /**
-     * Starts observing the selected session to listen for window requests
-     * and opens / closes tabs as needed.
-     */
     override fun start() {
         scope = store.flowScoped(dispatcher = Dispatchers.Main) { flow ->
             flow.mapNotNull { state ->
@@ -72,7 +58,6 @@ class WebExtensionPromptFeature(
                     }
 
                     else -> {
-                        // Ignore other prompt request types
                     }
                 }
             }
@@ -121,7 +106,6 @@ class WebExtensionPromptFeature(
     ) {
         val shouldGrantWithoutPrompt = Addon.localizePermissions(promptRequest.permissions, context).isEmpty()
 
-        // If we don't have any promptable permissions, just proceed.
         if (shouldGrantWithoutPrompt) {
             handlePermissions(promptRequest, granted = true, privateBrowsingAllowed = false)
             return
@@ -166,16 +150,12 @@ class WebExtensionPromptFeature(
             }
 
             is WebExtensionInstallException.UserCancelled -> {
-                // We don't want to show an error message when users cancel installation.
                 return null
             }
 
             is WebExtensionInstallException.UnsupportedAddonType,
             is WebExtensionInstallException.Unknown,
                 -> {
-                // Making sure we don't have a
-                // Title = Can't install extension
-                // Message = Failed to install $addonName
                 title = ""
                 if (addonName.isNotEmpty()) {
                     context.getString(R.string.mozac_feature_addons_failed_to_install, addonName)
@@ -222,8 +202,6 @@ class WebExtensionPromptFeature(
 
     private fun formatBlocklistURL(exception: WebExtensionInstallException): String? {
         var url: String? = exception.extensionId?.let { AMO_BLOCKED_PAGE_URL.format(it) }
-        // Only append the version if the URL is valid and we have a version. The AMO "blocked" page
-        // can be loaded without a version, but it's always better to specify a version if we have one.
         if (url != null && exception.extensionVersion != null) {
             url += "${exception.extensionVersion}/"
         }
@@ -231,9 +209,6 @@ class WebExtensionPromptFeature(
         return url
     }
 
-    /**
-     * Stops observing the selected session for incoming window requests.
-     */
     override fun stop() {
         scope?.cancel()
     }
@@ -338,12 +313,6 @@ class WebExtensionPromptFeature(
 
     private fun findPreviousPermissionDialogFragment(): PermissionsDialogFragment? {
         return fragmentManager.findFragmentByTag(PERMISSIONS_DIALOG_FRAGMENT_TAG) as? PermissionsDialogFragment
-    }
-
-    private fun findPreviousPostInstallationDialogFragment(): AddonInstallationDialogFragment? {
-        return fragmentManager.findFragmentByTag(
-            POST_INSTALLATION_DIALOG_FRAGMENT_TAG,
-        ) as? AddonInstallationDialogFragment
     }
 
     private fun showPostInstallationDialog(addon: Addon) {

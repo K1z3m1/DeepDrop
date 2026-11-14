@@ -60,8 +60,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.fragment.app.Fragment
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
+import com.prirai.android.lr.ui.components.RemoteImage
 import com.prirai.android.lr.R
 import com.prirai.android.lr.ext.components
 import com.prirai.android.lr.preferences.UserPreferences
@@ -75,9 +74,9 @@ import kotlinx.coroutines.withContext
 import mozilla.components.feature.addons.Addon
 import mozilla.components.feature.addons.ui.translateName
 import androidx.core.net.toUri
+import androidx.fragment.app.FragmentActivity
 
 class ComposeAddonsFragment : Fragment() {
-
     private var showSortMenuTrigger: (() -> Unit)? = null
     private var showSearchTrigger: (() -> Unit)? = null
 
@@ -117,7 +116,6 @@ class ComposeAddonsFragment : Fragment() {
                 val context = LocalContext.current
                 val prefs = UserPreferences(context)
                 
-                // Edge-to-edge
                 LaunchedEffect(Unit) {
                     val window = requireActivity().window
                     WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -154,11 +152,10 @@ fun AddonsScreen(
     val selectedSort = remember { mutableStateOf("Name") }
     val showSortMenu = remember { mutableStateOf(false) }
     
-    // Wire menu triggers
     LaunchedEffect(Unit) {
         onSearchTriggerReady?.invoke {
             val searchSheet = SearchExtensionsBottomSheet()
-            searchSheet.show((context as androidx.fragment.app.FragmentActivity).supportFragmentManager, "search_extensions")
+            searchSheet.show((context as FragmentActivity).supportFragmentManager, "search_extensions")
         }
         onSortMenuTriggerReady?.invoke {
             showSortMenu.value = true
@@ -177,18 +174,15 @@ fun AddonsScreen(
                 enabledAddons.value = installed
                 recommendedAddons.value = recommended
             } catch (e: Exception) {
-                // Handle error
             } finally {
                 isLoading.value = false
             }
         }
     }
 
-    // Apply sort
     val filteredEnabled = remember(selectedSort.value, enabledAddons.value) {
         var result = enabledAddons.value
         
-        // Apply sort
         result = when (selectedSort.value) {
             "Name" -> result.sortedBy { it.translateName(context) }
             "Recently Updated" -> result.sortedByDescending { it.updatedAt }
@@ -201,7 +195,6 @@ fun AddonsScreen(
     val filteredRecommended = remember(selectedSort.value, recommendedAddons.value) {
         var result = recommendedAddons.value
         
-        // Apply sort
         result = when (selectedSort.value) {
             "Name" -> result.sortedBy { it.translateName(context) }
             "Rating" -> result.sortedByDescending { it.rating?.average ?: 0f }
@@ -232,7 +225,6 @@ fun AddonsScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // Enabled section
                 if (filteredEnabled.isNotEmpty()) {
                     item {
                         AddonSection(
@@ -247,7 +239,6 @@ fun AddonsScreen(
                     }
                 }
 
-                // Recommended section
                 if (filteredRecommended.isNotEmpty()) {
                     item {
                         AddonSection(
@@ -262,7 +253,6 @@ fun AddonsScreen(
                     }
                 }
                 
-                // "All extensions" link
                 item {
                     TextButton(
                         onClick = {
@@ -280,7 +270,6 @@ fun AddonsScreen(
                     }
                 }
                 
-                // Empty state
                 if (filteredEnabled.isEmpty() && filteredRecommended.isEmpty() && !isLoading.value) {
                     item {
                         LREmptyState(
@@ -296,7 +285,6 @@ fun AddonsScreen(
             }
         }
         
-        // Sort dropdown menu
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -346,7 +334,6 @@ fun AddonSection(
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
-        // Section title
         Text(
             text = title,
             style = MaterialTheme.typography.titleMediumEmphasized,
@@ -354,7 +341,6 @@ fun AddonSection(
             modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
         )
 
-        // iOS-style list
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -398,7 +384,6 @@ fun AddonListItem(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Extension icon
             Surface(
                 modifier = Modifier
                     .size(48.dp)
@@ -410,11 +395,8 @@ fun AddonListItem(
                 
                 when {
                     iconToUse != null -> {
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(iconToUse)
-                                .crossfade(true)
-                                .build(),
+                        RemoteImage(
+ model = iconToUse,
                             contentDescription = null,
                             modifier = Modifier
                                 .fillMaxSize()
@@ -422,11 +404,8 @@ fun AddonListItem(
                         )
                     }
                     iconUrlToUse.isNotEmpty() -> {
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(iconUrlToUse)
-                                .crossfade(true)
-                                .build(),
+                        RemoteImage(
+ model = iconUrlToUse,
                             contentDescription = null,
                             modifier = Modifier
                                 .fillMaxSize()
@@ -451,8 +430,6 @@ fun AddonListItem(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Extension info: title only - the description lives behind
-            // the info icon, not in the list.
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -510,7 +487,6 @@ fun AddonListItem(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Chevron
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,

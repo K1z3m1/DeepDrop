@@ -51,18 +51,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.prirai.android.lr.R
 import mozilla.components.browser.state.state.TabSessionState
+import androidx.compose.foundation.layout.ColumnScope
 
-/**
- * The shell both group container variants (list and grid) share: the group
- * Surface, the 4dp color accent strip, the expand/collapse header with the
- * count badge and options button, and the motion-specified expand/collapse.
- * The variants differ only in how their children lay out, which lands in
- * [content].
- *
- * @param containerModifier view-specific drag wiring: the list variant adds
- *   its hover-zoom scale and contextId drop-target metadata, the grid variant
- *   adds drag visual feedback.
- */
 @Composable
 private fun GroupContainerShell(
     title: String,
@@ -72,11 +62,8 @@ private fun GroupContainerShell(
     onHeaderClick: () -> Unit,
     onOptionsClick: () -> Unit,
     containerModifier: Modifier,
-    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
-    // Neutral M3 container (anti-slop: containers are theme tokens, never
-    // tinted with the group's accent); the 4dp accent strip, name and badge
-    // carry the group color - its identity.
     Surface(
         modifier = containerModifier
             .fillMaxWidth()
@@ -84,13 +71,11 @@ private fun GroupContainerShell(
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh
     ) {
-        // IntrinsicSize.Min lets the left accent strip fill the container's full height
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(IntrinsicSize.Min)
         ) {
-            // 4dp colored left strip matching group color
             Box(
                 modifier = Modifier
                     .width(4.dp)
@@ -102,8 +87,6 @@ private fun GroupContainerShell(
             )
 
             Column(modifier = Modifier.weight(1f)) {
-                // Header content integrated into container
-                // Use pointerInput instead of clickable to avoid interfering with drag gestures
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -121,7 +104,6 @@ private fun GroupContainerShell(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.weight(1f)
                     ) {
-                        // Expand/Collapse icon
                         Icon(
                             imageVector = if (isExpanded) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
                             contentDescription = stringResource(if (isExpanded) R.string.collapse else R.string.expand),
@@ -129,7 +111,6 @@ private fun GroupContainerShell(
                             modifier = Modifier.size(24.dp)
                         )
 
-                        // Group name
                         Text(
                             text = title,
                             style = MaterialTheme.typography.titleMediumEmphasized,
@@ -139,7 +120,6 @@ private fun GroupContainerShell(
                             modifier = Modifier.weight(1f)
                         )
 
-                        // Tab count badge
                         Surface(
                             shape = CircleShape,
                             color = Color(color).copy(alpha = 0.2f),
@@ -160,7 +140,6 @@ private fun GroupContainerShell(
                         }
                     }
 
-                    // Options button
                     IconButton(
                         onClick = onOptionsClick,
                         modifier = Modifier.size(32.dp)
@@ -186,10 +165,6 @@ private fun GroupContainerShell(
     }
 }
 
-/**
- * Group container for list view - container has the background with integrated header.
- * The parent Surface contains everything with group styling.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupContainerListItem(
@@ -213,7 +188,6 @@ fun GroupContainerListItem(
     val scale = remember { Animatable(1f) }
     val hoverSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
 
-    // Apply zoom effect when dragging ungrouped tab over this container
     LaunchedEffect(hoveredGroupId) {
         if (hoveredGroupId == groupId) {
             scale.animateTo(1.05f, hoverSpec)
@@ -232,7 +206,6 @@ fun GroupContainerListItem(
         containerModifier = modifier
             .scale(scale.value)
             .then(
-                // Only make group draggable when collapsed to avoid conflict with child tab dragging
                 if (!isExpanded) {
                     Modifier.draggableItem(
                         itemType = DraggableItemType.Group(groupId),
@@ -252,7 +225,6 @@ fun GroupContainerListItem(
                 )
             ),
     ) {
-        // Child tabs wrapped in extension-list style Surface — shown when expanded
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -264,7 +236,6 @@ fun GroupContainerListItem(
                 children.forEachIndexed { index, tab ->
                     val isLastInGroup = index == children.size - 1
 
-                    // Drag insertion indicator
                     if (isDragging && hoverState.isDraggingGroupedTab() && coordinator.isHoveringOver("divider_${tab.id}")) {
                         Box(
                             modifier = Modifier
@@ -316,11 +287,6 @@ fun GroupContainerListItem(
     }
 }
 
-
-/**
- * Grouped tab item within the container — wraps [GroupedTabRow] with swipe-to-dismiss
- * and drag-and-drop modifiers.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GroupedTabListItem(
@@ -342,7 +308,6 @@ private fun GroupedTabListItem(
         onDismiss = onTabClose,
         onMenu = onShowTabMenu,
     ) {
-        // Inline tab row that lives inside the shared group Surface container
         GroupedTabRow(
             tab = tab,
             isSelected = isSelected,
@@ -368,11 +333,6 @@ private fun GroupedTabListItem(
     }
 }
 
-/**
- * A single tab row rendered inside the grouped Surface container.
- * Has no own background Surface — relies on the parent surfaceContainerHigh container.
- * Selected state is shown via a subtle background tint on the row.
- */
 @Composable
 private fun GroupedTabRow(
     tab: TabSessionState,
@@ -386,8 +346,6 @@ private fun GroupedTabRow(
         modifier = modifier
             .fillMaxWidth()
             .background(
-                // One selection language: the focused row is always the
-                // primaryContainer, grouped or not.
                 if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
                 else Color.Transparent
             )
@@ -395,7 +353,6 @@ private fun GroupedTabRow(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 40dp rounded favicon container
         Surface(
             shape = RoundedCornerShape(10.dp),
             color = MaterialTheme.colorScheme.surfaceVariant,
@@ -408,7 +365,6 @@ private fun GroupedTabRow(
 
         Spacer(modifier = Modifier.width(12.dp))
 
-        // Title + URL
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -436,7 +392,6 @@ private fun GroupedTabRow(
             }
         }
 
-        // Close button
         IconButton(
             onClick = onTabClose,
             modifier = Modifier.size(32.dp)
@@ -451,10 +406,6 @@ private fun GroupedTabRow(
     }
 }
 
-/**
- * Group container for grid view - container has the background with integrated header.
- * The parent Surface contains everything with group styling.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupContainerGridItem(
@@ -483,7 +434,6 @@ fun GroupContainerGridItem(
         onOptionsClick = onOptionsClick,
         containerModifier = modifier
             .then(
-                // Only make group draggable when collapsed to avoid conflict with child tab dragging
                 if (!isExpanded) {
                     Modifier.draggableItem(
                         itemType = DraggableItemType.Group(groupId),
@@ -516,9 +466,6 @@ fun GroupContainerGridItem(
     }
 }
 
-/**
- * 2-column grid of tabs within a group, wrapped in the extension-list style Surface container.
- */
 @Composable
 private fun GroupTabsGridRow(
     groupId: String,
@@ -587,7 +534,6 @@ private fun GroupTabsGridRow(
                             )
                         }
                     }
-                    // Pad to maintain the 2-column grid when the last row has only 1 tab
                     if (rowTabs.size == 1) {
                         Spacer(modifier = Modifier.weight(1f))
                     }
@@ -597,9 +543,6 @@ private fun GroupTabsGridRow(
     }
 }
 
-/**
- * Individual tab item in grid group row
- */
 @Composable
 private fun GroupedTabGridItem(
     tab: TabSessionState,
@@ -609,7 +552,6 @@ private fun GroupedTabGridItem(
     onTabClose: () -> Unit,
     onTabLongPress: () -> Unit
 ) {
-    // Use the reusable TabGridCard component
     TabGridCard(
         tab = tab,
         isSelected = isSelected,

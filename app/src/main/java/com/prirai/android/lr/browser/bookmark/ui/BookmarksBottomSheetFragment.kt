@@ -22,17 +22,7 @@ import com.prirai.android.lr.preferences.UserPreferences
 import com.prirai.android.lr.theme.ThemeManager
 import com.prirai.android.lr.ui.theme.LRTheme
 
-/**
- * The bookmarks bottom sheet: the folder/list view with breadcrumb folder
- * navigation, add/edit/delete for bookmarks and folders, the folder-selection
- * move flow and multiselect mode, rendered with the shared Material 3
- * Expressive components.
- *
- * Public entry API is unchanged: `newInstance()` + `show(fragmentManager,
- * tag)`, with the same class name and package.
- */
 class BookmarksBottomSheetFragment : BottomSheetDialogFragment() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setStyle(STYLE_NORMAL, R.style.AppBottomSheetDialogTheme)
@@ -85,11 +75,6 @@ class BookmarksBottomSheetFragment : BottomSheetDialogFragment() {
         return null
     }
 
-    /**
-     * Opens a tapped bookmark in a new selected tab and, when the sheet was
-     * opened from the home screen, navigates to the browser, as the old
-     * RecyclerView implementation did.
-     */
     private fun openBookmark(site: BookmarkSiteItem) {
         requireContext().components.tabsUseCases.addTab.invoke(
             url = site.url,
@@ -101,7 +86,6 @@ class BookmarksBottomSheetFragment : BottomSheetDialogFragment() {
                 navController.navigate(NavGraphDirections.actionGlobalBrowser(null))
             }
         } catch (e: Exception) {
-            // Ignore navigation errors
         }
         dismiss()
     }

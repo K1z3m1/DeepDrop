@@ -29,11 +29,8 @@ import com.prirai.android.lr.ui.components.animateLRGridItem
 import mozilla.components.browser.state.state.TabSessionState
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 
-/**
- * Grid view for tab sheet
- * Refactored to use UnifiedItemBuilder and custom drag system
- */
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun TabSheetGridView(
@@ -55,22 +52,18 @@ fun TabSheetGridView(
     val scope = rememberCoroutineScope()
     val gridState = rememberLazyGridState()
 
-    // Create drag coordinator
     val coordinator = rememberDragCoordinator(
         scope = scope,
         viewModel = viewModel,
         orderManager = orderManager
     )
 
-    // Menu state
     val menuState = rememberTabSheetMenuState()
 
-    // Build + deduplicate unified items
     val uniqueItems = rememberUnifiedSheetItems(tabs, groups, expandedGroups, currentOrder)
 
     val dragState by coordinator.dragState
     val isDragging = dragState.isDragging
-    // Hover state manager for contextual drag feedback
     val hoverState = rememberTabSheetHoverState(coordinator, uniqueItems)
     val hoveredGroupId = hoverState.getHoveredGroupIdForUngroupedDragGrid()
     LaunchedEffect(selectedTabId, uniqueItems) {
@@ -92,12 +85,10 @@ fun TabSheetGridView(
         modifier = modifier
             .fillMaxSize()
             .onGloballyPositioned { layoutCoordinates ->
-                // Track scroll container bounds for auto-scroll
                 val bounds = layoutCoordinates.boundsInRoot()
                 coordinator.setScrollContainerBounds(bounds)
             }
     ) {
-        // Static layer
         LazyVerticalGrid(
             columns = GridCells.Fixed(3),
             state = gridState,
@@ -110,20 +101,18 @@ fun TabSheetGridView(
                 items = uniqueItems,
                 key = { it.id },
                 span = { item ->
-                    // Group containers, headers and rows span all columns
                     @Suppress("DEPRECATION")
                     when (item) {
-                        is UnifiedItem.GroupContainer -> androidx.compose.foundation.lazy.grid.GridItemSpan(3)
-                        is UnifiedItem.GroupHeader -> androidx.compose.foundation.lazy.grid.GridItemSpan(3)
-                        is UnifiedItem.GroupRow -> androidx.compose.foundation.lazy.grid.GridItemSpan(3)
-                        else -> androidx.compose.foundation.lazy.grid.GridItemSpan(1)
+                        is UnifiedItem.GroupContainer -> GridItemSpan(3)
+                        is UnifiedItem.GroupHeader -> GridItemSpan(3)
+                        is UnifiedItem.GroupRow -> GridItemSpan(3)
+                        else -> GridItemSpan(1)
                     }
                 }
             ) { item ->
                 @Suppress("DEPRECATION")
                 when (item) {
                     is UnifiedItem.GroupContainer -> {
-                        // New unified group structure - header as parent with child tabs
                         GroupContainerGridItem(
                             groupId = item.groupId,
                             title = item.title,
@@ -197,7 +186,6 @@ fun TabSheetGridView(
 
                     is UnifiedItem.GroupRow -> {
                         val group = groups.find { it.id == item.groupId }
-                        // Check if this group row is being hovered (for group container enlargement)
                         val isGroupHovered = hoveredGroupId == item.groupId
 
                         GroupTabsRow(
@@ -208,7 +196,6 @@ fun TabSheetGridView(
                             onTabClick = onTabClick,
                             onTabClose = onTabClose,
                             onTabLongPress = { tab ->
-                                // Long press now only used for drag - use tap/click for menu
                             },
                             modifier = animateLRGridItem(),
                             coordinator = coordinator,
@@ -218,9 +205,6 @@ fun TabSheetGridView(
                     }
 
                     is UnifiedItem.GroupedTab -> {
-                        // GroupedTab items should not appear in grid view
-                        // They should be in GroupRow instead
-                        // But handle it just in case
                         val group = groups.find { it.id == item.groupId }
                         TabGridItem(
                             tab = item.tab,
@@ -229,7 +213,6 @@ fun TabSheetGridView(
                             onTabClick = { onTabClick(item.tab.id) },
                             onTabClose = { onTabClose(item.tab.id) },
                             onTabLongPress = {
-                                // Long press now only used for drag - use tap/click for menu
                             },
                             modifier = Modifier
                                 .then(animateLRGridItem())
@@ -265,7 +248,6 @@ fun TabSheetGridView(
                             onTabClick = { onTabClick(item.tab.id) },
                             onTabClose = { onTabClose(item.tab.id) },
                             onTabLongPress = {
-                                // Long press now only used for drag - use tap/click for menu
                             },
                             modifier = Modifier
                                 .then(animateLRGridItem())
@@ -289,10 +271,8 @@ fun TabSheetGridView(
         }
     }
 
-    // Insertion indicator layer
     InsertionIndicator(coordinator = coordinator)
 
-    // Drag layer
     DragLayer(coordinator = coordinator) { draggedItem ->
         when (draggedItem) {
             is DraggableItemType.Tab -> {
@@ -346,13 +326,9 @@ fun TabSheetGridView(
         }
     }
 
-    // Show tab + group context menus
     TabSheetMenuHost(menuState = menuState, viewModel = viewModel, scope = scope)
 }
 
-/**
- * Row of tabs within a group (full width in grid)
- */
 @Composable
 fun GroupTabsRow(
     groupId: String,
@@ -367,7 +343,6 @@ fun GroupTabsRow(
     isGroupHovered: Boolean = false,
     hoverState: TabSheetHoverState? = null
 ) {
-    // Animate scale for the entire group row when hovered, on the theme's spatial spring
     val scale by animateFloatAsState(
         targetValue = if (isGroupHovered) 1.05f else 1f,
         animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
@@ -385,7 +360,6 @@ fun GroupTabsRow(
         color = Color(groupColor).copy(alpha = 0.05f),
         border = BorderStroke(1.dp, Color(groupColor).copy(alpha = 0.2f))
     ) {
-        // Scrollable horizontal row with fixed-size tabs at 80% scale
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Start,
@@ -395,7 +369,6 @@ fun GroupTabsRow(
                 items = tabs,
                 key = { it.id }
             ) { tab ->
-                // Fixed width box at 80% scale for consistent sizing
                 Box(
                     modifier = Modifier
                         .width(140.dp) // Fixed width for each tab
@@ -443,10 +416,6 @@ fun GroupTabsRow(
     }
 }
 
-
-/**
- * Full-size tab grid item
- */
 @Composable
 private fun TabGridItem(
     tab: TabSessionState,
@@ -457,7 +426,6 @@ private fun TabGridItem(
     onTabLongPress: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Use the reusable TabGridCard component
     TabGridCard(
         tab = tab,
         isSelected = isSelected,

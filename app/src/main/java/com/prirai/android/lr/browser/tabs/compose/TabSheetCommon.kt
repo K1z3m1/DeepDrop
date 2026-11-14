@@ -49,13 +49,9 @@ import com.prirai.android.lr.R
 import com.prirai.android.lr.browser.tabgroups.TabGroupData
 import kotlinx.coroutines.CoroutineScope
 import mozilla.components.browser.state.state.TabSessionState
+import androidx.compose.runtime.Stable
 
-/**
- * The context-menu state both tab sheet views (list and grid) share: which tab or
- * group a menu is open for, and whether it is showing. Kept as one object instead
- * of five loose `remember` booleans duplicated per view.
- */
-@androidx.compose.runtime.Stable
+@Stable
 class TabSheetMenuState {
     var menuTab by mutableStateOf<TabSessionState?>(null)
     var menuIsInGroup by mutableStateOf(false)
@@ -80,10 +76,6 @@ class TabSheetMenuState {
 @Composable
 fun rememberTabSheetMenuState(): TabSheetMenuState = remember { TabSheetMenuState() }
 
-/**
- * Renders the tab and group context menus for a sheet view. One host instead of
- * the same two `if` blocks duplicated at the bottom of every view.
- */
 @Composable
 fun TabSheetMenuHost(
     menuState: TabSheetMenuState,
@@ -110,11 +102,6 @@ fun TabSheetMenuHost(
     }
 }
 
-/**
- * The unified item list every tab sheet view renders: build + dedup, in one
- * place. Keys stay stable across view modes so remembered item state (drag
- * offset, animateItem) travels with the tab.
- */
 @Composable
 fun rememberUnifiedSheetItems(
     tabs: List<TabSessionState>,
@@ -133,12 +120,6 @@ fun rememberUnifiedSheetItems(
     return remember(items) { UnifiedItemBuilder.deduplicateItems(items) }
 }
 
-/**
- * The group header row both sheet views render: Surface with the group tint,
- * expand/collapse indicator, emphasized name, count badge, and a view-specific
- * [trailing] affordance (the list view shows a drag handle, the grid view an
- * options button).
- */
 @Composable
 fun GroupHeaderRow(
     title: String,
@@ -154,8 +135,6 @@ fun GroupHeaderRow(
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 4.dp),
         shape = RoundedCornerShape(12.dp),
-        // Neutral M3 container; the group color lives on the name, badge
-        // and expand icon - not on the container fill or a border.
         color = MaterialTheme.colorScheme.surfaceContainerHigh
     ) {
         Row(
@@ -171,7 +150,6 @@ fun GroupHeaderRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.weight(1f)
             ) {
-                // Expand/Collapse icon
                 Icon(
                     imageVector = if (isExpanded) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = stringResource(if (isExpanded) R.string.collapse else R.string.expand),
@@ -179,7 +157,6 @@ fun GroupHeaderRow(
                     modifier = Modifier.size(24.dp)
                 )
 
-                // Group name
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMediumEmphasized,
@@ -189,7 +166,6 @@ fun GroupHeaderRow(
                     modifier = Modifier.weight(1f)
                 )
 
-                // Tab count badge
                 Surface(
                     shape = CircleShape,
                     color = Color(color).copy(alpha = 0.2f),
@@ -215,15 +191,6 @@ fun GroupHeaderRow(
     }
 }
 
-/**
- * The swipe affordance every list-shaped tab row shares: swipe toward end
- * (left) triggers [onDismiss], swipe toward start (right) opens the menu via
- * [onMenu]. Both directions are disabled while a drag is in flight so the
- * drag system owns the gesture.
- *
- * [dismissIcon] and [dismissIconLabel] let the group header carry "Ungroup"
- * where tab rows carry the delete glyph.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TabSwipeWrapper(
@@ -267,11 +234,6 @@ fun TabSwipeWrapper(
     }
 }
 
-/**
- * The swipe background: errorContainer with the destructive glyph when
- * swiping toward the end, primaryContainer with the menu glyph when swiping
- * toward the start.
- */
 @Composable
 private fun TabSwipeBackground(
     dismissState: SwipeToDismissBoxState,

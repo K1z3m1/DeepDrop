@@ -22,6 +22,9 @@ import mozilla.components.support.ktx.util.URLStringUtils.toDisplayUrl
 import mozilla.components.ui.widgets.behavior.EngineViewScrollingGesturesBehavior
 import java.lang.ref.WeakReference
 import androidx.core.net.toUri
+import androidx.appcompat.content.res.AppCompatResources
+import androidx.core.content.pm.ShortcutManagerCompat
+import mozilla.components.concept.engine.EngineView
 
 interface BrowserToolbarViewInteractor {
     fun onBrowserToolbarPaste(text: String)
@@ -39,9 +42,8 @@ class BrowserToolbarView(
     private val interactor: BrowserToolbarViewInteractor,
     private val customTabSession: CustomTabSessionState?,
     private val lifecycleOwner: LifecycleOwner,
-    private val engineView: mozilla.components.concept.engine.EngineView? = null
+    private val engineView: EngineView? = null
 ) {
-
     private val settings = UserPreferences(container.context)
 
     @LayoutRes
@@ -51,11 +53,9 @@ class BrowserToolbarView(
     }
 
     private val layout = if (toolbarLayout == R.layout.component_bottom_browser_toolbar && container is CoordinatorLayout) {
-        // For bottom toolbar, inflate without adding to container first, then add with proper params
         val inflatedView = LayoutInflater.from(container.context).inflate(toolbarLayout, null, false)
         val toolbarContainer = inflatedView.findViewById<View>(R.id.toolbarContainer) ?: inflatedView
         
-        // Create proper CoordinatorLayout.LayoutParams
         val layoutParams = CoordinatorLayout.LayoutParams(
             CoordinatorLayout.LayoutParams.MATCH_PARENT,
             CoordinatorLayout.LayoutParams.WRAP_CONTENT
@@ -67,7 +67,6 @@ class BrowserToolbarView(
         
         inflatedView
     } else {
-        // For other layouts, use normal inflation
         LayoutInflater.from(container.context).inflate(toolbarLayout, container, true)
     }
 
@@ -75,7 +74,6 @@ class BrowserToolbarView(
     internal var view: BrowserToolbar = layout
         .findViewById(R.id.toolbar)
 
-    // Get the actual container for bottom toolbar
     private val toolbarContainer: View? = if (toolbarLayout == R.layout.component_bottom_browser_toolbar) {
         val container = layout.findViewById<View>(R.id.toolbarContainer)
         container ?: layout
@@ -95,44 +93,23 @@ class BrowserToolbarView(
         }
 
         with(container.context) {
-            val isPinningSupported = androidx.core.content.pm.ShortcutManagerCompat.isRequestPinShortcutSupported(this)
+            val isPinningSupported = ShortcutManagerCompat.isRequestPinShortcutSupported(this)
 
             view.apply {
                 setToolbarBehavior()
 
-                // Match Fenix's BrowserToolbarView: elevate the toolbar by
-                // browser_fragment_toolbar_elevation (16dp) so it casts a
-                // shadow over the EngineView, and let the AC display toolbar
-                // draw the inner URL pill via display.setUrlBackground(...)
-                // pointing at the same rounded ?attr/colorSurfaceContainerHigh
-                // shape Fenix uses (search_url_background). This is the single
-                // frictionless integration point the upstream toolbar exposes;
-                // any custom padding/margin overrides in the layout XML fight
-                // AC's baked mozac_browser_toolbar_displaytoolbar.xml.
                 elevation = resources.getDimension(R.dimen.browser_fragment_toolbar_elevation)
 
                 display.setUrlBackground(
-                    androidx.appcompat.content.res.AppCompatResources.getDrawable(
+                    AppCompatResources.getDrawable(
                         container.context,
                         R.drawable.toolbar_background
                     )
                 )
 
-                // Inset the URL pill 12dp on each side. LR does not populate
-                // the navigation-actions or browser-actions containers on the
-                // address bar, so AC's ActionContainer collapses each of them
-                // to View.GONE, and the URL background ImageView pins flush
-                // against the parent edges (rounded corners invisible).
-                // setUrlBackgroundMargins is AC's first-class API for exactly
-                // this case: it applies layout_goneMarginStart / goneMarginEnd
-                // to the URL background, so ConstraintLayout inserts the
-                // requested inset only when the neighbouring action containers
-                // are GONE. The progress bar keeps its own edge-to-edge
-                // constraint (constraintStart/End="parent"), so this does not
-                // shorten the loading indicator.
                 val pillInsetPx = (12f * resources.displayMetrics.density).toInt()
                 display.setUrlBackgroundMargins(
-                    mozilla.components.browser.toolbar.display.DisplayToolbar.DisplayMargins(
+                    DisplayToolbar.DisplayMargins(
                         goneStartMargin = pillInsetPx,
                         goneEndMargin = pillInsetPx,
                     )
@@ -177,7 +154,6 @@ class BrowserToolbarView(
                     separator = separatorColor,
                     trackingProtection = primaryTextColor
                 )
-
 
                 display.hint = context.getString(R.string.search)
             }
@@ -237,20 +213,6 @@ class BrowserToolbarView(
         }
     }
 
-    /**
-     * Pins the address bar to a fixed position - it never scrolls off-screen.
-     *
-     * The address bar is always the user's one guaranteed anchor to tap into
-     * search, see the URL, and tap the chevron to toggle minimal state.
-     * Previously this installed AC's `EngineViewScrollingGesturesBehavior`
-     * which translated the whole toolbar off-screen 1:1 with page scroll;
-     * that was removed in favour of a pinned address bar. Post-v0.5.14 the
-     * scroll-driven minimal toggle was also removed - the chevron button is
-     * the only remaining input (see ModernScrollBehavior kdoc).
-     *
-     * The @param is kept for source compatibility with existing call sites
-     * but no longer influences behavior.
-     */
     fun setToolbarBehavior(shouldDisableScroll: Boolean = false) {
         expandToolbarAndMakeItFixed()
     }
@@ -258,9 +220,6 @@ class BrowserToolbarView(
     @VisibleForTesting
     internal fun expandToolbarAndMakeItFixed() {
         expand()
-        // Remove any pre-existing scroll behavior from the container so the
-        // address bar stays pinned to its edge. All page-scroll driven hiding
-        // is now the responsibility of UnifiedToolbar's minimal state.
         val targetView = if (toolbarLayout == R.layout.component_bottom_browser_toolbar) {
             toolbarContainer ?: layout
         } else {
@@ -281,55 +240,42 @@ class BrowserToolbarView(
         }
     }
 
-    /**
-     * Smart URL display that shows base domain + shortened path
-     * Example: https://en.wikipedia.org/wiki/Sarojini_Naidu -> en.wikipedia.org/w/Sarojini_Naidu
-     */
     private fun smartUrlDisplay(url: CharSequence): CharSequence {
         return try {
             val uri = url.toString().toUri()
             val host = uri.host ?: return toDisplayUrl(url)
             val path = uri.path ?: return host
             
-            // Remove protocol and www prefix for display
             val cleanHost = host.removePrefix("www.")
             
             if (path == "/" || path.isEmpty()) {
                 return cleanHost
             }
             
-            // Smart path shortening logic: abbreviate path segments to first letter
             val pathSegments = path.split("/").filter { it.isNotEmpty() }
             
             when {
-                // Handle Wikipedia URLs: /wiki/Article_Name -> /w/Article_Name
                 pathSegments.size >= 2 && pathSegments[0] == "wiki" -> {
                     "$cleanHost/w/${pathSegments[1]}"
                 }
-                // Handle paths with 2 or more segments: abbreviate middle segments to first letter
                 pathSegments.size >= 2 -> {
                     val abbreviatedSegments = mutableListOf<String>()
                     
-                    // First segment: abbreviate to first letter
                     abbreviatedSegments.add(pathSegments[0].take(1))
                     
-                    // Middle segments: abbreviate to first letter 
                     for (i in 1 until pathSegments.size - 1) {
                         abbreviatedSegments.add(pathSegments[i].take(1))
                     }
                     
-                    // Last segment: keep full name
                     abbreviatedSegments.add(pathSegments.last())
                     
                     "$cleanHost/${abbreviatedSegments.joinToString("/")}"
                 }
-                // Show full path for single segment
                 else -> {
                     "$cleanHost$path"
                 }
             }
         } catch (_: Exception) {
-            // Fallback to original toDisplayUrl function
             toDisplayUrl(url)
         }
     }

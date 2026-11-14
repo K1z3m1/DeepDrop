@@ -3,10 +3,6 @@ package com.prirai.android.lr.browser.tabs.compose
 import org.json.JSONArray
 import org.json.JSONObject
 
-/**
- * Single source of truth for tab ordering across all views.
- * Represents the hierarchical structure of tabs and groups.
- */
 data class UnifiedTabOrder(
     val profileId: String,
     val primaryOrder: List<OrderItem>,
@@ -24,37 +20,6 @@ data class UnifiedTabOrder(
         ) : OrderItem()
     }
     
-    /**
-     * Get all tab IDs in flat order
-     */
-    fun getAllTabIds(): List<String> {
-        return primaryOrder.flatMap { item ->
-            when (item) {
-                is OrderItem.SingleTab -> listOf(item.tabId)
-                is OrderItem.TabGroup -> item.tabIds
-            }
-        }
-    }
-    
-    /**
-     * Find which group contains a specific tab
-     */
-    fun findGroupContaining(tabId: String): OrderItem.TabGroup? {
-        return primaryOrder.filterIsInstance<OrderItem.TabGroup>()
-            .find { tabId in it.tabIds }
-    }
-    
-    /**
-     * Get the flat position of a tab (across all groups)
-     */
-    fun getTabPosition(tabId: String): Int? {
-        val allTabs = getAllTabIds()
-        return allTabs.indexOf(tabId).takeIf { it >= 0 }
-    }
-    
-    /**
-     * Get the position of an item in the primary order
-     */
     fun getItemPosition(itemId: String): Int? {
         return primaryOrder.indexOfFirst { item ->
             when (item) {
@@ -64,7 +29,6 @@ data class UnifiedTabOrder(
         }.takeIf { it >= 0 }
     }
 
-    /** Serialises this order to JSON (replaces kotlinx.serialization). */
     fun toJson(): String {
         val items = JSONArray()
         primaryOrder.forEach { item ->
@@ -91,7 +55,6 @@ data class UnifiedTabOrder(
     }
 
     companion object {
-        /** Parses JSON written by [toJson]; returns null if it is malformed. */
         fun fromJson(json: String): UnifiedTabOrder? = try {
             val obj = JSONObject(json)
             val arr = obj.getJSONArray("primaryOrder")

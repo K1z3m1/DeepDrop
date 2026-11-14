@@ -4,7 +4,6 @@ open class BrowserInteractor(
     private val browserToolbarController: BrowserToolbarController,
     private val menuController: BrowserToolbarMenuController
 ) : BrowserToolbarViewInteractor {
-
     override fun onTabCounterClicked() {
         browserToolbarController.handleTabCounterClick()
     }

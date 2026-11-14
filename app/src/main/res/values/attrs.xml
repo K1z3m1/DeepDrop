@@ -27,16 +27,6 @@
         <attr name="browserToolbarInsecureColor" format="color" />
     </declare-styleable>
 
-    <declare-styleable name="TabCountView">
-        <attr name="tabIconColor" format="reference|color" />
-        <attr name="tabIconTextSize" format="dimension"/>
-        <attr name="tabIconBorderWidth" format="dimension"/>
-        <attr name="tabIconBorderRadius" format="dimension"/>
-    </declare-styleable>
-
-    <!-- Custom state for internal pages -->
-    <attr name="state_internal_page" format="boolean" />
-
     <!-- Explanation text shown by a preference's info icon dialog -->
     <attr name="infoText" format="reference" />
 

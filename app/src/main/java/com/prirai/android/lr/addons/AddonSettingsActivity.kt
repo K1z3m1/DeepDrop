@@ -21,11 +21,9 @@ import com.prirai.android.lr.ext.getParcelableCompat
 import com.prirai.android.lr.ext.enableEdgeToEdgeMode
 import com.prirai.android.lr.ext.applyPersistentInsets
 import com.prirai.android.lr.theme.applyCompleteTheme
-
-// An activity to show the settings of an add-on.
+import com.prirai.android.lr.theme.ThemeManager
 
 class AddonSettingsActivity : AppCompatActivity() {
-
     lateinit var binding: ActivityAddOnSettingsBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,10 +36,8 @@ class AddonSettingsActivity : AppCompatActivity() {
         
         applyCompleteTheme(this)
         
-        // Enable edge-to-edge with standardized approach
         enableEdgeToEdgeMode()
         
-        // Apply insets to container
         findViewById<View>(R.id.addonSettingsContainer)?.applyPersistentInsets()
 
         val addon = requireNotNull(intent.getParcelableExtraCompat<Addon>("add_on"))
@@ -55,7 +51,7 @@ class AddonSettingsActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        com.prirai.android.lr.theme.ThemeManager.applySystemBarsTheme(this, false)
+        ThemeManager.applySystemBarsTheme(this, false)
     }
 
     override fun onCreateView(parent: View?, name: String, context: Context, attrs: AttributeSet): View? =
@@ -64,7 +60,6 @@ class AddonSettingsActivity : AppCompatActivity() {
             else -> super.onCreateView(parent, name, context, attrs)
         }
 
-    // A fragment to show the settings of an add-on with [EngineView].
     class AddonSettingsFragment : Fragment() {
         private lateinit var addon: Addon
         private lateinit var engineSession: EngineSession
@@ -97,7 +92,6 @@ class AddonSettingsActivity : AppCompatActivity() {
         }
 
         companion object {
-            // Create an [AddonSettingsFragment] with add_on as a required parameter.
             fun create(addon: Addon) = AddonSettingsFragment().apply {
                 arguments = Bundle().apply {
                     putParcelable("add_on", addon)

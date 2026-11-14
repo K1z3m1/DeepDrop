@@ -29,7 +29,6 @@ class DefaultBrowserToolbarController(
     private val customTabSessionId: String?,
     private val onTabCounterClicked: () -> Unit
 ) : BrowserToolbarController {
-
     private val currentSession
         get() = store.state.findCustomTabOrSelectedTab(customTabSessionId)
 
@@ -73,7 +72,6 @@ class DefaultBrowserToolbarController(
     }
 
     override fun handleScroll(offset: Int) {
-        // No clipping needed - we use margins for top toolbar instead
     }
 }
 

@@ -71,6 +71,7 @@ import com.prirai.android.lr.ui.components.LREmptyState
 import com.prirai.android.lr.ui.components.LRSheetHeader
 import java.util.Locale
 import mozilla.components.browser.state.selector.selectedTab
+import androidx.compose.foundation.layout.Box
 
 internal sealed interface BookmarksDeleteRequest {
     data class Single(val item: BookmarkItem) : BookmarksDeleteRequest
@@ -82,15 +83,6 @@ internal sealed interface BookmarksMoveRequest {
     data class Multiple(val items: List<BookmarkItem>) : BookmarksMoveRequest
 }
 
-/**
- * The bookmarks bottom sheet body: the grouped-card folder/list view, the
- * multiselect header, breadcrumb folder navigation and every bookmark and
- * folder dialog, on the shared Material 3 Expressive components.
- *
- * The bookmark tree in [BookmarkManager] is a mutable in-place model, so every
- * mutation bumps [revision] to force the list to re-read the folder contents —
- * the Compose counterpart of the old adapter re-creation in `setBookmarkList`.
- */
 @Composable
 internal fun BookmarksSheet(
     manager: BookmarkManager,
@@ -218,8 +210,6 @@ internal fun BookmarksSheet(
     }
 
     fun sortByName() {
-        // The original sort dialog mapped every option to a title-ascending
-        // sort; that behavior is kept as is.
         currentFolder.itemList.sortBy { it.title?.lowercase(Locale.getDefault()) }
         refresh()
     }
@@ -517,13 +507,6 @@ internal fun BookmarksSheet(
     }
 }
 
-/**
- * One bookmark or folder row of the list: the shared grouped-card row with a
- * favicon (or folder glyph) as the leading element, the selection checkbox in
- * multiselect mode, and the overflow menu with every action the old popup
- * menu offered. A long press enters multiselect mode and preselects the row,
- * as the RecyclerView implementation did.
- */
 @Composable
 private fun BookmarkRow(
     item: BookmarkItem,
@@ -585,7 +568,7 @@ private fun BookmarkRow(
             null
         } else {
             {
-                androidx.compose.foundation.layout.Box {
+                Box {
                     IconButton(onClick = { onMenuOpenChange(true) }) {
                         Icon(
                             imageVector = Icons.Rounded.MoreVert,
@@ -683,12 +666,6 @@ private fun BookmarkRow(
     )
 }
 
-/**
- * The breadcrumb path from the root folder down to [currentFolder]; every
- * ancestor is a navigation link. The old sheet left its path view permanently
- * empty (a TODO in the View implementation), so this is the first version
- * that actually renders the folder path.
- */
 @Composable
 private fun FolderBreadcrumbs(
     root: BookmarkFolderItem,

@@ -5,11 +5,9 @@ import android.view.View
 import mozilla.components.concept.engine.HitResult
 import mozilla.components.feature.contextmenu.ContextMenuCandidate
 import mozilla.components.ui.widgets.SnackbarDelegate
+import android.content.ClipData
+import android.content.ClipboardManager
 
-/**
- * Context menu candidate for copying link text (the visible text of a link, not the URL).
- * This appears for any link element that has both a URL and visible text.
- */
 fun createCopyLinkTextCandidate(
     context: Context,
     parentView: View,
@@ -19,7 +17,6 @@ fun createCopyLinkTextCandidate(
         id = "copy-link-text",
         label = "Copy link",
         showFor = { _, hitResult ->
-            // Show for images and links
             when (hitResult) {
                 is HitResult.IMAGE_SRC -> true
                 is HitResult.IMAGE -> true
@@ -34,8 +31,8 @@ fun createCopyLinkTextCandidate(
             }
             
             if (linkText.isNotEmpty()) {
-                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                val clip = android.content.ClipData.newPlainText("link", linkText)
+                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                val clip = ClipData.newPlainText("link", linkText)
                 clipboard.setPrimaryClip(clip)
                 
                 snackbarDelegate.show(

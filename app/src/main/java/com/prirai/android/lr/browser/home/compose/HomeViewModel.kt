@@ -22,7 +22,6 @@ class HomeViewModel(
     private val shortcutDao: ShortcutDao,
     private val historyStorage: HistoryStorage,
 ) : ViewModel() {
-    
     private val _shortcuts = MutableStateFlow<List<ShortcutItem>>(emptyList())
     val shortcuts: StateFlow<List<ShortcutItem>> = _shortcuts.asStateFlow()
     
@@ -32,9 +31,6 @@ class HomeViewModel(
     private val _showAddShortcutDialog = MutableStateFlow(false)
     val showAddShortcutDialog: StateFlow<Boolean> = _showAddShortcutDialog.asStateFlow()
     
-    private val _isBookmarkSectionExpanded = MutableStateFlow(true)
-    val isBookmarkSectionExpanded: StateFlow<Boolean> = _isBookmarkSectionExpanded.asStateFlow()
-
     private val _jumpBackInHistory = MutableStateFlow<List<JumpBackInItem>>(emptyList())
     val jumpBackInHistory: StateFlow<List<JumpBackInItem>> = _jumpBackInHistory.asStateFlow()
     
@@ -98,7 +94,6 @@ class HomeViewModel(
             try {
                 val firstLevelBookmarks = mutableListOf<BookmarkItem>()
                 
-                // Get first level items from root folder
                 withContext(Dispatchers.IO) {
                     bookmarkManager.root.list.forEach { item ->
                         when (item) {
@@ -128,7 +123,6 @@ class HomeViewModel(
                     }
                 }
                 
-                // Get all first-level bookmarks (no limit)
                 _bookmarks.value = firstLevelBookmarks
             } catch (e: Exception) {
                 _bookmarks.value = emptyList()
@@ -146,7 +140,6 @@ class HomeViewModel(
                 loadShortcuts()
                 _showAddShortcutDialog.value = false
             } catch (e: Exception) {
-                // Handle error
             }
         }
     }
@@ -162,7 +155,6 @@ class HomeViewModel(
                 }
                 loadShortcuts()
             } catch (e: Exception) {
-                // Handle error
             }
         }
     }
@@ -173,10 +165,6 @@ class HomeViewModel(
     
     fun hideAddShortcutDialog() {
         _showAddShortcutDialog.value = false
-    }
-    
-    fun toggleBookmarkSection() {
-        _isBookmarkSectionExpanded.value = !_isBookmarkSectionExpanded.value
     }
 }
 

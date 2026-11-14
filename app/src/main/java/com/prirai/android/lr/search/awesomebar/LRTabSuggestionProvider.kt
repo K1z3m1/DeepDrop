@@ -15,7 +15,6 @@ class LRTabSuggestionProvider(
     private val switchToTabDescription: String = "Switch to tab",
     private val suggestionsHeader: String? = null,
 ) : AwesomeBar.SuggestionProvider {
-
     override val id: String = UUID.randomUUID().toString()
 
     override fun groupTitle(): String? = suggestionsHeader

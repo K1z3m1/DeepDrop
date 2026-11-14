@@ -7,16 +7,9 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
 import com.prirai.android.lr.preferences.UserPreferences
 import mozilla.components.browser.state.search.SearchEngine
+import java.util.concurrent.ConcurrentHashMap
 
 class SearchEngineList(private val context: Context) {
-
-    /**
-     * Cache of rasterised engine icons keyed by drawable resource id. Each
-     * icon is a ~48x48 ARGB_8888 bitmap; without this cache, every call to
-     * [getEngines] re-decodes and rasterises all 8 engine drawables (touched
-     * from `AwesomeBarView`, `SearchDialog`, awesomebar rebuilds, ...).
-     * Icons are shared across all `SearchEngine` instances the list emits.
-     */
     private fun getIconBitmap(drawableId: Int): Bitmap {
         iconCache[drawableId]?.let { return it }
         val drawable = ContextCompat.getDrawable(context, drawableId) ?: return createBitmap(48, 48)
@@ -48,10 +41,7 @@ class SearchEngineList(private val context: Context) {
     }
 
     companion object {
-        // Process-wide icon cache (search engines are known at compile time
-        // and the icons never change). ContentResolver / drawable-container
-        // parsing is measurably expensive on cold-start with 8 icons.
-        private val iconCache = java.util.concurrent.ConcurrentHashMap<Int, Bitmap>()
+        private val iconCache = ConcurrentHashMap<Int, Bitmap>()
 
         fun normalizeCustomSearchUrl(url: String): String {
             return url.replace("%s", "{searchTerms}")

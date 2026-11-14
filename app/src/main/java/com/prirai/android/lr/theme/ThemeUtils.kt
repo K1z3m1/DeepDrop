@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 import com.prirai.android.lr.preferences.UserPreferences
 import com.prirai.android.lr.settings.ThemeChoice
+import com.google.android.material.color.DynamicColors
 
 fun applyAppTheme(choice: Int) {
     val mode = when (choice) {
@@ -19,17 +20,12 @@ fun applyAppTheme(context: Context) {
     applyAppTheme(UserPreferences(context).appThemeChoice)
 }
 
-/**
- * Apply complete theme including Material You dynamic colors and AMOLED mode
- */
 fun applyCompleteTheme(activity: Activity) {
     applyAppTheme(activity)
     
-    // Apply Material You dynamic colors if enabled
     if (ThemeManager.shouldUseDynamicColors(activity)) {
-        com.google.android.material.color.DynamicColors.applyToActivityIfAvailable(activity)
+        DynamicColors.applyToActivityIfAvailable(activity)
     }
     
-    // Apply AMOLED mode and system bars
     ThemeManager.applySystemBarsTheme(activity, false)
 }

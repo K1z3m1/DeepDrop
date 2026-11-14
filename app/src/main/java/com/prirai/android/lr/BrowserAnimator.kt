@@ -13,17 +13,12 @@ import mozilla.components.concept.engine.EngineView
 import java.lang.ref.WeakReference
 import com.prirai.android.lr.components.toolbar.ToolbarPosition as OldToolbarPosition
 
-/**
- * Handles properly animating the browser engine based on `SHOULD_ANIMATE_FLAG` passed in through
- * nav arguments.
- */
 class BrowserAnimator(
     private val fragment: WeakReference<Fragment>,
     private val engineView: WeakReference<EngineView>,
     private val swipeRefresh: WeakReference<View>?,
     private val viewLifecycleScope: WeakReference<LifecycleCoroutineScope>
 ) {
-
     private val unwrappedEngineView: EngineView?
         get() = engineView.get()
 
@@ -35,14 +30,9 @@ class BrowserAnimator(
         unwrappedSwipeRefresh?.background = null
     }
 
-    /**
-     * Makes the swipeRefresh background a screenshot of the engineView in its current state.
-     * This allows us to "animate" the engineView.
-     */
     fun captureEngineViewAndDrawStatically(onComplete: () -> Unit) {
         unwrappedEngineView?.asView()?.context.let {
             viewLifecycleScope.get()?.launch {
-                // isAdded check is necessary because of a bug in viewLifecycleOwner. See AC#3828
                 if (!fragment.isAdded()) {
                     return@launch
                 }
@@ -52,7 +42,6 @@ class BrowserAnimator(
                     }
 
                     unwrappedSwipeRefresh?.apply {
-                        // If the bitmap is null, the best we can do to reduce the flash is set transparent
                         background = bitmap?.toDrawable(context.resources)
                             ?: Color.TRANSPARENT.toDrawable()
                     }

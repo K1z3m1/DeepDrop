@@ -7,7 +7,6 @@ import java.io.IOException
 import java.io.Serializable
 
 class BookmarkSiteItem : BookmarkItem, Serializable {
-
     lateinit var url: String
 
     override val type: Int
@@ -38,5 +37,4 @@ class BookmarkSiteItem : BookmarkItem, Serializable {
         protected const val COLUMN_NAME_URL = "2"
         const val BOOKMARK_ITEM_ID = 2
     }
-
 }

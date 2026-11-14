@@ -56,29 +56,13 @@ import com.prirai.android.lr.preferences.UserPreferences
 import com.prirai.android.lr.theme.ThemeManager
 import com.prirai.android.lr.ui.theme.LRTheme
 import kotlin.math.roundToInt
+import android.content.ContextWrapper
+import androidx.fragment.app.FragmentActivity
 
-/**
- * Custom Material 3 Expressive browser menu. The content is rendered with the
- * app's unified Compose stack ([LRTheme]); it does not use the Mozilla
- * Components menu system.
- *
- * Hosted as an overlay attached to the activity's content view (the same
- * pattern as the settings/profile Compose dialogs), NOT a [PopupWindow]: a
- * popup's decor view has no ViewTree lifecycle owners, so a ComposeView
- * inside one crashes with "ViewTreeLifecycleOwner not found" when it tries
- * to create its window recomposer. Attached to the activity content, the
- * ComposeView inherits the full view-tree owners for free.
- *
- * The overlay keeps the anchoring, outside-dismiss (full-screen scrim) and
- * back-press behaviour (intercepted while shown) of the previous
- * View-based implementation: absolute screen coordinates computed from
- * the anchor, never scrollable, 280dp wide.
- */
 class Material3BrowserMenu(
     private val context: Context,
     private val items: List<MenuItem>
 ) {
-
     sealed class MenuItem {
         data class Action(
             val id: String,
@@ -104,13 +88,10 @@ class Material3BrowserMenu(
             val onForwardClick: () -> Unit,
             val onReloadClick: () -> Unit,
             val onShareClick: () -> Unit,
-            /** Optional "+" button: shows / hides the tab group bar. */
             val onCollapseClick: (() -> Unit)? = null,
-            /** True while the tab group bar is hidden (button shows "+", otherwise "−"). */
             val tabBarHidden: Boolean = false,
             val backEnabled: Boolean = true,
             val forwardEnabled: Boolean = true,
-            /** Optional long-press affordance: opens the tab-history popup. */
             val onBackLongClick: (() -> Unit)? = null,
             val onForwardLongClick: (() -> Unit)? = null
         ) : MenuItem()
@@ -164,9 +145,6 @@ class Material3BrowserMenu(
         val displayMetrics = context.resources.displayMetrics
         val density = displayMetrics.density
         val menuWidthPx = (MENU_WIDTH_DP * density).toInt()
-        // Every row renders at a fixed height, so this dp sum is the natural
-        // content height. It only positions the popup; the window itself wraps
-        // the composed content, so the menu is never clipped or scrollable.
         val menuHeightPx = (visibleItems.menuHeightDp().value * density).roundToInt()
 
         val prefs = UserPreferences(context)
@@ -192,55 +170,37 @@ class Material3BrowserMenu(
         val gap = (8 * density).toInt()
         val screenPadding = (16 * density).toInt()
 
-        // Get anchor screen position
         val location = IntArray(2)
         anchor.getLocationOnScreen(location)
         val anchorY = location[1]
 
-        // Determine if anchor is in the bottom half of the screen (contextual toolbar case)
         val anchorInBottomHalf = anchorY > screenHeight / 2
 
-        // Decide whether to show above or below
         val showAbove = if (preferBottom) {
-            // Prefer bottom positioning: if anchor is in bottom half, show above it to keep menu at bottom
-            // if anchor is in top half, show below it to position menu at bottom
             anchorInBottomHalf
         } else {
-            // Prefer top positioning: if anchor is in top half, show below it to keep menu at top
-            // if anchor is in bottom half, show above it to position menu at top
             !anchorInBottomHalf
         }
 
-        // Calculate Y position
         val yPos = if (showAbove) {
-            // Show above - align bottom of menu with top of anchor
             anchorY - menuHeightPx - gap
         } else {
-            // Show below - position below anchor
             anchorY + anchor.height + gap
         }
 
-        // Calculate X position - align right edge of menu with right edge of screen minus padding
         val xPos = displayMetrics.widthPixels - menuWidthPx - screenPadding
 
-        // Ensure menu stays on screen
         val finalX = xPos.coerceIn(screenPadding, displayMetrics.widthPixels - menuWidthPx - screenPadding)
         val finalY = yPos.coerceIn(screenPadding, screenHeight - menuHeightPx - screenPadding)
 
-        // Host in the activity's content view: the ComposeView inherits the
-        // view-tree lifecycle owners (a PopupWindow's decor view has none,
-        // which crashed composition). A full-screen scrim dismisses on
-        // outside taps; an OnBackPressedCallback intercepts back while shown.
         val activity = anchor.context.let { ctx ->
-            var current: android.content.Context? = ctx
-            while (current is android.content.ContextWrapper) {
-                if (current is androidx.fragment.app.FragmentActivity) return@let current
+            var current: Context? = ctx
+            while (current is ContextWrapper) {
+                if (current is FragmentActivity) return@let current
                 current = current.baseContext
             }
             null
         } ?: run {
-            // No activity host (unit-test context): fall back to a plain
-            // popup so the API still behaves.
             popupWindow = PopupWindow(
                 composeView,
                 menuWidthPx,
@@ -256,7 +216,6 @@ class Material3BrowserMenu(
         val content = activity.window.decorView
             .findViewById(android.R.id.content) as? ViewGroup ?: return
 
-        // Screen coordinates -> content-view-local coordinates.
         val contentOrigin = IntArray(2)
         content.getLocationOnScreen(contentOrigin)
         val localX = finalX - contentOrigin[0]
@@ -298,16 +257,6 @@ class Material3BrowserMenu(
     }
 }
 
-// ============================================================================
-// Menu content (Compose)
-// ============================================================================
-
-/**
- * The menu card: one [Surface] in the theme's surface-container-high role, the
- * same container idiom as [com.prirai.android.lr.ui.components.LRCardRow].
- * One composable per legacy view-holder type, each at a fixed height so the
- * popup position math in [Material3BrowserMenu.show] stays exact.
- */
 @Composable
 private fun BrowserMenuContent(items: List<MenuItem>, onDismiss: () -> Unit) {
     val shape = MaterialTheme.shapes.medium
@@ -409,8 +358,6 @@ private fun MenuToggleRow(item: MenuItem.Toggle, onDismiss: () -> Unit) {
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        // Display-only: the row's toggleable owns the interaction, so the
-        // whole row (switch included) toggles and dismisses together.
         Switch(checked = item.isChecked, onCheckedChange = null)
     }
 }
@@ -498,7 +445,6 @@ private fun MenuToolbarButton(
             .alpha(if (enabled) 1f else DISABLED_ALPHA)
             .then(
                 if (enabled) {
-                    // combinedClickable performs the long-press haptic itself.
                     Modifier.combinedClickable(
                         interactionSource = interactionSource,
                         onClick = onClick,
@@ -660,8 +606,6 @@ private fun MenuIconRow(row: MenuItem.IconRow, onDismiss: () -> Unit) {
         repeat(ICON_ROW_SLOT_COUNT) { slot ->
             val rowItem = row.items.getOrNull(slot)
             if (rowItem == null) {
-                // The legacy layout kept unused slots invisible but laid out,
-                // preserving the equal-width grid.
                 Spacer(modifier = Modifier.weight(1f).height(ICON_CELL_HEIGHT))
             } else {
                 Column(
@@ -695,15 +639,6 @@ private fun MenuIconRow(row: MenuItem.IconRow, onDismiss: () -> Unit) {
     }
 }
 
-// ============================================================================
-// Height accounting
-// ============================================================================
-
-/**
- * The natural height of the composed menu, mirrored from the fixed row heights
- * above so [Material3BrowserMenu.show] can position the popup before the
- * content is composed. Keep in sync with the row composables.
- */
 private fun List<MenuItem>.menuHeightDp(): Dp =
     MENU_TOP_PADDING + fold(0.dp) { acc, item ->
         acc + when (item) {

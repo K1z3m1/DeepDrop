@@ -18,14 +18,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.prirai.android.lr.ext.components
 import mozilla.components.browser.state.state.TabSessionState
-import mozilla.components.browser.thumbnails.loader.ThumbnailLoader
 import mozilla.components.concept.base.images.ImageLoadRequest
+import android.graphics.Matrix
 
-/**
- * Composable that displays a tab thumbnail using Mozilla's ThumbnailLoader.
- * Falls back to a placeholder icon if thumbnail is not available.
- * Crops the thumbnail to show only the top 60-70% of the image.
- */
 @Composable
 fun ThumbnailImageView(
     tab: TabSessionState,
@@ -66,7 +61,7 @@ fun ThumbnailImageView(
                                 val drawableHeight = drawable.intrinsicHeight
                                 
                                 if (drawableWidth > 0 && drawableHeight > 0) {
-                                    val matrix = android.graphics.Matrix()
+                                    val matrix = Matrix()
                                     
                                     val scale = maxOf(
                                         width.toFloat() / drawableWidth,

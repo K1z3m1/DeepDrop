@@ -24,37 +24,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.prirai.android.lr.R
 import com.prirai.android.lr.ui.components.LRAlertDialog
+import androidx.compose.ui.platform.LocalContext
+import com.prirai.android.lr.browser.profile.ProfileManager
 
-/**
- * Reusable Dialog Components for Tab Menu System
- *
- * This file contains all dialog components used in the tab menu system:
- * - RenameGroupDialog: For renaming groups/islands
- * - ColorPickerDialog: For changing group colors
- * - ProfilePickerDialog: For moving tabs/groups between profiles
- *
- * These dialogs are designed to be reusable across different contexts
- * and maintain consistent styling with Material 3 guidelines.
- */
-
-// ============================================================================
-// RENAME GROUP DIALOG
-// ============================================================================
-
-/**
- * Dialog for renaming a group/island.
- * Validates that the name is not blank before allowing confirmation.
- *
- * Features:
- * - Pre-fills with current name
- * - Single-line text input
- * - Validates non-blank input
- * - Confirm/Cancel actions
- *
- * @param currentName The current name of the group
- * @param onConfirm Callback with new name when user confirms
- * @param onDismiss Callback when dialog is dismissed without confirming
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RenameGroupDialog(
@@ -93,31 +65,6 @@ fun RenameGroupDialog(
     )
 }
 
-// ============================================================================
-// COLOR PICKER DIALOG
-// ============================================================================
-
-/**
- * Dialog for picking a color for a group/island.
- * Shows a grid of 16 predefined Material Design colors.
- * Highlights the currently selected color with a white border.
- *
- * Features:
- * - 4x4 grid of colors
- * - Visual indication of current selection
- * - Immediate selection on tap
- * - Predefined Material Design color palette
- *
- * Color Palette:
- * - Red, Pink, Purple, Deep Purple
- * - Indigo, Blue, Light Blue, Cyan
- * - Teal, Green, Light Green, Lime
- * - Yellow, Amber, Orange, Deep Orange
- *
- * @param currentColor The current color of the group (as Int)
- * @param onConfirm Callback with selected color (as Int) when user picks a color
- * @param onDismiss Callback when dialog is dismissed without picking
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ColorPickerDialog(
@@ -125,7 +72,6 @@ fun ColorPickerDialog(
     onConfirm: (Int) -> Unit,
     onDismiss: () -> Unit
 ) {
-    // Material Design color palette - 16 colors
     val colors = remember {
         listOf(
             0xFFE57373.toInt(), // Red
@@ -193,35 +139,15 @@ fun ColorPickerDialog(
     )
 }
 
-// ============================================================================
-// PROFILE PICKER DIALOG
-// ============================================================================
-
-/**
- * Dialog for selecting a profile to move tabs/groups to.
- * Shows a list of available profiles for the user to choose from.
- *
- * Features:
- * - Lists all available profiles
- * - Simple tap-to-select interaction
- * - Cancel option
- *
- * @param onConfirm Callback with selected profile ID when user picks a profile
- * @param onDismiss Callback when dialog is dismissed without picking
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfilePickerDialog(
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    // Real profile list from ProfileManager instead of the previous
-    // "default / work / personal" hard-coded triple. Loaded once when the
-    // dialog is first composed - profiles are rarely created / renamed
-    // while a menu is open.
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     val profiles = remember {
-        com.prirai.android.lr.browser.profile.ProfileManager
+        ProfileManager
             .getInstance(context)
             .getAllProfiles()
             .map { it.id to it.name }
@@ -261,31 +187,3 @@ fun ProfilePickerDialog(
         }
     )
 }
-
-// ============================================================================
-// FUTURE DIALOG COMPONENTS
-// ============================================================================
-
-/**
- * Potential future dialogs to implement:
- *
- * 1. AddToGroupDialog:
- *    - Shows list of existing groups to add a tab to
- *    - Option to create new group
- *
- * 2. MergeGroupsDialog:
- *    - Confirmation dialog when merging two groups
- *    - Shows preview of combined tabs
- *
- * 3. CloseAllTabsDialog:
- *    - Confirmation dialog for destructive actions
- *    - Shows count of tabs to be closed
- *
- * 4. ExportGroupDialog:
- *    - Options for exporting group (bookmarks, sharing, etc.)
- *    - Format selection
- *
- * 5. GroupDetailsDialog:
- *    - Detailed view of group statistics
- *    - Tab list, memory usage, etc.
- */

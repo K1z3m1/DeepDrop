@@ -44,14 +44,7 @@ import com.prirai.android.lr.ui.theme.LRTheme
 import mozilla.components.feature.addons.Addon
 import mozilla.components.feature.addons.ui.translateName
 
-/**
- * The list of add-ons that are installed but not supported by the browser, on the shared
- * Material 3 Expressive Compose stack: one grouped [LRCardRow] card whose rows carry the
- * add-on's icon, name and a remove action. Removing the last one finishes the screen, as
- * the mozac adapter this replaces did.
- */
 class NotYetSupportedAddonActivity : AppCompatActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

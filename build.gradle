@@ -1,4 +1,3 @@
-// Removed buildscript block in favor of plugins block
 
 plugins {
     alias libs.plugins.android.application apply false

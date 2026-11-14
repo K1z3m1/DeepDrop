@@ -48,20 +48,14 @@ import com.prirai.android.lr.browser.profile.BrowserProfile
 import com.prirai.android.lr.browser.profile.ProfileIcons
 import com.prirai.android.lr.ui.components.mutedAdaptive
 import com.prirai.android.lr.ui.components.pressScale
+import com.prirai.android.lr.theme.ColorConstants
 
-/** One cell of the profile card grid. */
 private sealed interface ProfileCardItem {
     data class Profile(val profile: BrowserProfile) : ProfileCardItem
     data object Private : ProfileCardItem
     data object Add : ProfileCardItem
 }
 
-/**
- * The "Profiles" page of the tab sheet: a grid of profile cards - one per
- * profile, the Private card and an add-profile card. It swaps with the tab
- * cards page through the sheet's tab row. Tapping a card switches to that
- * profile; long-pressing a profile card opens its edit dialog.
- */
 @Composable
 fun ProfileCardsPage(
     profiles: List<BrowserProfile>,
@@ -110,7 +104,7 @@ fun ProfileCardsPage(
                 ProfileCardItem.Private -> ProfileCard(
                     icon = Icons.Filled.Shield,
                     iconTint = Color(
-                        com.prirai.android.lr.theme.ColorConstants.PrivateMode.PURPLE
+                        ColorConstants.PrivateMode.PURPLE
                     ).mutedAdaptive(),
                     label = stringResource(R.string.private_mode_short),
                     tabCount = privateTabCount,

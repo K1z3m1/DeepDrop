@@ -15,6 +15,7 @@ import mozilla.components.browser.menu.item.BrowserMenuItemToolbar
 import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.state.TabSessionState
 import mozilla.components.browser.state.store.BrowserStore
+import android.util.TypedValue
 
 class BrowserMenu(
     private val context: Context,
@@ -24,7 +25,6 @@ class BrowserMenu(
     private val lifecycleOwner: LifecycleOwner,
     val isPinningSupported: Boolean
 ) : ToolbarMenu {
-
     private val selectedSession: TabSessionState? get() = store.state.selectedTab
 
     override val menuBuilder by lazy {
@@ -124,7 +124,6 @@ class BrowserMenu(
     private val menuItems by lazy {
         val menuItems = listOfNotNull(
             settings,
-            findInPage,
             BrowserMenuDivider(),
             historyItem,
             bookmarksItem,
@@ -185,13 +184,6 @@ class BrowserMenu(
         onItemTapped.invoke(ToolbarMenu.Item.AddToHomeScreen)
     }
 
-    private val findInPage = ThemedBrowserMenuImageText(
-        label = context.getString(R.string.mozac_feature_findindpage_input),
-        imageResource = R.drawable.mozac_ic_search_24
-    ) {
-        onItemTapped.invoke(ToolbarMenu.Item.FindInPage)
-    }
-
     val historyItem = ThemedBrowserMenuImageText(
         context.getString(R.string.action_history),
         mozilla.components.ui.icons.R.drawable.mozac_ic_history_24
@@ -234,19 +226,10 @@ class BrowserMenu(
         onItemTapped.invoke(ToolbarMenu.Item.Bookmarks)
     }
 
-    val securityItem = ThemedBrowserMenuImageText(
-        label = "Security",
-        imageResource = mozilla.components.ui.icons.R.drawable.mozac_ic_lock_24
-    ) {
-        onItemTapped.invoke(ToolbarMenu.Item.Security)
-    }
-
     @ColorRes
     @VisibleForTesting
     internal fun primaryTextColor(): Int {
-        // Use Material 3 onSurface color for menu items
-        // Resolve the color from theme attribute at runtime
-        val typedValue = android.util.TypedValue()
+        val typedValue = TypedValue()
         val resolved = context.theme.resolveAttribute(
             com.google.android.material.R.attr.colorOnSurface,
             typedValue,
@@ -256,7 +239,6 @@ class BrowserMenu(
         return if (resolved && typedValue.resourceId != 0) {
             typedValue.resourceId
         } else {
-            // Fallback to primary_icon if Material 3 color not available
             R.color.primary_icon
         }
     }

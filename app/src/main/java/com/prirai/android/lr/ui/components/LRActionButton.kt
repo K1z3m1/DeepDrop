@@ -21,11 +21,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 
-/**
- * The medium, full-width call to action of a page or sheet bottom bar. With [progress] it becomes
- * a tonal button whose container fills from the start as the lambda moves from 0 to 1; the lambda
- * is read while drawing, so a moving fill never recomposes the button.
- */
 @Composable
 fun LRActionButton(
     text: String,

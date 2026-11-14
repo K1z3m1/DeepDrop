@@ -4,14 +4,9 @@ import com.prirai.android.lr.search.awesomebar.AwesomeBarInteractor
 import com.prirai.android.lr.search.toolbar.ToolbarInteractor
 import mozilla.components.browser.state.search.SearchEngine
 
-/**
- * Interactor for the search screen
- * Provides implementations for the AwesomeBarView and ToolbarView
- */
 class SearchDialogInteractor(
     private val searchController: SearchDialogController
 ) : AwesomeBarInteractor, ToolbarInteractor {
-
     override fun onUrlCommitted(url: String) {
         searchController.handleUrlCommitted(url)
     }

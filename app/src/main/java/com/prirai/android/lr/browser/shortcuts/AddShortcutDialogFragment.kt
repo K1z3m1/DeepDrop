@@ -13,9 +13,9 @@ import com.prirai.android.lr.ui.theme.LRTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import android.widget.Toast
 
 class AddShortcutDialogFragment : DialogFragment() {
-    
     private var initialUrl: String = ""
     private var initialTitle: String = ""
     
@@ -62,18 +62,18 @@ class AddShortcutDialogFragment : DialogFragment() {
             }
             
             withContext(Dispatchers.Main) {
-                android.widget.Toast.makeText(
+                Toast.makeText(
                     context,
                     "Added to favorites",
-                    android.widget.Toast.LENGTH_SHORT
+                    Toast.LENGTH_SHORT
                 ).show()
             }
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
-                android.widget.Toast.makeText(
+                Toast.makeText(
                     context,
                     "Failed to add favorite: ${e.message}",
-                    android.widget.Toast.LENGTH_SHORT
+                    Toast.LENGTH_SHORT
                 ).show()
             }
         }

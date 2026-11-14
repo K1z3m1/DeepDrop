@@ -26,15 +26,6 @@ class BookmarkManager private constructor(context: Context) : Serializable {
         @Volatile
         private var instance: BookmarkManager? = null
 
-        /**
-         * Threadsafe singleton accessor. Uses double-checked locking with a
-         * `@Volatile` field so that concurrent callers on different threads
-         * cannot each construct their own `BookmarkManager` (the old
-         * implementation had a plain `if (instance == null) instance = ...`
-         * race that could produce two managers pointing at the same
-         * `bookmarks.dat` file, with the corresponding possibility of
-         * concurrent-writer data corruption).
-         */
         fun getInstance(context: Context): BookmarkManager {
             return instance ?: synchronized(this) {
                 instance ?: BookmarkManager(context.applicationContext).also { instance = it }
@@ -57,9 +48,6 @@ class BookmarkManager private constructor(context: Context) : Serializable {
                 return true
             }
         } catch (e: IOException) {
-            // Bookmarks file is corrupt or unreadable. Return false so callers
-            // can react (currently none do - but at least the exception is
-            // no longer silently swallowed).
             logger.error("Failed to read bookmarks from ${file.path}", e)
         }
         return false
@@ -76,9 +64,6 @@ class BookmarkManager private constructor(context: Context) : Serializable {
                 return true
             }
         } catch (e: IOException) {
-            // Bookmarks write failed - disk full, permissions, etc. Callers
-            // observe the returned `false`; see BrowserFragment "Add Bookmark"
-            // menu action which surfaces this to the user as a Toast.
             logger.error("Failed to save bookmarks to ${file.path}", e)
         }
 
@@ -97,11 +82,6 @@ class BookmarkManager private constructor(context: Context) : Serializable {
         if (item is BookmarkSiteItem) {
             addToIndex(item)
         }
-    }
-
-    fun moveToFirst(folder: BookmarkFolderItem, item: BookmarkItem) {
-        folder.list.remove(item)
-        folder.list.add(0, item)
     }
 
     fun remove(folder: BookmarkFolderItem, index: Int) {
@@ -124,21 +104,17 @@ class BookmarkManager private constructor(context: Context) : Serializable {
     }
 
     fun flattenFolder(parentFolder: BookmarkFolderItem, folderToFlatten: BookmarkFolderItem) {
-        // Get all items from the folder to be flattened
         val itemsToMove = ArrayList(folderToFlatten.list)
         
-        // Move all items to parent folder
         itemsToMove.forEach { item ->
             folderToFlatten.list.remove(item)
             parentFolder.add(item)
             
-            // Update parent reference for folders
             if (item is BookmarkFolderItem) {
                 item.parent = parentFolder
             }
         }
         
-        // Remove the now-empty folder from parent
         parentFolder.list.remove(folderToFlatten)
     }
 
@@ -153,57 +129,6 @@ class BookmarkManager private constructor(context: Context) : Serializable {
                 if (child == item) {
                     it.remove()
                     return true
-                }
-            }
-        }
-        return false
-    }
-
-    fun moveTo(from: BookmarkFolderItem, to: BookmarkFolderItem, siteIndex: Int) {
-        val item = from.list.removeAt(siteIndex)
-        to.list.add(item)
-        if (item is BookmarkFolderItem) {
-            item.parent = to
-        }
-    }
-
-    fun isBookmarked(url: String?): Boolean {
-        if (url == null){
-            return false
-        }
-
-        var low = 0
-        var high = siteIndex.size - 1
-        val hash = url.hashCode()
-
-        while (low <= high) {
-            val mid = (low + high).ushr(1)
-            val itemHash = siteIndex[mid].url.hashCode()
-            when {
-                itemHash < hash -> low = mid + 1
-                itemHash > hash -> high = mid - 1
-                else -> {
-                    if (url == siteIndex[mid].url) {
-                        return true
-                    }
-                    for (i in mid - 1 downTo 0) {
-                        val nowHash = siteIndex[i].hashCode()
-                        if (hash != nowHash) {
-                            break
-                        }
-                        if (siteIndex[i].url == url) {
-                            return true
-                        }
-                    }
-                    for (i in mid + 1 until siteIndex.size) {
-                        val nowHash = siteIndex[i].hashCode()
-                        if (hash != nowHash) {
-                            break
-                        }
-                        if (siteIndex[i].url == url) {
-                            return true
-                        }
-                    }
                 }
             }
         }

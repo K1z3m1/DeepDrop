@@ -69,15 +69,16 @@ import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.feature.addons.Addon
 import mozilla.components.feature.addons.ui.translateName
 import mozilla.components.lib.state.ext.observeAsComposableState
+import android.util.TypedValue
+import androidx.compose.ui.platform.LocalContext
 
 private fun Context.getColorFromAttr(attr: Int): Int {
-    val typedValue = android.util.TypedValue()
+    val typedValue = TypedValue()
     theme.resolveAttribute(attr, typedValue, true)
     return typedValue.data
 }
 
 class ExtensionsBottomSheetFragment : BottomSheetDialogFragment() {
-
     companion object {
         const val TAG = "ExtensionsBottomSheet"
 
@@ -99,7 +100,7 @@ class ExtensionsBottomSheetFragment : BottomSheetDialogFragment() {
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
-                val context = androidx.compose.ui.platform.LocalContext.current
+                val context = LocalContext.current
                 val store = context.components.store
                 val extensions by store.observeAsComposableState { it.extensions }
                 val selectedTab by store.observeAsComposableState { it.selectedTab }
@@ -137,16 +138,13 @@ class ExtensionsBottomSheetFragment : BottomSheetDialogFragment() {
     private fun handleAddonClick(context: Context, addon: Addon) {
         dismiss()
         
-        // Get the web extension state from the store
         val store = context.components.store
         val webExtension = store.state.extensions[addon.id]
         val selectedTab = store.state.selectedTab
         
-        // Try to find and invoke the extension action (browser action or page action)
         var actionInvoked = false
         
         webExtension?.browserAction?.let { browserAction ->
-            // Get tab-specific overrides if available
             val tabAction = selectedTab?.extensionState?.get(addon.id)?.browserAction
             val finalAction = if (tabAction != null) {
                 browserAction.copyWithOverride(tabAction)
@@ -154,7 +152,6 @@ class ExtensionsBottomSheetFragment : BottomSheetDialogFragment() {
                 browserAction
             }
             
-            // Invoke the action's onClick handler
             finalAction.onClick?.invoke()
             actionInvoked = true
         }
@@ -168,7 +165,6 @@ class ExtensionsBottomSheetFragment : BottomSheetDialogFragment() {
                     pageAction
                 }
                 
-                // Check if page action is enabled before invoking
                 if (finalAction.enabled == true) {
                     finalAction.onClick?.invoke()
                     actionInvoked = true
@@ -176,15 +172,12 @@ class ExtensionsBottomSheetFragment : BottomSheetDialogFragment() {
             }
         }
         
-        // If no action was invoked, show the settings page
         if (!actionInvoked) {
             val intent = Intent(context, InstalledAddonDetailsActivity::class.java)
             intent.putExtra("add_on", addon)
             context.startActivity(intent)
         }
     }
-
-
 
     override fun onResume() {
         super.onResume()
@@ -213,8 +206,6 @@ fun ExtensionsBottomSheetContent(
     onManageAddonsClick: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    // The dialog theme's rounded_bottom_sheet provides the sheet chrome
-    // (28dp top corners, colorSurface); the content draws no second surface.
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -226,7 +217,6 @@ fun ExtensionsBottomSheetContent(
                 contentPadding = PaddingValues(start = 24.dp, end = 16.dp, bottom = 6.dp),
             )
 
-            // Content
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -285,7 +275,7 @@ fun ExtensionItem(
     addon: Addon,
     onClick: () -> Unit
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     var icon by remember(addon.id) { mutableStateOf<Bitmap?>(null) }
 
     LaunchedEffect(addon.id) {
@@ -343,7 +333,6 @@ fun ExtensionItem(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Extension info
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -366,7 +355,6 @@ fun ExtensionItem(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Chevron
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,

@@ -3,7 +3,6 @@ package com.prirai.android.lr.search.awesomebar
 import mozilla.components.browser.state.search.SearchEngine
 
 interface AwesomeBarInteractor {
-
     fun onUrlTapped(url: String)
 
     fun onSearchTermsTapped(searchTerms: String)
@@ -15,5 +14,4 @@ interface AwesomeBarInteractor {
     fun onExistingSessionSelected(tabId: String)
 
     fun onSearchShortcutsButtonClicked()
-
 }

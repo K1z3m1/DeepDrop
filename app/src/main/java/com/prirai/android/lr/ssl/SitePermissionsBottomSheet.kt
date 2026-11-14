@@ -68,11 +68,6 @@ import mozilla.components.support.ktx.kotlin.getOrigin
 import mozilla.components.support.ktx.kotlin.tryGetHostFromUrl
 import mozilla.components.ui.icons.R as iconsR
 
-/**
- * Which AC permission a row flips. BACKGROUND_PLAYBACK is LR-local (backed
- * by [BackgroundPlaybackAllowlist], not AC's `SitePermissions`); every other
- * kind maps 1:1 to an AC field.
- */
 private enum class PermissionKind {
     BACKGROUND_PLAYBACK,
     LOCATION,
@@ -95,30 +90,7 @@ private data class SitePermissionRowUi(
     val checked: Boolean,
 )
 
-/**
- * Material 3 bottom sheet that lists every site-permission for the current
- * origin and lets the user flip each one.
- *
- * Opened from `ConnectionInfoBottomSheet`'s "Site permissions" row. The
- * backing store is LR's `components.permissionStorage`, which is the
- * same `GeckoSitePermissionsStorage` AC uses for its own prompt
- * decisions - so toggling here is immediately picked up by
- * `SitePermissionsFeature.shouldShowPrompt` and sites that previously
- * triggered a prompt will stop prompting (and vice versa).
- *
- * Rows render with the shared grouped-card idiom: mozac icon + title +
- * Material 3 Switch, rebuilt from the stored row after every flip so the
- * switches always reflect storage.
- *
- * UX conventions:
- * - A `Status` field has three values (ALLOWED / NO_DECISION / BLOCKED).
- *   The M3 switch is boolean, so we treat NO_DECISION as off (user hasn't
- *   decided -> site will prompt) and ALLOWED as on. Flipping on writes
- *   ALLOWED; flipping off writes BLOCKED (so sites don't keep prompting).
- * - AutoplayStatus is already two-state (BLOCKED/ALLOWED); switch maps 1:1.
- */
 class SitePermissionsBottomSheet : BottomSheetDialogFragment() {
-
     private var current: SitePermissions? = null
     private var isPrivate: Boolean = false
     private var siteUrl: String = ""
@@ -165,11 +137,6 @@ class SitePermissionsBottomSheet : BottomSheetDialogFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         val context = requireContext()
-        // Prefer an explicit origin passed via arguments (used by the
-        // Site Exceptions screen in settings) so this sheet can be
-        // reused for any origin, not just the currently selected tab.
-        // Fall back to deriving from the selected tab for the normal
-        // "lock icon -> site permissions row" entry point.
         val argOrigin = arguments?.getString(ARG_ORIGIN)
         val argPrivate = arguments?.getBoolean(ARG_PRIVATE, false) ?: false
         val selectedTab = context.components.store.state.selectedTab
@@ -177,13 +144,11 @@ class SitePermissionsBottomSheet : BottomSheetDialogFragment() {
         siteUrl = argOrigin ?: tabUrl
         isPrivate = argOrigin?.let { argPrivate } ?: (selectedTab?.content?.private == true)
         val origin = argOrigin ?: siteUrl.getOrigin() ?: run {
-            // No valid origin (chrome:// / about:); nothing to show.
             dismiss()
             return
         }
         originState.value = origin
 
-        // Query storage on IO; render on Main.
         viewLifecycleOwner.lifecycleScope.launch {
             val stored = withContext(Dispatchers.IO) {
                 context.components.permissionStorage.findSitePermissionsBy(
@@ -197,28 +162,10 @@ class SitePermissionsBottomSheet : BottomSheetDialogFragment() {
         refreshRetentionLabel()
     }
 
-    /**
-     * Rebuilds the row list from the stored permissions. Only AC permissions
-     * the site has actually interacted with (non-default values) are shown
-     * so the sheet does not become a wall of twelve "Ask every time"
-     * entries for a page that never asked for anything.
-     *
-     * Background playback is a LR-local permission (not in AC's
-     * `SitePermissions` enum). Its row is always rendered since the
-     * user may want to opt-in before the site is "touched" in any AC
-     * sense.
-     *
-     * The autoplay permissions are also always shown when `stored` is
-     * non-null, since they are two-state and AC seeds them to concrete
-     * values.
-     */
     private fun rebuildRows() {
         val origin = originState.value ?: return
         val rows = mutableListOf<SitePermissionRowUi>()
 
-        // Background playback - always rendered because it is LR-local
-        // storage (BackgroundPlaybackAllowlist) and the user may want to
-        // opt in before any AC permission has been touched.
         rows += SitePermissionRowUi(
             kind = PermissionKind.BACKGROUND_PLAYBACK,
             titleRes = R.string.permission_background_playback,
@@ -234,8 +181,6 @@ class SitePermissionsBottomSheet : BottomSheetDialogFragment() {
                 @StringRes titleRes: Int,
                 @DrawableRes iconRes: Int,
             ) {
-                // Hide permissions the site has not touched yet - keeps the
-                // sheet focused on actual decisions.
                 if (value == Status.NO_DECISION) return
                 rows += SitePermissionRowUi(kind, titleRes, iconRes, value.isAllowed())
             }
@@ -249,8 +194,6 @@ class SitePermissionsBottomSheet : BottomSheetDialogFragment() {
             statusRow(PermissionKind.LOCAL_DEVICE, stored.localDeviceAccess, R.string.permission_local_device_access, iconsR.drawable.mozac_ic_device_mobile_24)
             statusRow(PermissionKind.LOCAL_NETWORK, stored.localNetworkAccess, R.string.permission_local_network_access, iconsR.drawable.mozac_ic_local_network_24)
 
-            // Autoplay rows - these are two-state so always meaningful once
-            // the origin has any stored permissions row.
             fun autoplayRow(
                 kind: PermissionKind,
                 value: AutoplayStatus,
@@ -300,11 +243,6 @@ class SitePermissionsBottomSheet : BottomSheetDialogFragment() {
         }
     }
 
-    /**
-     * Apply a mutation to the current SitePermissions row and persist to
-     * storage. If no row existed before (`current == null`), save a fresh
-     * row; otherwise update in place.
-     */
     private fun persist(mutate: SitePermissions.() -> SitePermissions) {
         val existing = current
         val updated = (existing ?: freshRow()).mutate()
@@ -325,12 +263,6 @@ class SitePermissionsBottomSheet : BottomSheetDialogFragment() {
         savedAt = System.currentTimeMillis(),
     )
 
-    /**
-     * Confirm-before-clear flow for cookies + DOM storage scoped to the
-     * current site, triggered by the "Clear cookies and site data" button.
-     * The confirm dialog explicitly calls out that the user may have to
-     * sign in again.
-     */
     private fun clearCookiesForCurrentSite() {
         if (siteUrl.isEmpty()) {
             dismiss()
@@ -353,13 +285,6 @@ class SitePermissionsBottomSheet : BottomSheetDialogFragment() {
         dismiss()
     }
 
-    /**
-     * Writes the retention window picked in the chooser dialog. Picking
-     * "Never" removes the row; any other value calls
-     * `CookiePolicyRepository.setPolicy`. After writing we refresh the
-     * chip label so the user sees the new state without re-opening the
-     * sheet.
-     */
     private fun onRetentionPicked(index: Int) {
         val origin = originState.value ?: return
         val repo = CookiePolicyRepository.getInstance(requireContext())
@@ -377,12 +302,6 @@ class SitePermissionsBottomSheet : BottomSheetDialogFragment() {
         }
     }
 
-    /**
-     * Reads the stored [CookiePolicy] for the current origin into the chip
-     * label state ("Never" when no row exists, otherwise e.g. "24 h" /
-     * "7 d"). Called from [onViewCreated] on initial render and from
-     * [onRetentionPicked] after the user picks a new value.
-     */
     private fun refreshRetentionLabel() {
         val origin = originState.value ?: return
         val repo = CookiePolicyRepository.getInstance(requireContext())
@@ -412,12 +331,6 @@ class SitePermissionsBottomSheet : BottomSheetDialogFragment() {
 
         fun newInstance(): SitePermissionsBottomSheet = SitePermissionsBottomSheet()
 
-        /**
-         * Open the sheet pre-wired to an explicit [origin] (instead of
-         * deriving from `BrowserStore.selectedTab`). Used by the Site
-         * Exceptions settings screen so the sheet works outside the
-         * browser surface.
-         */
         fun newInstanceForOrigin(
             origin: String,
             isPrivate: Boolean = false,
@@ -428,15 +341,6 @@ class SitePermissionsBottomSheet : BottomSheetDialogFragment() {
             }
         }
 
-        /**
-         * Icon references for the permissions currently in a non-default
-         * state on the given stored row. Used by `ConnectionInfoBottomSheet`
-         * to render the "icons of enabled permissions" visual next to the
-         * "Site permissions" row.
-         *
-         * Returns up to 5 icons so the row doesn't overflow; the full
-         * list is always available by tapping into the bottom sheet.
-         */
         fun summaryIcons(stored: SitePermissions?): List<Int> {
             if (stored == null) return emptyList()
             val out = mutableListOf<Int>()
@@ -460,12 +364,6 @@ class SitePermissionsBottomSheet : BottomSheetDialogFragment() {
     }
 }
 
-/**
- * The Compose body of the site-permissions sheet: the permission rows of the
- * origin, the cookie-policy chip row and the clear-cookies action, rendered
- * with the shared grouped-card idiom. The two destructive/choice flows render
- * as [LRAlertDialog]s.
- */
 @Composable
 private fun SitePermissionsSheetContent(
     origin: String?,
@@ -503,8 +401,6 @@ private fun SitePermissionsSheetContent(
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             if (showEmptyHint) {
-                // No AC permission has been interacted with yet, but the
-                // background-playback row above is still there to toggle.
                 Text(
                     text = stringResource(R.string.site_permissions_empty_hint),
                     style = MaterialTheme.typography.bodyMedium,
@@ -524,10 +420,6 @@ private fun SitePermissionsSheetContent(
                         )
                     }
                 }
-                // Hint for the LR-local background-playback row (the
-                // first row of the card): the toggle writes to the
-                // allow-list uniformly so a future broadening of the
-                // extension's content-script match needs no migration.
                 Text(
                     text = stringResource(R.string.permission_background_playback_subtitle),
                     style = MaterialTheme.typography.bodySmall,

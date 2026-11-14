@@ -1,12 +1,10 @@
 [versions]
 activity-compose = "1.13.0"
 agp = "9.3.1"
-annotation = "1.10.0"
 appcompat = "1.8.0"
-coil-compose = "2.7.0"
 # Alpha BOM: pins material3 1.5.0-alpha26 (M3 Expressive) + compose 1.13.0-alpha01 consistently.
 compose-bom = "2026.08.00"
-components = "156.0.1"
+components = "157.0.1"
 constraintlayout = "2.2.2"
 core-ktx = "1.19.0"
 google-devtools-ksp = "2.3.11"
@@ -16,14 +14,13 @@ material = "1.14.0"
 navigation = "2.9.8"
 preference-ktx = "1.2.1"
 recyclerview = "1.4.0"
-remotesettings = "156.0"
+remotesettings = "157.0.1"
 room = "2.8.4"
 swiperefreshlayout = "1.1.0"
 work = "2.11.0"
 
 [libraries]
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity-compose" }
-androidx-annotation = { group = "androidx.annotation", name = "annotation", version.ref = "annotation" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
@@ -33,7 +30,6 @@ androidx-foundation = { group = "androidx.compose.foundation", name = "foundatio
 androidx-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "lifecycle-viewmodel-compose" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-navigation-fragment-ktx = { group = "androidx.navigation", name = "navigation-fragment-ktx", version.ref = "navigation" }
-androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation-ui-ktx", version.ref = "navigation" }
 androidx-preference-ktx = { group = "androidx.preference", name = "preference-ktx", version.ref = "preference-ktx" }
 androidx-recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
@@ -51,7 +47,6 @@ browser-state = { group = "org.mozilla.components", name = "browser-state", vers
 browser-storage-sync = { group = "org.mozilla.components", name = "browser-storage-sync", version.ref = "components" }
 browser-thumbnails = { group = "org.mozilla.components", name = "browser-thumbnails", version.ref = "components" }
 browser-toolbar = { group = "org.mozilla.components", name = "browser-toolbar", version.ref = "components" }
-coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil-compose" }
 concept-awesomebar = { group = "org.mozilla.components", name = "concept-awesomebar", version.ref = "components" }
 concept-base = { group = "org.mozilla.components", name = "concept-base", version.ref = "components" }
 concept-engine = { group = "org.mozilla.components", name = "concept-engine", version.ref = "components" }
@@ -64,28 +59,22 @@ feature-awesomebar = { group = "org.mozilla.components", name = "feature-awesome
 feature-contextmenu = { group = "org.mozilla.components", name = "feature-contextmenu", version.ref = "components" }
 feature-customtabs = { group = "org.mozilla.components", name = "feature-customtabs", version.ref = "components" }
 feature-downloads = { group = "org.mozilla.components", name = "feature-downloads", version.ref = "components" }
-feature-findinpage = { group = "org.mozilla.components", name = "feature-findinpage", version.ref = "components" }
 feature-intent = { group = "org.mozilla.components", name = "feature-intent", version.ref = "components" }
 feature-media = { group = "org.mozilla.components", name = "feature-media", version.ref = "components" }
 feature-prompts = { group = "org.mozilla.components", name = "feature-prompts", version.ref = "components" }
-feature-recentlyclosed = { group = "org.mozilla.components", name = "feature-recentlyclosed", version.ref = "components" }
 feature-search = { group = "org.mozilla.components", name = "feature-search", version.ref = "components" }
 feature-session = { group = "org.mozilla.components", name = "feature-session", version.ref = "components" }
 feature-sitepermissions = { group = "org.mozilla.components", name = "feature-sitepermissions", version.ref = "components" }
 feature-tabs = { group = "org.mozilla.components", name = "feature-tabs", version.ref = "components" }
 feature-toolbar = { group = "org.mozilla.components", name = "feature-toolbar", version.ref = "components" }
-feature-webcompat = { group = "org.mozilla.components", name = "feature-webcompat", version.ref = "components" }
-feature-webnotifications = { group = "org.mozilla.components", name = "feature-webnotifications", version.ref = "components" }
 lib-fetch-httpurlconnection = { group = "org.mozilla.components", name = "lib-fetch-httpurlconnection", version.ref = "components" }
 lib-publicsuffixlist = { group = "org.mozilla.components", name = "lib-publicsuffixlist", version.ref = "components" }
 lib-state = { group = "org.mozilla.components", name = "lib-state", version.ref = "components" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 remotesettings = { group = "org.mozilla.appservices", name = "remotesettings", version.ref = "remotesettings" }
-service-location = { group = "org.mozilla.components", name = "service-location", version.ref = "components" }
 support-appservices = { group = "org.mozilla.components", name = "support-appservices", version.ref = "components" }
 support-base = { group = "org.mozilla.components", name = "support-base", version.ref = "components" }
 support-ktx = { group = "org.mozilla.components", name = "support-ktx", version.ref = "components" }
-support-locale = { group = "org.mozilla.components", name = "support-locale", version.ref = "components" }
 support-remotesettings = { group = "org.mozilla.components", name = "support-remotesettings", version.ref = "components" }
 support-utils = { group = "org.mozilla.components", name = "support-utils", version.ref = "components" }
 support-webextensions = { group = "org.mozilla.components", name = "support-webextensions", version.ref = "components" }

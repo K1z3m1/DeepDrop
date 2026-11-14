@@ -10,30 +10,23 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import mozilla.components.concept.toolbar.ScrollableToolbar
 import mozilla.components.concept.engine.EngineView
+import com.prirai.android.lr.theme.ThemeManager
 
-/**
- * Revolutionary unified toolbar system that combines all toolbar components
- * into one seamless, beautifully animated container with perfect scroll behavior.
- */
 class ModernToolbarSystem @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0,
 ) : LinearLayout(context, attrs, defStyleAttr), ScrollableToolbar {
-
     private var currentOffset = 0
     private var scrollingEnabled = true
     private val hideAnimator = ValueAnimator()
     private var engineView: EngineView? = null
 
-    // Position tracking for proper scroll direction
     private var toolbarPosition: ToolbarPosition = ToolbarPosition.BOTTOM
 
-    // Components
     private var tabGroupComponent: View? = null
     private var addressBarComponent: View? = null
     
-    // Toolbar offset callback for smooth margin adjustment
     private var onOffsetChangedListener: ((Int, Int) -> Unit)? = null
 
     enum class ToolbarPosition {
@@ -45,9 +38,8 @@ class ModernToolbarSystem @JvmOverloads constructor(
         clipToPadding = false
         clipChildren = false
         
-        // Use unified ThemeManager helper (supports AMOLED + Material 3)
         setBackgroundColor(
-            com.prirai.android.lr.theme.ThemeManager.getToolbarBackgroundColor(
+            ThemeManager.getToolbarBackgroundColor(
                 context, 
                 useElevation = true, 
                 elevationDp = 3f
@@ -56,7 +48,6 @@ class ModernToolbarSystem @JvmOverloads constructor(
     }
 
     fun addComponent(component: View, type: ComponentType) {
-
         val layoutParams = LayoutParams(
             LayoutParams.MATCH_PARENT,
             LayoutParams.WRAP_CONTENT
@@ -75,40 +66,12 @@ class ModernToolbarSystem @JvmOverloads constructor(
             }
         }
 
-        // Update engine view clipping after adding component
-        updateEngineViewClipping()
-    }
-
-    fun removeComponent(type: ComponentType) {
-        val component = when (type) {
-            ComponentType.TAB_GROUP -> tabGroupComponent
-            ComponentType.ADDRESS_BAR -> addressBarComponent
-        }
-
-        component?.let {
-            removeView(it)
-            when (type) {
-                ComponentType.TAB_GROUP -> tabGroupComponent = null
-                ComponentType.ADDRESS_BAR -> addressBarComponent = null
-            }
-        }
-
-        // Update engine view clipping after removing component
         updateEngineViewClipping()
     }
 
     fun setEngineView(engine: EngineView) {
         engineView = engine
 
-        // Previously called `setDynamicToolbarMaxHeight(currentHeight)`
-        // on first attach; that reserved a soft gutter inside the
-        // engine viewport which caused `position: fixed; bottom: 0`
-        // page elements to float above our pinned toolbar instead of
-        // sitting flush against it. The pinned toolbar's layout
-        // reservation now happens entirely via swipeRefresh.bottomMargin
-        // on the BrowserFragment side (see
-        // UnifiedToolbar.reconcileEngineViewHeight), so we tell Gecko
-        // there is no dynamic chrome at all.
         post {
             engine.setDynamicToolbarMaxHeight(0)
         }
@@ -117,12 +80,9 @@ class ModernToolbarSystem @JvmOverloads constructor(
     fun setToolbarPosition(position: ToolbarPosition) {
         toolbarPosition = position
         
-        // Setup window insets handling for edge-to-edge
-        // This allows toolbars to add padding for system bars without affecting fullscreen
         ViewCompat.setOnApplyWindowInsetsListener(this) { view, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             
-            // Only apply padding when visible (not in fullscreen)
             if (view.isVisible && view.alpha > 0f) {
                 when (toolbarPosition) {
                     ToolbarPosition.BOTTOM -> {
@@ -133,7 +93,6 @@ class ModernToolbarSystem @JvmOverloads constructor(
                     }
                 }
             } else {
-                // In fullscreen or hidden - no padding
                 view.setPadding(0, 0, 0, 0)
             }
             
@@ -193,60 +152,29 @@ class ModernToolbarSystem @JvmOverloads constructor(
         val totalHeight = getTotalHeight()
         currentOffset = offset.coerceIn(0, totalHeight)
 
-        // Position-aware translation:
-        // TOP toolbar: Negative Y to hide upward, 0 Y to show
-        // BOTTOM toolbar: Positive Y to hide downward, 0 Y to show
         translationY = when (toolbarPosition) {
             ToolbarPosition.TOP -> -currentOffset.toFloat()  // Negative moves UP (hiding)
             ToolbarPosition.BOTTOM -> currentOffset.toFloat()  // Positive moves DOWN (hiding)
         }
 
-        // Notify listener for engine view padding adjustment
         onOffsetChangedListener?.invoke(currentOffset, totalHeight)
 
-        // Update engine view padding to maintain clipping
         updateEngineViewClipping()
         
-        // Make toolbar transparent when fully hidden to prevent visibility in gesture navigation bar
-        // Calculate hide percentage (0 = fully visible, 1 = fully hidden)
         val hidePercentage = if (totalHeight > 0) {
             (currentOffset.toFloat() / totalHeight.toFloat()).coerceIn(0f, 1f)
         } else {
             0f
         }
         
-        // Fade out toolbar as it hides (becomes fully transparent when completely hidden)
         alpha = 1f - hidePercentage
         
-        // Keep visibility as VISIBLE to maintain layout space
-        // (alpha handles transparency, not visibility)
         visibility = VISIBLE
     }
     
-    /**
-     * Formerly updated GeckoView's dynamic-toolbar reservation as the
-     * toolbar translated during scroll. The toolbar is now pinned; only
-     * the aux bar (tab group bar) toggle via UnifiedToolbar's
-     * minimal state. Scroll-DOWN enters minimal (ModernScrollBehavior);
-     * the chevron button on the address bar toggles both directions and
-     * is the sole exit path. Chrome reservation is a static
-     * swipeRefresh.bottomMargin on the fragment side, so GeckoView's
-     * dynamic-toolbar reservation stays at 0.
-     *
-     * Kept as a no-op so the existing `updateEngineViewClipping()`
-     * call sites inside this file (addComponent, removeComponent,
-     * setToolbarOffset for fullscreen) continue to compile without
-     * touching every callsite.
-     */
     private fun updateEngineViewClipping() {
-        // Intentional no-op; see KDoc.
     }
 
-    fun getCurrentOffset(): Int = currentOffset
-    
-    /**
-     * Set listener for offset changes (for smooth margin adjustment)
-     */
     fun setOnOffsetChangedListener(listener: (Int, Int) -> Unit) {
         onOffsetChangedListener = listener
     }

@@ -8,13 +8,9 @@ import androidx.annotation.DrawableRes
 import androidx.core.content.ContextCompat
 import com.google.android.material.R as MaterialR
 import mozilla.components.browser.menu.item.BrowserMenuImageText
+import android.util.TypedValue
+import mozilla.components.browser.menu.BrowserMenu
 
-/**
- * Themed version of BrowserMenuImageText that uses Material 3 colors.
- * 
- * This wrapper applies colorOnSurface from Material 3 theme to menu icons and text,
- * ensuring proper theming in light/dark modes.
- */
 class ThemedBrowserMenuImageText(
     label: String,
     @DrawableRes imageResource: Int,
@@ -25,21 +21,17 @@ class ThemedBrowserMenuImageText(
     iconTintColorResource = android.R.color.transparent, // We'll apply color programmatically
     listener = listener
 ) {
-    
-    override fun bind(menu: mozilla.components.browser.menu.BrowserMenu, view: View) {
+    override fun bind(menu: BrowserMenu, view: View) {
         super.bind(menu, view)
         
-        // Apply Material 3 colorOnSurface to icon and text
         val context = view.context
         val m3Color = resolveM3Color(context)
         
-        // Find and tint the icon
         val iconView = view.findViewById<ImageView>(
             mozilla.components.browser.menu.R.id.image
         )
         iconView?.setColorFilter(m3Color)
         
-        // Find and color the text
         val textView = view.findViewById<TextView>(
             mozilla.components.browser.menu.R.id.text
         )
@@ -47,7 +39,7 @@ class ThemedBrowserMenuImageText(
     }
     
     private fun resolveM3Color(context: Context): Int {
-        val typedValue = android.util.TypedValue()
+        val typedValue = TypedValue()
         val resolved = context.theme.resolveAttribute(
             MaterialR.attr.colorOnSurface,
             typedValue,
@@ -59,7 +51,6 @@ class ThemedBrowserMenuImageText(
         } else if (resolved) {
             typedValue.data
         } else {
-            // Fallback to black
             ContextCompat.getColor(context, com.prirai.android.lr.R.color.menu_text_color)
         }
     }

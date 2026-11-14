@@ -38,10 +38,9 @@ import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
 import org.mozilla.gecko.util.ThreadUtils.runOnUiThread
 import java.io.File
 import java.io.FileOutputStream
-
+import android.util.Log
 
 class AdvancedSettingsFragment : BaseSettingsFragment() {
-
     private val webExtensionPromptFeature = ViewBoundFeatureWrapper<WebExtensionPromptFeature>()
 
     private val pickXpiFile = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
@@ -70,19 +69,15 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
             onClick = { sideloadXpiFile() }
         )
 
-        // GeckoView remote debugging - off by default. When on, a desktop
-        // Firefox can inspect this app's pages via about:debugging over USB.
         switchPreference(
             preference = requireContext().resources.getString(R.string.key_remote_debugging),
             isChecked = UserPreferences(requireContext()).remoteDebugging,
         ) {            val prefs = UserPreferences(requireContext())
             prefs.remoteDebugging = it
-            // Apply live so the user doesn't have to restart the app to
-            // start a debugging session.
             try {
                 requireContext().components.engine.settings.remoteDebuggingEnabled = it
             } catch (t: Throwable) {
-                android.util.Log.w(
+                Log.w(
                     "AdvancedSettings",
                     "Failed to apply remoteDebuggingEnabled at runtime",
                     t,
@@ -96,8 +91,6 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
             ).show()
         }
 
-        // Faster page loading: the predictor pref is baked into the Gecko
-        // runtime config at start-up (UserJsPreferences), so it needs a restart.
         switchPreference(
             preference = requireContext().resources.getString(R.string.key_fast_page_load),
             isChecked = UserPreferences(requireContext()).fastPageLoad,
@@ -110,13 +103,11 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
             ).show()
         }
 
-        // SECURITY: Third-party certificate trust disabled for security
         switchPreference(
             preference = requireContext().resources.getString(R.string.key_trust_third_party_certs),
             isChecked = false,
             isEnabled = false
         ) {
-            // Disabled for security reasons
         }
 
         switchPreference(
@@ -161,7 +152,6 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
             preference = resources.getString(R.string.key_collection_name),
             onClick = { pickCollectionName() }
         )
-
     }
 
     private fun showCollectionDisclaimer(enabled: Boolean) {
@@ -291,17 +281,14 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
         )
 
         try {
-            // Copy file to permanent extensions directory instead of cache
             val contentResolver = requireContext().contentResolver
             val inputStream = contentResolver.openInputStream(uri)
 
-            // Create permanent extensions directory in app's internal storage
             val extensionsDir = File(requireContext().filesDir, "sideloaded_extensions")
             if (!extensionsDir.exists()) {
                 extensionsDir.mkdirs()
             }
 
-            // Generate unique filename based on timestamp
             val timestamp = System.currentTimeMillis()
             val permanentFile = File(extensionsDir, "extension_${timestamp}.xpi")
 
@@ -311,7 +298,6 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
                 }
             }
 
-            // Install from the permanent file location
             components.engine.installWebExtension(
                 "file://${permanentFile.absolutePath}",
                 InstallationMethod.FROM_FILE,
@@ -325,7 +311,6 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
                                     components.engine.uninstallWebExtension(extension)
                                 }
                                 loadingDialog.dismiss()
-                                // Clean up permanent file if installation failed
                                 permanentFile.delete()
                                 return@launch
                             }
@@ -338,7 +323,6 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
                                 Toast.LENGTH_LONG
                             ).show()
                         }
-                        // Do NOT delete the permanent file - it's needed for restart persistence
                     }
                 },
                 onError = { error ->
@@ -350,7 +334,6 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
                         ).show()
                         loadingDialog.dismiss()
                     }
-                    // Clean up permanent file if installation failed
                     permanentFile.delete()
                 })
         } catch (e: Exception) {

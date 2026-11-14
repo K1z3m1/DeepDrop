@@ -11,9 +11,9 @@ import com.prirai.android.lr.R
 import com.prirai.android.lr.preferences.UserPreferences
 import com.prirai.android.lr.theme.ThemeManager
 import com.prirai.android.lr.ui.theme.LRTheme
+import androidx.compose.ui.platform.LocalContext
 
 class DownloadsBottomSheetFragment : BottomSheetDialogFragment() {
-
     companion object {
         const val TAG = "DownloadsBottomSheet"
 
@@ -33,7 +33,7 @@ class DownloadsBottomSheetFragment : BottomSheetDialogFragment() {
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
-                val context = androidx.compose.ui.platform.LocalContext.current
+                val context = LocalContext.current
                 val prefs = UserPreferences(context)
                 LRTheme(
                     darkTheme = ThemeManager.isDarkMode(context),

@@ -7,15 +7,12 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-/** The system font (Roboto on most devices). */
 val LRFontFamily: FontFamily = FontFamily.Default
 
-/** Material's own scale, for the roles LR keeps at their Material size. */
 private val MaterialScale = Typography()
 
 private fun baseTypography(family: FontFamily) =
     Typography(
-        // Display - Large titles
         displayLarge =
             TextStyle(
                 fontFamily = family,
@@ -33,7 +30,6 @@ private fun baseTypography(family: FontFamily) =
                 letterSpacing = 0.sp,
             ),
         displaySmall = MaterialScale.displaySmall.copy(fontFamily = family),
-        // Headline - Screen titles
         headlineLarge =
             TextStyle(
                 fontFamily = family,
@@ -51,7 +47,6 @@ private fun baseTypography(family: FontFamily) =
                 letterSpacing = 0.sp,
             ),
         headlineSmall = MaterialScale.headlineSmall.copy(fontFamily = family),
-        // Title - Card titles, section headers
         titleLarge =
             TextStyle(
                 fontFamily = family,
@@ -76,7 +71,6 @@ private fun baseTypography(family: FontFamily) =
                 lineHeight = 20.sp,
                 letterSpacing = 0.1.sp,
             ),
-        // Body - Main content
         bodyLarge =
             TextStyle(
                 fontFamily = family,
@@ -101,7 +95,6 @@ private fun baseTypography(family: FontFamily) =
                 lineHeight = 16.sp,
                 letterSpacing = 0.4.sp,
             ),
-        // Label - Buttons, tabs
         labelLarge =
             TextStyle(
                 fontFamily = family,
@@ -130,7 +123,6 @@ private fun baseTypography(family: FontFamily) =
 
 private fun TextStyle.emphasized(weight: FontWeight = FontWeight.Bold): TextStyle = copy(fontWeight = weight)
 
-/** The app's type scale, every role (and its emphasized form) set in [family]. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 fun lrTypography(family: FontFamily): Typography {
     val base = baseTypography(family)
@@ -153,5 +145,4 @@ fun lrTypography(family: FontFamily): Typography {
     )
 }
 
-/** The type scale in the system font. */
 val Typography: Typography = lrTypography(LRFontFamily)

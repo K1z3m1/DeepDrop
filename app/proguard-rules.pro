@@ -28,8 +28,29 @@
 # 6. Keep all BuildConfig classes
 -keep class **.BuildConfig { *; }
 
-# 7. Keep application classes
--keep class com.prirai.android.lr.** { *; }
+# 7. Application classes: keep only what is created/looked up by name
+# (manifest, XML, reflection, JS bridge). Everything else may be shrunk.
+# To revert to the old behaviour, restore:  -keep class com.prirai.android.lr.** { *; }
+-keep class com.prirai.android.lr.BrowserApp { *; }
+-keep public class com.prirai.android.lr.** extends android.app.Activity { <init>(...); }
+-keep public class com.prirai.android.lr.** extends android.content.BroadcastReceiver { <init>(...); }
+-keep public class com.prirai.android.lr.** extends android.content.ContentProvider { <init>(...); }
+-keep public class com.prirai.android.lr.** extends androidx.fragment.app.Fragment { <init>(...); }
+-keep public class com.prirai.android.lr.** extends androidx.fragment.app.DialogFragment { <init>(...); }
+-keep class com.prirai.android.lr.** extends androidx.preference.Preference { <init>(...); }
+-keep class com.prirai.android.lr.** extends android.view.View { <init>(...); }
+-keep class com.prirai.android.lr.** extends androidx.work.ListenableWorker { <init>(...); }
+-keep class com.prirai.android.lr.** extends androidx.lifecycle.ViewModel { <init>(...); }
+-keepclassmembers class com.prirai.android.lr.** {
+    @android.webkit.JavascriptInterface <methods>;
+}
+-keep @androidx.room.Database class * { *; }
+-keep @androidx.room.Entity class * { *; }
+-keep @androidx.room.Dao class * { *; }
+-keepclassmembers class com.prirai.android.lr.** extends java.lang.Enum {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
 -keep public class * extends androidx.fragment.app.Fragment
 -keep public class * extends androidx.appcompat.app.AppCompatActivity
 -keep public class * extends android.app.Service

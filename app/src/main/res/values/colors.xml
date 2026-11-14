@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <resources>
+    <!-- colors.xml -->
     <!-- Legacy colors (deprecated - use Material 3 attributes instead) -->
 <color name="white">#FFFFFF</color>
     
@@ -42,7 +43,6 @@
 <color name="primary_icon">@color/m3_on_surface_variant</color>
     <color name="secondary_icon">@color/m3_outline</color>
 <color name="statusbar_background">@color/m3_surface_container_high</color>
-    <color name="icon_inside_5">#f59714</color>
 
     <!-- Tab card colors (light mode) -->
 <!-- Search result chips -->
@@ -76,4 +76,11 @@
 
     
     <color name="photonWhite">#FFFBFBFE</color>
+
+    <!-- unified_toolbar_colors.xml -->
+    <!-- Group colors for tab groups -->
+
+    <!-- Surface colors -->
+
+    <!-- Toolbar colors -->
 </resources>

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <resources>
+    <!-- strings.xml -->
   <string name="app_name" translatable="false">LR</string>
   <string
         name="url_project"
@@ -49,10 +50,6 @@
         name="key_font_size_factor"
         translatable="false"
     >font_size_factor</string>
-<string
-        name="key_show_contextual_toolbar"
-        translatable="false"
-    >show_contextual_toolbar</string>
   <string
         name="key_show_tab_group_bar"
         translatable="false"
@@ -201,7 +198,6 @@
 <string name="my_website_placeholder">My Website</string>
 <string name="private_mode_short">Private</string>
 <string name="jump_back_in">Jump Back In</string>
-<string name="recently_closed">Recently Closed</string>
 <string name="private_browsing">Private Browsing</string>
 <string name="private_browsing_does">What Private Browsing Does</string>
 <string name="private_browsing_does_desc">Your browsing history, cookies, and site data won\'t be saved after you close all private tabs.</string>
@@ -260,60 +256,6 @@
     <item quantity="one">%1$d Tab</item>
     <item quantity="other">%1$d Tabs</item>
 </plurals>
-<plurals name="connected_devices">
-    <item quantity="one">Connected to %1$d other device</item>
-    <item quantity="other">Connected to %1$d other devices</item>
-</plurals>
-<string name="enabled">Enabled</string>
-<string name="disabled">Disabled</string>
-<string name="start_browsing">Start Browsing</string>
-<string name="skip">Skip</string>
-<string name="next">Next</string>
-<string name="welcome_to_lr">Welcome to LR</string>
-<string name="fast_private_browser">A fast, private browser</string>
-<string name="onboarding_bullet_geckoview">• Built on Mozilla\'s powerful GeckoView engine</string>
-<string name="onboarding_bullet_tab_groups">• Tab groups to stay organised</string>
-<string name="onboarding_bullet_sync">• Firefox Account sync across devices</string>
-<string name="onboarding_bullet_extensions">• Powerful extension support</string>
-<string name="onboarding_bullet_profiles">• Multiple profiles for different identities</string>
-<string name="onboarding_bullet_downloads">• Download manager with progress tracking</string>
-<string name="choose_your_theme">Choose Your Theme</string>
-<string name="personalise_looks">Personalise how LR looks</string>
-<string name="app_theme">App Theme</string>
-<string name="web_page_theme">Web Page Theme</string>
-<string name="theme_system_default">System Default</string>
-<string name="light_pages">Light pages</string>
-<string name="dark_pages">Dark pages</string>
-<string name="follow_system">Follow system</string>
-<string name="pick_search_engine">Pick a Search Engine</string>
-<string name="choose_default_search">Choose your default search for browsing</string>
-<string name="privacy_by_default">Privacy by Default</string>
-<string name="lr_protects">LR protects you as you browse</string>
-<string name="tracker_ad_blocking">Tracker &amp; ad blocking</string>
-<string name="fingerprint_protection">Fingerprint protection</string>
-<string name="enhanced_tracking_protection_short">Enhanced Tracking Protection</string>
-<string name="strict_https">Strict HTTPS enforcement</string>
-<string name="customise_settings">Customise Settings</string>
-<string name="block_trackers_cookies">Block trackers and third-party cookies</string>
-<string name="warn_dangerous_sites">Warn about dangerous sites</string>
-<string name="show_suggestions_as_you_type">Show suggestions as you type</string>
-<string name="you_re_all_set">You\'re all set!</string>
-<string name="here_s_what_configured">Here\'s what you configured</string>
-<string name="theme_label">Theme</string>
-<string name="search_engine_label">Search Engine</string>
-<string name="toolbar_position_title">Toolbar Position</string>
-<string name="address_bar_where">Choose where the address bar appears</string>
-<string name="toolbar_top">Top</string>
-<string name="toolbar_bottom">Bottom</string>
-<string name="address_bar_top_desc">Address bar at the top of the screen</string>
-<string name="address_bar_bottom_desc">Address bar at the bottom of the screen</string>
-<string name="tab_bar_title">Tab Group Bar</string>
-<string name="tab_bar_subtitle">Switch tabs and tab groups in one tap. Show or hide it anytime with the + button in the ••• menu</string>
-<string name="show_tab_bar">Show Tab Group Bar</string>
-<string name="show_tab_bar_desc">Switch between tab groups at a glance</string>
-<string name="hide_tab_bar">Hide Tab Group Bar</string>
-<string name="hide_tab_bar_desc">More screen space – bring it back with + in the ••• menu</string>
-<string name="icon_size">Icon Size</string>
 <string name="enabled_section">Enabled (%1$d)</string>
 <string name="recommended_section">Recommended (%1$d)</string>
 <string name="sort_name">Name</string>
@@ -369,7 +311,6 @@
 
   <string name="settings_about">About</string>
 
-
   <!-- Update bottom sheet (shown by BrowserActivity when the periodic
        worker has written a pending manifest; see
        UpdateAvailableBottomSheet.kt). -->
@@ -386,10 +327,6 @@
         name="app_restart"
     >Please restart the app for the change to take effect.</string>
 
-<string name="show_contextual_toolbar">Show contextual toolbar</string>
-  <string
-        name="show_contextual_toolbar_desc"
-    >Display bottom toolbar with navigation buttons</string>
   <string name="show_tab_group_bar">Show tab group bar</string>
   <string
         name="show_tab_group_bar_desc"
@@ -681,7 +618,6 @@
 
     <!-- Custom Tabs -->
   <string name="browser_menu_open_in_lr">Open in LR</string>
-  <string name="browser_menu_find_in_page">Find in page</string>
   <string name="custom_tab_menu_minimize">Minimize</string>
 
   <!-- WebAuthn/FIDO2 Digital Asset Links -->
@@ -694,19 +630,13 @@
     }]
   </string>
 
-  <!-- Onboarding strings -->
 <string name="extensions">Extensions</string>
 <string name="small">Small</string>
   <string name="large">Large</string>
 <!-- Per-site dark mode -->
 
-
     <!-- Web Theme -->
 <!-- Settings -->
-  <string name="toolbar_icon_size">Toolbar Icon Size</string>
-  <string
-        name="toolbar_icon_size_desc"
-    >Adjust the size of toolbar icons</string>
   <string name="interface_font_scale">Interface Font Size</string>
   <string
         name="interface_font_scale_desc"
@@ -758,7 +688,6 @@
     >Clearing cookies every %1$s</string>
   <string name="site_exceptions_no_overrides">No active overrides</string>
 
-
   <string name="more_options">More Options</string>
 
 <string name="addon_enabled_for_profiles">Enabled for profiles</string>
@@ -802,7 +731,6 @@
     <string name="menu_add_to_favorite">Favorite</string>
     <string name="menu_close_tab">Close tab</string>
 
-
     <!-- One-time tab migration popup (see DefaultProfileTabMigration). -->
     <string name="lr_default_profile_migration_title">Tabs moved to Default profile</string>
     <string name="lr_default_profile_migration_message">%1$d tab(s) that had no profile assigned were moved to the Default profile. You can find them in the tab bar now.</string>
@@ -835,7 +763,6 @@
     <!-- Minimal-state toggle button (right of the URL pill in the address bar).
          Down chevron while expanded (tap to minimize); up chevron while
          minimal (tap to restore the tab bar + contextual bar). -->
-    <string name="minimal_state_collapse">Collapse toolbar</string>
     <string name="info_icon_description">Show information</string>
 
     <!-- Firefox Sync settings page -->
@@ -843,4 +770,113 @@
   <string name="mozac_browser_menu_new_private_tab">New private tab</string>
     <string name="tab_group_bar_menu_show">Show tab group bar</string>
     <string name="tab_group_bar_menu_hide">Hide tab group bar</string>
+
+    <!-- strings_addon_details.xml -->
+    <string name="addon_installing">Installing…</string>
+    <string name="addon_no_permissions">No permissions requested</string>
+
+    <!-- strings_bookmarks.xml -->
+    <!-- Bookmarks bottom sheet (Compose) -->
+    <string name="bookmark_select_items">Select items</string>
+    <string name="bookmark_root_folder">Root</string>
+    <string name="bookmark_unnamed_folder">Unnamed folder</string>
+    <string name="bookmark_opened_tabs_background">Opened %1$d tabs in background</string>
+    <string name="bookmark_no_sites_selected">No bookmark sites selected</string>
+    <string name="bookmark_moved_to">Moved \"%1$s\" to \"%2$s\"</string>
+    <string name="bookmark_moved_items_to">Moved %1$d items to \"%2$s\"</string>
+    <string name="bookmark_deleted_items">Deleted %1$d items</string>
+    <string name="bookmark_delete_items_confirm">Delete %1$d items?</string>
+    <string name="bookmark_flattened">Flattened \"%1$s\"</string>
+    <string name="bookmark_error_moving">Error moving bookmark</string>
+    <string name="bookmark_error_moving_items">Error moving items</string>
+    <string name="bookmark_error_deleting">Error deleting bookmark</string>
+    <string name="bookmark_error_deleting_items">Error deleting items</string>
+    <string name="bookmark_error_flattening">Error flattening folder</string>
+
+    <!-- strings_contextual_menu.xml -->
+    <!-- Contextual bottom toolbar: the back slot shows the bookmark glyph on the homepage. -->
+
+    <!--
+      Previously declared by contextual_bottom_toolbar.xml (deleted when the
+      toolbar moved to Compose rendering). BrowserFragment.showBrowserMenu()
+      looks the contextual toolbar's menu button up by this id to anchor the
+      browser menu popup, so the id must stay defined.
+    -->
+    <item type="id" name="menu_button" />
+
+    <!-- strings_history.xml -->
+    <string name="history_search_hint">Search history</string>
+    <string name="history_section_today">Today</string>
+    <string name="history_section_yesterday">Yesterday</string>
+    <string name="history_section_this_week">This week</string>
+    <string name="history_section_this_month">This month</string>
+    <string name="history_section_older">Older</string>
+    <string name="history_time_just_now">Just now</string>
+    <string name="history_time_minutes_ago">%1$dm ago</string>
+    <string name="history_time_hours_ago">%1$dh ago</string>
+    <string name="history_time_days_ago">%1$dd ago</string>
+    <string name="history_time_weeks_ago">%1$dw ago</string>
+    <string name="history_time_months_ago">%1$dmo ago</string>
+
+    <!-- strings_settings.xml -->
+    <string name="pref_amoled_mode">AMOLED mode</string>
+    <string name="pref_appearance">Appearance</string>
+    <string name="pref_apply_semi_transparent_overlay_to_homepa">Apply semi-transparent overlay to homepage background</string>
+    <string name="pref_blocked_categories">Blocked Categories</string>
+    <string name="pref_blocks_ads_that_track_your_browsing">Blocks ads that track your browsing</string>
+    <string name="pref_blocks_content_that_tracks_your_browsing">Blocks content that tracks your browsing</string>
+    <string name="pref_blocks_email_tracking_pixels">Blocks email tracking pixels</string>
+    <string name="pref_blocks_scripts_that_fingerprint_your_dev">Blocks scripts that fingerprint your device</string>
+    <string name="pref_blocks_scripts_that_mine_cryptocurrency">Blocks scripts that mine cryptocurrency</string>
+    <string name="pref_blocks_social_media_tracking">Blocks social media tracking</string>
+    <string name="pref_browser">Browser</string>
+    <string name="pref_choose_what_to_block_in_custom_mode">Choose what to block in Custom mode</string>
+    <string name="pref_clear_browsing_data">Clear browsing data</string>
+    <string name="pref_controls_how_lr_blocks_trackers_and_scri">Controls how LR blocks trackers and scripts</string>
+    <string name="pref_cryptominers">Cryptominers</string>
+    <string name="pref_developer_options">Developer options (advanced)</string>
+    <string name="pref_dim_homepage_wallpaper">Dim homepage wallpaper</string>
+    <string name="pref_downloads">Downloads</string>
+    <string name="pref_dynamic_colors">Dynamic colors</string>
+    <string name="pref_email_tracking">Email Tracking</string>
+    <string name="pref_enhanced_tracking_protection">Enhanced Tracking Protection</string>
+    <string name="pref_extension_management">Extension Management</string>
+    <string name="pref_fingerprinters">Fingerprinters</string>
+    <string name="pref_gestures">Gestures</string>
+    <string name="pref_homepage">Homepage</string>
+    <string name="pref_pure_black_background_for_oled_displays_">Pure black background for OLED displays (dark mode only)</string>
+    <string name="pref_security">Certificates</string>
+    <string name="pref_social_trackers">Social Trackers</string>
+    <string name="pref_tabs_layout">Tabs &amp; Layout</string>
+    <string name="pref_tabs_permissions">Site permissions &amp; tabs</string>
+    <string name="pref_text_display">Text &amp; Display</string>
+    <string name="pref_toolbar_navigation">Toolbar &amp; Navigation</string>
+    <string name="pref_tracking_ads">Tracking Ads</string>
+    <string name="pref_tracking_content">Tracking Content</string>
+    <string name="pref_tracking_protection">Tracking Protection</string>
+    <string name="pref_use_colors_from_your_wallpaper_android_1">Use colors from your wallpaper (Android 12+)</string>
+    <string name="pref_warn_remote_debugging">Lets a computer inspect open pages over USB. Keep off unless you are developing.</string>
+    <string name="pref_warn_trust_certs">Trusts certificates installed by you or other apps. Turn on only if you understand the risk.</string>
+    <string name="settings_group_browsing">Browsing</string>
+    <string name="settings_group_privacy_data">Privacy &amp; data</string>
+    <string name="settings_group_system">System</string>
+
+    <!-- strings_ssl.xml -->
+    <!-- Connection info (lock icon) bottom sheet. -->
+    <string name="connection_is_not_secure">Connection is not secure</string>
+    <string name="connection_internal_page">Internal page</string>
+    <string name="certificate_issuer_unknown">Unknown</string>
+    <string name="tracking_protection_enabled_toast">Tracking protection enabled</string>
+    <string name="tracking_protection_disabled_toast">Tracking protection disabled</string>
+
+    <!-- strings_tabsearch.xml -->
+    <!-- Unified search sheet (tab sheet's Search button) -->
+    <string name="tabsearch_title">Search</string>
+    <string name="tabsearch_unknown_profile">Unknown</string>
+    <string name="tabsearch_time_last_hour">Last hour</string>
+    <string name="tabsearch_time_today">Today</string>
+    <string name="tabsearch_time_yesterday">Yesterday</string>
+    <string name="tabsearch_time_this_week">This week</string>
+    <string name="tabsearch_time_this_month">This month</string>
+    <string name="tabsearch_time_older">Older</string>
 </resources>

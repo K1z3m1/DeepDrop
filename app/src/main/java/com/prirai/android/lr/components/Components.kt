@@ -4,8 +4,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.content.res.Configuration
 import androidx.core.app.NotificationManagerCompat
-import com.prirai.android.lr.BrowserActivity
-import com.prirai.android.lr.R
 import com.prirai.android.lr.downloads.DownloadService
 import com.prirai.android.lr.ext.components
 import com.prirai.android.lr.media.MediaSessionService
@@ -35,7 +33,6 @@ import mozilla.components.browser.state.engine.middleware.TranslationsMiddleware
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.browser.storage.sync.PlacesBookmarksStorage
 import mozilla.components.browser.storage.sync.PlacesHistoryStorage
-import mozilla.components.concept.base.crash.CrashReporting
 import mozilla.components.browser.thumbnails.ThumbnailsMiddleware
 import mozilla.components.browser.thumbnails.storage.ThumbnailStorage
 import mozilla.components.browser.thumbnails.loader.ThumbnailLoader
@@ -46,7 +43,6 @@ import mozilla.components.concept.engine.mediaquery.PreferredColorScheme
 import mozilla.components.concept.fetch.Client
 import mozilla.components.feature.addons.AddonManager
 import mozilla.components.feature.addons.amo.AMOAddonsProvider
-import mozilla.components.feature.addons.migration.DefaultSupportedAddonsChecker
 import mozilla.components.feature.addons.update.DefaultAddonUpdater
 import mozilla.components.feature.app.links.AppLinksInterceptor
 import mozilla.components.feature.app.links.AppLinksUseCases
@@ -62,14 +58,11 @@ import mozilla.components.feature.media.MediaSessionFeature
 import mozilla.components.feature.media.middleware.RecordingDevicesMiddleware
 import mozilla.components.feature.prompts.PromptMiddleware
 import mozilla.components.feature.prompts.file.FileUploadsDirCleaner
-import mozilla.components.feature.recentlyclosed.RecentlyClosedMiddleware
-import mozilla.components.feature.recentlyclosed.RecentlyClosedTabsStorage
 import mozilla.components.feature.search.SearchApplicationName
 import mozilla.components.feature.search.SearchDeviceType
 import mozilla.components.feature.search.SearchUpdateChannel
 import mozilla.components.feature.search.SearchUseCases
 import mozilla.components.feature.search.middleware.SearchMiddleware
-import mozilla.components.feature.search.region.RegionMiddleware
 import mozilla.components.feature.search.storage.SearchEngineSelectorConfig
 import mozilla.components.feature.session.HistoryDelegate
 import mozilla.components.feature.session.SessionUseCases
@@ -77,10 +70,7 @@ import mozilla.components.feature.session.middleware.LastAccessMiddleware
 import mozilla.components.feature.session.middleware.undo.UndoMiddleware
 import mozilla.components.feature.sitepermissions.OnDiskSitePermissionsStorage
 import mozilla.components.feature.tabs.TabsUseCases
-import mozilla.components.feature.webcompat.WebCompatFeature
-import mozilla.components.feature.webnotifications.WebNotificationFeature
 import mozilla.components.lib.publicsuffixlist.PublicSuffixList
-import mozilla.components.service.location.LocationService
 import mozilla.components.support.base.android.NotificationsDelegate
 import mozilla.components.support.base.worker.Frequency
 import mozilla.appservices.remotesettings.RemoteSettingsServer
@@ -89,22 +79,20 @@ import org.mozilla.geckoview.ContentBlocking
 import org.mozilla.geckoview.GeckoRuntime
 import org.mozilla.geckoview.GeckoRuntimeSettings
 import java.util.concurrent.TimeUnit
-
+import android.os.Environment
+import com.prirai.android.lr.browser.profile.DefaultProfileTabMigration
+import com.prirai.android.lr.browser.profile.ProfileManager
+import com.prirai.android.lr.browser.profile.ProfileMiddleware
+import com.prirai.android.lr.browser.tabgroups.TabGroupMiddleware
+import com.prirai.android.lr.browser.tabgroups.UnifiedTabGroupManager
+import com.prirai.android.lr.browser.tabs.sleep.SleepingTabsManager
+import com.prirai.android.lr.middleware.MediaSessionThrottleMiddleware
+import mozilla.components.feature.tabs.CustomTabsUseCases
+import mozilla.components.support.utils.DefaultDownloadFileUtils
 
 private const val DAY_IN_MINUTES = 24 * 60L
-private const val RECENTLY_CLOSED_MAX = 10
-
-/** No-op [CrashReporting] for components that require one but LR has no crash service. */
-private val noOpCrashReporter = object : CrashReporting {
-    override fun submitCaughtException(throwable: Throwable) = kotlinx.coroutines.Job()
-    override fun recordCrashBreadcrumb(breadcrumb: mozilla.components.concept.base.crash.Breadcrumb) = Unit
-}
 
 open class Components(private val applicationContext: Context) {
-    
-    // Visual completeness queue for deferred initialization.
-    // Lazy so the Mutex + mutableListOf allocation is skipped if nothing
-    // ever queues against it (test fixtures, headless flows).
     val visualCompletenessQueue by lazy { VisualCompletenessQueue() }
     companion object {
         const val BROWSER_PREFERENCES = "browser_preferences"
@@ -118,7 +106,7 @@ open class Components(private val applicationContext: Context) {
     val faviconCache by lazy { FaviconCache.getInstance(applicationContext) }
 
     val tabGroupManager by lazy {
-        com.prirai.android.lr.browser.tabgroups.UnifiedTabGroupManager.getInstance(applicationContext)
+        UnifiedTabGroupManager.getInstance(applicationContext)
     }
 
     val fileSizeFormatter by lazy { DefaultFileSizeFormatter(applicationContext) }
@@ -127,27 +115,17 @@ open class Components(private val applicationContext: Context) {
 
     val downloadEstimator by lazy { DownloadEstimator(dateTimeProvider) }
 
-    // Method reference instead of lambda-wrapping-lambda - the previous form
-    // `by lazy { { applicationContext.packageName } }` built the inner lambda
-    // the first time the lazy was read; the method reference below produces
-    // a single `Function0` instance with no captured closure.
     val packageNameProvider: () -> String = applicationContext::getPackageName
 
-    // Lazy so that merely constructing Components does not open the
-    // "browser_preferences" SharedPreferences file (a synchronous XML read).
-    // The field is only touched from a handful of settings call sites, all
-    // off the critical startup path.
     val preferences: SharedPreferences by lazy {
         applicationContext.getSharedPreferences(BROWSER_PREFERENCES, Context.MODE_PRIVATE)
     }
-
 
     fun darkEnabled(url: String? = null): PreferredColorScheme {
         val darkOn =
                 (applicationContext.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                         Configuration.UI_MODE_NIGHT_YES
         
-        // Check per-site override first
         if (url != null) {
             val siteDarkMode = applicationContext.getSharedPreferences("site_dark_mode_override", Context.MODE_PRIVATE)
             if (siteDarkMode.contains(url)) {
@@ -160,7 +138,6 @@ open class Components(private val applicationContext: Context) {
             }
         }
         
-        // Use global web theme
         return when {
             UserPreferences(applicationContext).webThemeChoice == ThemeChoice.DARK.ordinal -> PreferredColorScheme.Dark
             UserPreferences(applicationContext).webThemeChoice == ThemeChoice.LIGHT.ordinal -> PreferredColorScheme.Light
@@ -173,20 +150,10 @@ open class Components(private val applicationContext: Context) {
         AppRequestInterceptor(applicationContext)
     }
 
-    // Engine Settings
-    //
-    // Memoised with `by lazy` so a second access does not rebuild DefaultSettings
-    // and re-read 8+ SharedPreferences keys. The only consumer is the `engine`
-    // lazy below (GeckoEngine takes the settings by reference at construction
-    // time), so caching the instance is safe - runtime mutations go through
-    // `engine.settings.X = Y` on the live settings object (see
-    // applyPrivacyEngineSettings). The previous getter form was accidentally
-    // reconstructing on every read.
     private val engineSettings: DefaultSettings by lazy {
         DefaultSettings().apply {
             historyTrackingDelegate = HistoryDelegate(lazyHistoryStorage)
             requestInterceptor = appRequestInterceptor
-            // Off by default; user can flip via Advanced Settings.
             remoteDebuggingEnabled = UserPreferences(applicationContext).remoteDebugging
             supportMultipleWindows = true
             enterpriseRootsEnabled = false // SECURITY: Third-party certs disabled
@@ -204,16 +171,6 @@ open class Components(private val applicationContext: Context) {
         }
     }
 
-    /**
-     * Starts DNS + TCP + TLS towards [url]'s origin before the navigation
-     * itself is issued, so the handshake overlaps with tab creation, session
-     * link-up and content-process start instead of running after them.
-     *
-     * Only http(s) URLs the user is about to load are passed in (external
-     * link, address-bar entry), so no host is contacted that the load would
-     * not contact anyway. Honours the "Faster page loading" toggle; never
-     * throws, because a missed pre-connect must not affect the navigation.
-     */
     fun speculativeConnect(url: String?) {
         if (url.isNullOrBlank()) return
         val scheme = url.substringBefore(':', "").lowercase()
@@ -230,9 +187,6 @@ open class Components(private val applicationContext: Context) {
         engine.settings.globalPrivacyControlEnabled = prefs.globalPrivacyControl
     }
 
-    // Lazy so NotificationManagerCompat.from is not resolved until the
-    // notifications delegate is actually needed. The two consumers
-    // (notificationsDelegate and webNotificationFeature) are both lazy.
     private val notificationManagerCompat by lazy {
         NotificationManagerCompat.from(applicationContext)
     }
@@ -243,46 +197,6 @@ open class Components(private val applicationContext: Context) {
         )
     }
 
-    /**
-     * Global web-notification feature. Initialised exactly once for the app
-     * process (upstream doc: "Initialize this feature globally once on app
-     * start"). The `init` block registers a delegate with the engine, so
-     * simply resolving this lazy property is enough - we never call methods
-     * on it directly. It is anchored here in Components so the graph owns
-     * its lifetime; previously the constructor call was dropped on the floor
-     * inside `store.apply { ... }`, leaving no strong reference outside the
-     * engine's internal registration map.
-     *
-     * # PWA / Web Push status
-     * Server-initiated web push (Notification subscribed via a service
-     * worker's `pushManager.subscribe()`) additionally requires
-     * `mozilla.components.feature.push.AutoPushFeature` and a concrete
-     * `PushService`. As of mozilla-components v153 the only shipped service
-     * implementation is `lib-push-firebase` (Firebase Cloud Messaging), which
-     * requires adding `google-services.json`, the Google Services Gradle
-     * plugin, and `firebase-messaging` - all Google-proprietary dependencies
-     * that a privacy-focused browser probably should not ship by default.
-     * The removed `lib-push-amazon` module and community UnifiedPush
-     * adapters are no longer part of upstream. Foreground web notifications
-     * still work via the [WebNotificationFeature] above; only background
-     * server-pushed subscriptions are gated on adding a `PushService`.
-     */
-    val webNotificationFeature: WebNotificationFeature by lazy {
-        WebNotificationFeature(
-            context = applicationContext,
-            engine = engine,
-            browserIcons = icons,
-            smallIcon = R.drawable.ic_notification,
-            sitePermissionsStorage = permissionStorage,
-            activityClass = BrowserActivity::class.java,
-            notificationsDelegate = notificationsDelegate,
-        )
-    }
-
-    // Lazy so that merely touching Components does not eagerly construct the
-    // DefaultAddonUpdater (which registers WorkManager polling for addon
-    // updates and resolves `notificationsDelegate`). Only consumed from
-    // BrowserApp.initializeAfterFirstFrame.
     val addonUpdater by lazy {
         DefaultAddonUpdater(
             applicationContext,
@@ -292,18 +206,14 @@ open class Components(private val applicationContext: Context) {
         )
     }
 
-    // Engine
     open val engine: Engine by lazy {
-        GeckoEngine(applicationContext, engineSettings, runtime).also {
-            WebCompatFeature.install(it)
-        }
+        GeckoEngine(applicationContext, engineSettings, runtime)
     }
 
     open val client: Client by lazy { GeckoViewFetchClient(applicationContext, runtime) }
 
     val icons by lazy { BrowserIcons(applicationContext, client) }
 
-    // Storage
     private val lazyHistoryStorage = lazy { PlacesHistoryStorage(applicationContext) }
     val historyStorage by lazy { lazyHistoryStorage.value }
 
@@ -312,17 +222,13 @@ open class Components(private val applicationContext: Context) {
 
     val sessionStorage by lazy { SessionStorage(applicationContext, engine) }
 
-    val recentlyClosedTabsStorage by lazy {
-        RecentlyClosedTabsStorage(applicationContext, engine, noOpCrashReporter)
-    }
-
     val permissionStorage by lazy { GeckoSitePermissionsStorage(runtime, OnDiskSitePermissionsStorage(applicationContext)) }
 
     val thumbnailStorage by lazy { ThumbnailStorage(applicationContext) }
     val thumbnailLoader by lazy { ThumbnailLoader(thumbnailStorage) }
     
     val profileManager by lazy { 
-        com.prirai.android.lr.browser.profile.ProfileManager.getInstance(applicationContext)
+        ProfileManager.getInstance(applicationContext)
     }
     
     val downloadConfirmationMiddleware by lazy {
@@ -330,23 +236,11 @@ open class Components(private val applicationContext: Context) {
     }
 
     val profileMiddleware by lazy {
-        com.prirai.android.lr.browser.profile.ProfileMiddleware(profileManager)
+        ProfileMiddleware(profileManager)
     }
 
-    /**
-     * One-time migration that clears the legacy
-     * `"profile_default"` sentinel from
-     * [mozilla.components.browser.state.state.TabSessionState.contextId] back
-     * to `null` on every restored tab, so the default profile shares Gecko's
-     * default partition with custom tabs. Runs exactly once per install,
-     * gated by the pref `lr.tabs.profile.defaultMigrate.v2` (see
-     * [UserPreferences.defaultProfileMigrationDone]). Placed first in the
-     * middleware chain so it can intercept
-     * [mozilla.components.browser.state.action.TabListAction.RestoreAction]
-     * before the reducer applies it.
-     */
     val defaultProfileTabMigration by lazy {
-        com.prirai.android.lr.browser.profile.DefaultProfileTabMigration(applicationContext)
+        DefaultProfileTabMigration(applicationContext)
     }
 
     val remoteSettingsService by lazy {
@@ -361,22 +255,17 @@ open class Components(private val applicationContext: Context) {
     val store by lazy {
         BrowserStore(
                 middleware = listOf(
-                        // MUST be first: rewrites TabListAction.RestoreAction so restored
-                        // tabs with null/empty contextId get adopted by the default profile
-                        // before any downstream middleware (Undo, Thumbnails, TabGroup, etc.)
-                        // observes them. Guarded by the `lr.tabs.profile.defaultMigrate`
-                        // pref so it self-disables after the first successful run.
                         defaultProfileTabMigration,
                         downloadConfirmationMiddleware,
                         DownloadMiddleware(
                             applicationContext,
                             DownloadService::class.java,
                             { true },
-                            downloadFileUtils = mozilla.components.support.utils.DefaultDownloadFileUtils(
+                            downloadFileUtils = DefaultDownloadFileUtils(
                                 context = applicationContext,
                                 downloadLocation = {
-                                    android.os.Environment.getExternalStoragePublicDirectory(
-                                        android.os.Environment.DIRECTORY_DOWNLOADS
+                                    Environment.getExternalStoragePublicDirectory(
+                                        Environment.DIRECTORY_DOWNLOADS
                                     ).path
                                 },
                             ),
@@ -384,10 +273,7 @@ open class Components(private val applicationContext: Context) {
                         ThumbnailsMiddleware(thumbnailStorage),
                         FaviconMiddleware(faviconCache),
                         UndoMiddleware(),
-                        RegionMiddleware(
-                                applicationContext,
-                                LocationService.default()
-                        ),
+                        LocaleRegionMiddleware(),
                         SearchMiddleware(
                             applicationContext,
                             searchEngineSelectorConfig = SearchEngineSelectorConfig(
@@ -404,22 +290,11 @@ open class Components(private val applicationContext: Context) {
                             ),
                         ),
                         RecordingDevicesMiddleware(applicationContext, notificationsDelegate),
-                        // LR: Throttle high-frequency media-session churn from YouTube
-                        // et al. that would otherwise cause AC's AudioFocus.request() to
-                        // fire multiple times in quick succession and trigger an
-                        // AUDIOFOCUS_REQUEST_DELAYED -> controller.pause() cycle.
-                        com.prirai.android.lr.middleware.MediaSessionThrottleMiddleware(),
+                        MediaSessionThrottleMiddleware(),
                         PromptMiddleware(),
                         LastAccessMiddleware(),
-                        RecentlyClosedMiddleware(
-                            lazy<RecentlyClosedMiddleware.Storage> { recentlyClosedTabsStorage },
-                            RECENTLY_CLOSED_MAX,
-                        ),
                         SaveToPDFMiddleware(applicationContext),
-                        // Pass the Lazy directly so adding the middleware to the
-                        // store does not force tabGroupManager construction (which
-                        // opens a Room database on first touch).
-                        com.prirai.android.lr.browser.tabgroups.TabGroupMiddleware(
+                        TabGroupMiddleware(
                             lazy { tabGroupManager }
                         ),
                         profileMiddleware,  // Use the exposed instance
@@ -438,13 +313,6 @@ open class Components(private val applicationContext: Context) {
                     trimMemoryAutomatically = false,
                 )
         ).apply {
-            // Only the desktop-mode initial dispatch stays here, because it
-            // seeds state the reducer needs before any tab is restored. All
-            // the heavy registrations below (icons.install, webNotificationFeature,
-            // MediaSessionFeature.start, sleepingTabsManager.start) have moved
-            // to bootstrapStore() so they run after the first frame instead of
-            // during the store-construction burst on whichever thread first
-            // touches components.store.
             val prefs = UserPreferences(applicationContext)
             val desktopDefault = if (prefs.hasDesktopModeDefault()) {
                 prefs.desktopModeDefault
@@ -455,136 +323,30 @@ open class Components(private val applicationContext: Context) {
         }
     }
 
-    /**
-     * Guards [bootstrapStore] against double-invocation. The method is called
-     * from `BrowserApp.initializeAfterFirstFrame`; this flag makes a hypothetical
-     * second call (e.g. a future test harness or a re-entry from a process
-     * warm start) a no-op instead of double-registering engine observers.
-     */
     @Volatile
     private var storeBootstrapped = false
 
-    /**
-     * Installs the store-level side-effects that used to run inside
-     * `store.apply { ... }`:
-     *
-     * - [BrowserIcons.install] (favicon fetching on page-load actions)
-     * - [WebNotificationFeature] lazy touch (its `init` block registers the
-     *   web-notification delegate with the engine; the field keeps the
-     *   delegate strongly reachable beyond the engine's internal registry)
-     * - [MediaSessionFeature.start] (binds [MediaSessionService] so media
-     *   playback can continue in the background with a notification)
-     * - [sleepingTabsManager.start] (observes tab selection and suspends
-     *   idle non-selected tabs)
-     *
-     * Must be called on the **main thread** - all four callees ultimately
-     * register observers with GeckoView, which requires a Handler bound to
-     * the main looper. Called from [com.prirai.android.lr.BrowserApp]
-     * once Choreographer confirms the first frame has been scheduled.
-     *
-     * Idempotent via [storeBootstrapped]; safe to call more than once.
-     */
     fun bootstrapStore() {
         if (storeBootstrapped) return
         storeBootstrapped = true
 
         icons.install(engine, store)
 
-        // Pre-create the "Site notifications" channel so it shows up under
-        // System Settings -> Apps -> LR -> Notifications before any site
-        // has fired a notification. AC's WebNotificationFeature creates
-        // the same channel lazily on first onShowNotification; because
-        // NotificationManager.createNotificationChannel is idempotent on
-        // channel ID, the later call is a no-op if the channel already
-        // exists. This also lets users mute LR's web notifications
-        // without having to visit a website that triggers one first.
-        preCreateWebNotificationChannel()
-
-        // Force the WebNotificationFeature singleton to initialise. Its
-        // `init { engine.registerWebNotificationDelegate(this) }` block
-        // hooks into GeckoView so web-notification permission prompts and
-        // dispatches to `NotificationsDelegate` work end-to-end. Storing
-        // the reference in a lazy Components field (rather than throwing
-        // the constructor result away) means the delegate is kept alive by
-        // our Components graph, not just by the engine's internal
-        // registration map.
-        webNotificationFeature
-
-        // Keep the MediaSessionFeature reachable so callers can stop it
-        // explicitly on task-removal. AC's feature holds the bound-
-        // service connection to MediaSessionService internally - once
-        // started the only way to make that service exit is via
-        // feature.stop() (cancels the observing scope) PLUS
-        // handleNoMedia (unbinds). See BrowserActivity.onDestroy for
-        // the shutdown hook that triggers both when the user closes
-        // the task.
         mediaSessionFeature.start()
 
-        // Start the sleeping-tabs manager. It observes tab selection and
-        // periodically suspends idle non-selected tabs.
         sleepingTabsManager.start(store)
     }
 
-    /**
-     * Creates the Android notification channel that
-     * [mozilla.components.feature.webnotifications.WebNotificationFeature]
-     * uses for all site-triggered web notifications.
-     *
-     * Channel ID matches AC's hard-coded
-     * `"mozac.feature.webnotifications.generic.channel"` so AC's own lazy
-     * `ensureNotificationGroupAndChannelExists()` call sees the channel
-     * already configured and skips creating it. Importance / badge /
-     * lockscreen visibility match AC's values so there is no visible
-     * behaviour difference after the first notification.
-     *
-     * Only runs on API 26+ (channels did not exist pre-Oreo).
-     */
-    private fun preCreateWebNotificationChannel() {
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) return
-        val channelId = "mozac.feature.webnotifications.generic.channel"
-        if (notificationManagerCompat.getNotificationChannel(channelId) != null) return
-
-        val channel = android.app.NotificationChannel(
-            channelId,
-            applicationContext.getString(mozilla.components.feature.webnotifications.R.string.mozac_feature_notification_channel_name),
-            android.app.NotificationManager.IMPORTANCE_DEFAULT,
-        ).apply {
-            setShowBadge(true)
-            lockscreenVisibility = androidx.core.app.NotificationCompat.VISIBILITY_PRIVATE
-        }
-        notificationManagerCompat.createNotificationChannel(channel)
-    }
-
     val sleepingTabsManager by lazy {
-        com.prirai.android.lr.browser.tabs.sleep.SleepingTabsManager.getInstance(applicationContext)
+        SleepingTabsManager.getInstance(applicationContext)
     }
 
-    /**
-     * Retained reference to the media-session feature so
-     * `BrowserActivity.onDestroy` can call `stop()` on task-removal.
-     *
-     * AC's `MediaSessionFeature.start()` binds `MediaSessionService`
-     * with `BIND_AUTO_CREATE` and holds the connection privately
-     * inside the feature. For a service that is bound-only (no
-     * explicit `startService`), `android:stopWithTask` in the
-     * manifest has no effect - Android only honors it for started
-     * services. The only way to make the service go away when the
-     * user swipes LR from recents is to call `.stop()` on this
-     * feature (which cancels the state-observing scope so the next
-     * `showMediaStatus(null)` is the only path that would run) and
-     * then explicitly `stopService` + unbind.
-     *
-     * See `BrowserActivity.onDestroy` for the task-removal shutdown
-     * hook. Constructed lazily so the service bind happens only once
-     * the feature is actually started.
-     */
     val mediaSessionFeature: MediaSessionFeature by lazy {
         MediaSessionFeature(applicationContext, MediaSessionService::class.java, store)
     }
 
     val sessionUseCases by lazy { SessionUseCases(store) }
 
-    // Addons
     val addonManager by lazy {
         AddonManager(store, engine, addonCollectionProvider, addonUpdater)
     }
@@ -600,7 +362,6 @@ open class Components(private val applicationContext: Context) {
             )
         }
         else{
-            // Use Iceraven's comprehensive addon collection (158 extensions)
             AMOAddonsProvider(
                     applicationContext,
                     client,
@@ -612,28 +373,10 @@ open class Components(private val applicationContext: Context) {
         }
     }
 
-    val supportedAddonsChecker by lazy {
-        DefaultSupportedAddonsChecker(
-                applicationContext, Frequency(
-                1,
-                TimeUnit.DAYS
-        )
-        )
-    }
-
     val searchUseCases by lazy {
         SearchUseCases(store, tabsUseCases, sessionUseCases)
     }
 
-    val defaultSearchUseCase by lazy {
-        { searchTerms: String ->
-            searchUseCases.defaultSearch.invoke(
-                    searchTerms = searchTerms,
-                    searchEngine = null,
-                    parentSessionId = null
-            )
-        }
-    }
     val appLinksUseCases by lazy { AppLinksUseCases(applicationContext) }
 
     val appLinksInterceptor by lazy {
@@ -652,27 +395,6 @@ open class Components(private val applicationContext: Context) {
         FileUploadsDirCleaner { applicationContext.cacheDir }
     }
 
-    /**
-     * Cold-start note (field logcat, 2026-10-20):
-     *
-     * `geckoview-omni` 156.0.20260921121718 declares every child
-     * process in its own `AndroidManifest.xml` with the suffix
-     * `_disable_art_image_` (e.g. `:crashhelper_disable_art_image_`,
-     * `:gpu_disable_art_image_`, `:tab_disable_art_image_<N>`). This
-     * is a GeckoView-side build decision - the ART boot image is
-     * disabled on all content/tab/gpu/utility child processes, so
-     * each one has to re-link `libmozglue.so`, `libnss3.so`,
-     * `libfreebl3.so`, `libsoftokn3.so`, `libjnidispatch.so` from
-     * scratch (observed ~1.2 s per child spawn in device logs).
-     *
-     * Not a LR-side bug and not configurable from here - the only
-     * fix would be a GeckoView-side build change (or forking the
-     * omni variant). Documented so future contributors do not spend
-     * time trying to toggle this from the LR Gradle layer.
-     *
-     * Reference: `geckoview-omni` cached AAR under
-     * `~/.gradle/caches/.../transformed/geckoview-omni-<version>/AndroidManifest.xml`.
-     */
     private val runtime by lazy {
         val builder = GeckoRuntimeSettings.Builder()
 
@@ -745,11 +467,11 @@ open class Components(private val applicationContext: Context) {
     val downloadsUseCases: DownloadsUseCases by lazy {
         DownloadsUseCases(
             store = store,
-            downloadFileUtils = mozilla.components.support.utils.DefaultDownloadFileUtils(
+            downloadFileUtils = DefaultDownloadFileUtils(
                 context = applicationContext,
                 downloadLocation = {
-                    android.os.Environment.getExternalStoragePublicDirectory(
-                        android.os.Environment.DIRECTORY_DOWNLOADS
+                    Environment.getExternalStoragePublicDirectory(
+                        Environment.DIRECTORY_DOWNLOADS
                     ).path
                 },
             ),
@@ -757,10 +479,9 @@ open class Components(private val applicationContext: Context) {
     }
     val contextMenuUseCases: ContextMenuUseCases by lazy { ContextMenuUseCases(store) }
     
-    // Custom Tabs
     val customTabsStore by lazy { CustomTabsServiceStore() }
     
     val customTabsUseCases by lazy { 
-        mozilla.components.feature.tabs.CustomTabsUseCases(store, sessionUseCases.loadUrl) 
+        CustomTabsUseCases(store, sessionUseCases.loadUrl) 
     }
 }

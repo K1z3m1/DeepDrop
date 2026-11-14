@@ -11,9 +11,6 @@ import mozilla.components.browser.state.state.selectedOrDefaultSearchEngine
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.feature.tabs.TabsUseCases
 
-/**
- * An interface that handles the view manipulation of the Search, triggered by the Interactor
- */
 interface SearchController {
     fun handleUrlCommitted(url: String)
     fun handleEditingCancelled()
@@ -37,7 +34,6 @@ class SearchDialogController(
     private val clearToolbarFocus: () -> Unit,
     private val focusToolbar: () -> Unit
 ) : SearchController {
-
     override fun handleUrlCommitted(url: String) {
         when (url) {
             "moz://a" -> openSearchOrUrl("https://mozilla.org")
@@ -74,20 +70,6 @@ class SearchDialogController(
         }
     }
 
-    /**
-     * Decides whether a submitted search starts a new tab.
-     *
-     * - No tab in the dialog context: new tab.
-     * - Opened over a content page (the browser fragment address bar):
-     *   reuse the current tab - the omnibox navigates it, like Chrome.
-     * - Opened from the home screen: reuse the tab only when it is sitting
-     *   on the new tab page (the search then appends to it, keeping the
-     *   new tab page as the tab's history root). A home search with a
-     *   CONTENT tab still selected behind the home screen must NOT load
-     *   into that tab - it would bury the search inside the old tab's
-     *   history (no "New Tab" entry in the back popup, tab pill left
-     *   showing the old page) - so it starts a fresh tab instead.
-     */
     private fun shouldCreateNewTabForSearch(): Boolean {
         val tabId = fragmentStore.state.tabId ?: return true
 
@@ -111,10 +93,6 @@ class SearchDialogController(
 
         fragmentStore.dispatch(SearchFragmentAction.UpdateQuery(text))
 
-        // Only dispatch when the value actually changes: this runs on every
-        // keystroke, and each dispatch re-runs the dialog's full update
-        // chain (toolbar icon, clipboard check, providers) - the redundant
-        // emissions showed up as input lag while holding backspace.
         val showPicker =
             (textMatchesCurrentUrl || textMatchesCurrentSearch || text.isEmpty()) &&
                 fragmentStore.state.areShortcutsAvailable

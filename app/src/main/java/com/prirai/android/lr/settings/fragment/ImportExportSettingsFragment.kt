@@ -30,9 +30,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.util.Scanner
 
-
 class ImportExportSettingsFragment : BaseSettingsFragment() {
-
     override fun onCreatePreferences(savedInstanceState: Bundle?, s: String?) {
         addPreferencesFromResource(R.xml.preferences_import_export)
 
@@ -68,7 +66,6 @@ class ImportExportSettingsFragment : BaseSettingsFragment() {
     }
 
     private fun clearBookmarks() {
-        // TODO: notify bookmark manager to clear bookmarks
         showLRDialog { onDismiss ->
             LRAlertDialog(
                 onDismissRequest = onDismiss,
@@ -166,12 +163,10 @@ class ImportExportSettingsFragment : BaseSettingsFragment() {
             for (line in lines) {
                 val trimmedLine = line.trim()
 
-                // Skip HR tags
                 if (trimmedLine.startsWith("<HR", ignoreCase = true)) {
                     continue
                 }
 
-                // Check for folder (H3 tag)
                 if (trimmedLine.contains("<H3", ignoreCase = true)) {
                     val startIdx = trimmedLine.indexOf('>', trimmedLine.indexOf("<H3", ignoreCase = true)) + 1
                     val endIdx = trimmedLine.indexOf("</H3>", ignoreCase = true)
@@ -190,25 +185,20 @@ class ImportExportSettingsFragment : BaseSettingsFragment() {
                         }
                     }
                 }
-                // Check for opening DL tag (start of folder contents)
                 else if (trimmedLine.startsWith("<DL", ignoreCase = true)) {
                     if (lastFolder != null) {
                         folderStack.add(lastFolder!!)
                         lastFolder = null
                     }
                 }
-                // Check for closing DL tag (end of folder contents)
                 else if (trimmedLine.startsWith("</DL>", ignoreCase = true)) {
                     if (folderStack.size > 1) {
                         folderStack.removeAt(folderStack.size - 1)
                     }
                 }
-                // Check for bookmark (A tag)
                 else if (trimmedLine.contains("<A", ignoreCase = true) &&
                     trimmedLine.contains("HREF", ignoreCase = true)
                 ) {
-
-                    // Extract URL
                     val hrefStart = trimmedLine.indexOf("HREF=\"", ignoreCase = true)
                     if (hrefStart >= 0) {
                         val urlStart = hrefStart + 6
@@ -217,7 +207,6 @@ class ImportExportSettingsFragment : BaseSettingsFragment() {
                         if (urlEnd > urlStart) {
                             val url = trimmedLine.substring(urlStart, urlEnd)
 
-                            // Extract title
                             val titleStart = trimmedLine.indexOf('>', hrefStart) + 1
                             val titleEnd = trimmedLine.indexOf("</A>", ignoreCase = true)
 
@@ -245,10 +234,8 @@ class ImportExportSettingsFragment : BaseSettingsFragment() {
 
             Toast.makeText(context, R.string.successful, Toast.LENGTH_SHORT).show()
         } else {
-
             val itemArray = JSONTokener(content).nextValue()
 
-            // If the imported file is JSON and is an array, assume it's an export from this browser, or if it's an object, assume it's a legacy export
             if (itemArray is JSONArray) {
                 val bookmarks = FileOutputStream(bookmarkFile, false)
                 val contents: ByteArray = content?.toByteArray() ?: byteArrayOf()
@@ -264,7 +251,6 @@ class ImportExportSettingsFragment : BaseSettingsFragment() {
                 val folderScanner = Scanner(content)
                 val folderArray = mutableListOf<String>()
 
-                // Iterate over all folder items in the bookmark list and create them
                 while (folderScanner.hasNextLine()) {
                     val line = folderScanner.nextLine()
                     val `object` = JSONObject(line)
@@ -286,7 +272,6 @@ class ImportExportSettingsFragment : BaseSettingsFragment() {
 
                 val scanner = Scanner(content)
 
-                // Iterate over bookmarks and add them to relevant folders based on names
                 while (scanner.hasNextLine()) {
                     val line = scanner.nextLine()
                     val `object` = JSONObject(line)
@@ -294,7 +279,6 @@ class ImportExportSettingsFragment : BaseSettingsFragment() {
 
                     var folder = manager.root
 
-                    // Not the best way to do this, but it should be OK because names are unique in the old bookmark system
                     if (folderName != "") {
                         folder = folderItemArray[uniqueFolderArray.indexOf(folderName)]
                     }
@@ -379,13 +363,11 @@ class ImportExportSettingsFragment : BaseSettingsFragment() {
             val userPref = requireActivity().getSharedPreferences(SCW_PREFERENCES, 0)
             val allEntries: Map<String, *> = userPref.all
             
-            // Create JSON object with metadata
             val jsonObj = JSONObject()
             jsonObj.put("_version", 1) // Version for migration handling
             jsonObj.put("_timestamp", System.currentTimeMillis())
             
             for (entry in allEntries.entries) {
-                // Skip internal keys
                 if (entry.key.startsWith("_")) continue
                 
                 when (val value = entry.value) {
@@ -417,44 +399,36 @@ class ImportExportSettingsFragment : BaseSettingsFragment() {
             input?.use { stream ->
                 val content = stream.bufferedReader().use { it.readText() }
                 
-                // Try to parse as JSON
                 val jsonObj = try {
                     JSONObject(content)
                 } catch (e: Exception) {
-                    // Try legacy format: {"key"="value",...}
                     parseLegacySettings(content)
                 }
 
                 val userPref = requireActivity().getSharedPreferences(SCW_PREFERENCES, 0)
                 
-                // Get version for migration
                 val version = try {
                     jsonObj.getInt("_version")
                 } catch (e: Exception) {
                     0 // Legacy or no version
                 }
                 
-                // Apply settings with migration
                 userPref.edit {
                     val keys = jsonObj.keys()
                     while (keys.hasNext()) {
                         val key = keys.next()
 
-                        // Skip metadata keys
                         if (key.startsWith("_")) continue
 
-                        // Apply migrations if needed
                         val migratedKey = migrateSettingKey(key, version)
                         if (migratedKey == null) continue // Skip obsolete settings
 
-                        // Get value and determine type
                         when (val value = jsonObj.get(key)) {
                             is Boolean -> putBoolean(migratedKey, value)
                             is Int -> putInt(migratedKey, value)
                             is Long -> putLong(migratedKey, value)
                             is Double -> putFloat(migratedKey, value.toFloat())
                             is String -> {
-                                // Try to infer type from string value
                                 when {
                                     value == "true" || value == "false" ->
                                         putBoolean(migratedKey, value.toBoolean())
@@ -485,7 +459,6 @@ class ImportExportSettingsFragment : BaseSettingsFragment() {
                     }
                 }
                 
-                // Show success and restart
                 Toast.makeText(context, R.string.successful, Toast.LENGTH_SHORT).show()
                 requireActivity().recreate()
             }
@@ -495,16 +468,11 @@ class ImportExportSettingsFragment : BaseSettingsFragment() {
         }
     }
     
-    /**
-     * Parse legacy settings format: {"key"="value",...}
-     */
     private fun parseLegacySettings(content: String): JSONObject {
         val jsonObj = JSONObject()
         
-        // Remove surrounding braces
         val trimmed = content.trim().removeSurrounding("{", "}")
         
-        // Split by comma
         val pairs = trimmed.split(",")
         
         for (pair in pairs) {
@@ -519,18 +487,7 @@ class ImportExportSettingsFragment : BaseSettingsFragment() {
         return jsonObj
     }
     
-    /**
-     * Migrate setting keys from old versions to new versions
-     * Returns null if setting is obsolete and should be skipped
-     */
     private fun migrateSettingKey(key: String, fromVersion: Int): String {
-        // Add migrations here as needed
-        // Example:
-        // if (fromVersion < 1) {
-        //     if (key == "old_key_name") return "new_key_name"
-        // }
-        
-        // For now, just return the same key
         return key
     }
 

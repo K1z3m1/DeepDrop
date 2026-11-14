@@ -9,7 +9,6 @@ import mozilla.components.browser.state.state.searchEngines
 import mozilla.components.feature.search.ext.createSearchEngine
 
 object SearchEnginePreferences {
-
     suspend fun apply(context: Context, private: Boolean = false) {
         val prefs = UserPreferences(context)
         val components = context.components

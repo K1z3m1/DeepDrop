@@ -4,14 +4,9 @@ import android.content.Context
 import android.graphics.Color
 import androidx.annotation.ColorInt
 import com.prirai.android.lr.R
+import android.util.TypedValue
 
-/**
- * Centralized color constants for the entire app.
- * All hardcoded colors should be defined here and use theme attributes where possible.
- */
 object ColorConstants {
-    
-    // Security status colors
     @ColorInt
     fun getSecureColor(context: Context): Int {
         return context.getColor(R.color.secure_icon_color)
@@ -22,9 +17,7 @@ object ColorConstants {
         return context.getColor(R.color.insecure_icon_color)
     }
     
-    // Tab group colors - Material 3 based with expanded palette
     object TabGroups {
-        // Primary Material 3 colors
         const val BLUE = 0xFF2196F3.toInt()
         const val RED = 0xFFF44336.toInt()
         const val GREEN = 0xFF4CAF50.toInt()
@@ -34,7 +27,6 @@ object ColorConstants {
         const val TEAL = 0xFF009688.toInt()
         const val YELLOW = 0xFFFFC107.toInt()
         
-        // Extended Material 3 colors
         const val INDIGO = 0xFF3F51B5.toInt()
         const val CYAN = 0xFF00BCD4.toInt()
         const val LIME = 0xFFCDDC39.toInt()
@@ -44,7 +36,6 @@ object ColorConstants {
         const val DEEP_PURPLE = 0xFF673AB7.toInt()
         const val BROWN = 0xFF795548.toInt()
         
-        // UnifiedTabGroupManager AVAILABLE_COLORS palette (lighter shades)
         const val LIGHT_RED = 0xFFE57373.toInt()
         const val LIGHT_GREEN_ALT = 0xFF81C784.toInt()
         const val LIGHT_BLUE = 0xFF64B5F6.toInt()
@@ -72,7 +63,6 @@ object ColorConstants {
                 "light_green" -> LIGHT_GREEN
                 "deep_purple" -> DEEP_PURPLE
                 "brown" -> BROWN
-                // Support for lighter palette
                 "light_red" -> LIGHT_RED
                 "light_green_alt" -> LIGHT_GREEN_ALT
                 "light_blue" -> LIGHT_BLUE
@@ -103,7 +93,6 @@ object ColorConstants {
                 LIGHT_GREEN -> "light_green"
                 DEEP_PURPLE -> "deep_purple"
                 BROWN -> "brown"
-                // Support for lighter palette from UnifiedTabGroupManager.AVAILABLE_COLORS
                 LIGHT_RED -> "light_red"
                 LIGHT_GREEN_ALT -> "light_green_alt"
                 LIGHT_BLUE -> "light_blue"
@@ -117,7 +106,6 @@ object ColorConstants {
         }
     }
     
-    // Profile colors - Material 3 based
     object Profiles {
         val COLORS = listOf(
             0xFF6200EE.toInt(), // Purple
@@ -133,34 +121,14 @@ object ColorConstants {
         val DEFAULT_COLOR = COLORS[0]
     }
     
-    // Private mode colors
     object PrivateMode {
         const val PURPLE = 0xFF6A1B9A.toInt()
         
-        @ColorInt
-        fun getPurpleColor(context: Context): Int {
-            // Try to get from theme first
-            val typedValue = android.util.TypedValue()
-            return if (context.theme.resolveAttribute(android.R.attr.colorPrimary, typedValue, true)) {
-                typedValue.data
-            } else {
-                PURPLE
-            }
-        }
     }
     
-    // Drag and drop colors
-    object DragDrop {
-        const val UNGROUP_COLOR = 0xFFFF5722.toInt() // Orange-red
-        const val VALID_DROP_COLOR = 0xFF4CAF50.toInt() // Green
-    }
-    
-    /**
-     * Get color from theme attribute
-     */
     @ColorInt
     fun getColorFromAttr(context: Context, attr: Int, fallback: Int = Color.BLACK): Int {
-        val typedValue = android.util.TypedValue()
+        val typedValue = TypedValue()
         return if (context.theme.resolveAttribute(attr, typedValue, true)) {
             typedValue.data
         } else {

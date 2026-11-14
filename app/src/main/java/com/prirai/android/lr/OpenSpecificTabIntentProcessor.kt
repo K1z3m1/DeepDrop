@@ -5,11 +5,9 @@ import androidx.navigation.NavController
 import com.prirai.android.lr.ext.components
 import mozilla.components.feature.media.service.AbstractMediaSessionService
 
-
 class OpenSpecificTabIntentProcessor(
     private val activity: BrowserActivity
 ) : HomeIntentProcessor {
-
     override fun process(intent: Intent, navController: NavController, out: Intent): Boolean {
         if (intent.action == AbstractMediaSessionService.ACTION_SWITCH_TAB) {
             activity.components.store

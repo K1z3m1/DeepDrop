@@ -6,21 +6,9 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import java.util.concurrent.TimeUnit
 
-/**
- * Installs the periodic [CookiePolicyWorker] into WorkManager and
- * provides a one-shot [sweepNow] helper for the "clear now" affordance
- * in the settings screen.
- *
- * The scheduler is idempotent - `ensureScheduled` uses
- * [ExistingPeriodicWorkPolicy.KEEP] so repeated calls on each cold-start
- * are safe and do not reset the next-run clock.
- */
 object CookiePolicyScheduler {
-
     const val WORK_NAME = "lr.privacy.cookies.sweep"
-    const val WORK_NAME_ONESHOT = "lr.privacy.cookies.sweep.oneshot"
 
-    /** WorkManager minimum period for periodic work is 15 minutes. */
     val SWEEP_INTERVAL_MINUTES: Long = 60
 
     fun ensureScheduled(context: Context) {

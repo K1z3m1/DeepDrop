@@ -1,6 +1,5 @@
 package com.prirai.android.lr
 
-// import com.prirai.android.lr.browser.home.HomeFragmentDirections // Removed - using BrowserFragment for homepage
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
@@ -9,7 +8,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewStub
 import android.view.accessibility.AccessibilityManager
 import androidx.annotation.CallSuper
 import androidx.annotation.VisibleForTesting
@@ -38,7 +36,6 @@ import com.prirai.android.lr.databinding.FragmentBrowserBinding
 import com.prirai.android.lr.downloads.DownloadService
 import com.prirai.android.lr.ext.components
 import com.prirai.android.lr.integration.ContextMenuIntegration
-import com.prirai.android.lr.integration.FindInPageIntegration
 import com.prirai.android.lr.preferences.UserPreferences
 import com.prirai.android.lr.settings.HomepageChoice
 import kotlinx.coroutines.Dispatchers.IO
@@ -49,7 +46,6 @@ import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.withContext
-import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.browser.state.selector.findCustomTab
 import mozilla.components.browser.state.selector.findTabOrCustomTab
 import mozilla.components.browser.state.selector.findTabOrCustomTabOrSelectedTab
@@ -85,31 +81,30 @@ import mozilla.components.support.ktx.android.view.enterImmersiveMode
 import mozilla.components.support.ktx.android.view.exitImmersiveMode
 import mozilla.components.support.ktx.android.view.hideKeyboard
 import mozilla.components.support.ktx.kotlinx.coroutines.flow.ifAnyChanged
-import mozilla.components.support.locale.ActivityContextWrapper
 import mozilla.components.support.utils.ext.requestInPlacePermissions
 import java.lang.ref.WeakReference
+import android.os.Environment
+import android.view.Gravity
+import com.prirai.android.lr.browser.WebContentPositionManager
+import com.prirai.android.lr.browser.tabs.TabLRUManager
+import com.prirai.android.lr.browser.tabs.TabsBottomSheetFragment
+import com.prirai.android.lr.components.toolbar.unified.UnifiedToolbar
+import mozilla.components.support.utils.DefaultDownloadFileUtils
 
-/**
- * Base fragment extended by [BrowserFragment].
- * This class only contains shared code focused on the main browsing content.
- * UI code specific to the app or to custom tabs can be found in the subclasses.
- */
 @ExperimentalCoroutinesApi
 abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, ActivityResultHandler,
     AccessibilityManager.AccessibilityStateChangeListener {
-
     private lateinit var browserAnimator: BrowserAnimator
 
     private var _browserInteractor: BrowserToolbarViewInteractor? = null
     protected val browserInteractor: BrowserToolbarViewInteractor
         get() = _browserInteractor!!
 
-    // Unified Toolbar System
     @VisibleForTesting
-    internal var _unifiedToolbar: com.prirai.android.lr.components.toolbar.unified.UnifiedToolbar? = null
+    internal var _unifiedToolbar: UnifiedToolbar? = null
 
     @VisibleForTesting
-    internal val unifiedToolbar: com.prirai.android.lr.components.toolbar.unified.UnifiedToolbar?
+    internal val unifiedToolbar: UnifiedToolbar?
         get() = _unifiedToolbar
 
     protected val thumbnailsFeature = ViewBoundFeatureWrapper<BrowserThumbnails>()
@@ -119,13 +114,11 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
     private val downloadsFeature = ViewBoundFeatureWrapper<DownloadsFeature>()
     private val appLinksFeature = ViewBoundFeatureWrapper<AppLinksFeature>()
     private val promptsFeature = ViewBoundFeatureWrapper<PromptFeature>()
-    private val findInPageIntegration = ViewBoundFeatureWrapper<FindInPageIntegration>()
     private val sitePermissionsFeature = ViewBoundFeatureWrapper<SitePermissionsFeature>()
     private val fullScreenFeature = ViewBoundFeatureWrapper<FullScreenFeature>()
     private val swipeRefreshFeature = ViewBoundFeatureWrapper<SwipeRefreshFeature>()
     
-    // Web content position manager for toolbar and keyboard handling
-    private var webContentPositionManager: com.prirai.android.lr.browser.WebContentPositionManager? = null
+    private var webContentPositionManager: WebContentPositionManager? = null
     private val webExtensionPromptFeature = ViewBoundFeatureWrapper<WebExtensionPromptFeature>()
     private var fullScreenMediaSessionFeature =
         ViewBoundFeatureWrapper<MediaSessionFullscreenFeature>()
@@ -133,12 +126,6 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
     private val passkeyAuthFeature = ViewBoundFeatureWrapper<PasskeyAuthFeature>()
     private var pipFeature: PictureInPictureFeature? = null
 
-    /**
-     * Handles back-press when the current tab has no history left: removes
-     * external / custom-tab sessions, or falls back to the parent tab if the
-     * current tab was opened from another. Replaces the previous hand-rolled
-     * `removeSessionIfNeeded()` copy of the same logic.
-     */
     private val lastTabFeature = ViewBoundFeatureWrapper<LastTabFeature>()
 
     var customTabSessionId: String? = null
@@ -159,8 +146,6 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        // Only pin SessionFeature for a real custom tab. A normal tab id in this arg
-        // freezes EngineView on that session after later selectTab() calls.
         val argSessionId = requireArguments().getString(EXTRA_SESSION_ID)
         customTabSessionId = argSessionId?.takeIf {
             requireContext().components.store.state.findCustomTab(it) != null
@@ -169,13 +154,8 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
         _binding = FragmentBrowserBinding.inflate(inflater, container, false)
         val view = binding.root
         
-        // Note: activeSessionId is provided during navigation but we DON'T need to select it again here
-        // because it's already selected in the calling fragment (ComposeHomeFragment) before navigation
-        // getCurrentTab() will return the already-selected tab which is what we want
-
         val activity = activity as BrowserActivity
-        val originalContext = ActivityContextWrapper.getOriginalContext(activity)
-        binding.engineView.setActivityContext(originalContext)
+        binding.engineView.setActivityContext(activity)
 
         return view
     }
@@ -184,9 +164,6 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
         initializeUI(view)
 
         if (customTabSessionId == null) {
-            // We currently only need this observer to navigate to home
-            // in case all tabs have been removed on startup. No need to
-            // this if we have a known session to display.
             observeRestoreComplete(requireContext().components.store, findNavController())
         }
 
@@ -209,7 +186,6 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
         val store = context.components.store
         val activity = requireActivity() as BrowserActivity
 
-        // Setup edge-to-edge for fragment - don't apply padding to browserLayout
         setupEdgeToEdgeForFragment()
 
         val toolbarHeight = resources.getDimensionPixelSize(R.dimen.browser_toolbar_height)
@@ -237,21 +213,17 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
             onTabCounterClicked = {
                 thumbnailsFeature.get()?.requestScreenshot()
 
-                // Show the new bottom sheet tabs dialog
                 val tabsBottomSheet =
-                    com.prirai.android.lr.browser.tabs.TabsBottomSheetFragment.newInstance()
+                    TabsBottomSheetFragment.newInstance()
                 tabsBottomSheet.show(
                     parentFragmentManager,
-                    com.prirai.android.lr.browser.tabs.TabsBottomSheetFragment.TAG
+                    TabsBottomSheetFragment.TAG
                 )
             }
         )
         val browserToolbarMenuController = DefaultBrowserToolbarMenuController(
             activity = activity,
             navController = findNavController(),
-            findInPageLauncher = { 
-                findInPageIntegration.get()?.launch()
-            },
             browserAnimator = browserAnimator,
             customTabSessionId = customTabSessionId,
             store = store,
@@ -262,11 +234,8 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
             browserToolbarMenuController
         )
 
-        // Initialize UnifiedToolbar for subclasses
         initializeUnifiedToolbar(view, tab)
 
-        // Set up custom Find in Page component
-        setupFindInPage(view)
 
         contextMenuIntegration.set(
             feature = ContextMenuIntegration(
@@ -281,9 +250,6 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
             owner = this,
             view = view
         )
-
-        // Reload/Stop is owned by UnifiedToolbar (see UnifiedToolbar.kt), so no
-        // ReloadStopButtonIntegration wrapper is bound here.
 
         promptsFeature.set(
             PromptFeature(
@@ -351,11 +317,6 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
             view = view
         )
 
-        // Upstream LastTabFeature handles back-press when the current tab has
-        // no more history: it removes external/custom-tab sessions (finishing
-        // the host activity) and reselects the parent tab for context-menu-
-        // opened tabs. Replaces the hand-rolled logic that used to live in
-        // BaseBrowserFragment.removeSessionIfNeeded().
         lastTabFeature.set(
             feature = LastTabFeature(
                 store = requireContext().components.store,
@@ -398,32 +359,6 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
             view = view
         )
 
-        // Site-permission prompts (geolocation, notifications, camera, mic,
-        // DRM, autoplay, persistent storage, cross-origin storage access,
-        // MIDI). AC's SitePermissionsDialogFragment reads these styling
-        // fields on its first layout and respects them for the dialog's
-        // window placement.
-        //
-        // - gravity = CENTER: anchor the dialog in the middle of the window
-        //   instead of at the toolbar edge. The old BOTTOM gravity made the
-        //   prompt appear overlapping the toolbar when the toolbar was at
-        //   the bottom (default), which felt cramped and inconsistent with
-        //   Material 3 dialog guidelines (Material 3 dialogs are modal
-        //   centered surfaces).
-        // - shouldWidthMatchParent = true: tell AC's SitePermissionsDialogFragment
-        //   to call `setLayout(MATCH_PARENT, WRAP_CONTENT)` + make the dialog
-        //   window background transparent. Without this flag, AC leaves the
-        //   window at the system default WRAP_CONTENT in both dimensions,
-        //   which clamps the dialog to its measured minimum (icon + title
-        //   next to a two-column button stack) - cramped and unreadable.
-        //   The horizontal insets that make the dialog look like a floating
-        //   card instead of a full-bleed sheet come from the overridden
-        //   `res/layout/mozac_site_permissions_prompt.xml` which gives the
-        //   root a card background + 24dp side margins.
-        //
-        // Button colors stay accented (secondary_icon / photonWhite) so
-        // Allow is still visually distinct from Deny, which uses the M3
-        // outlined-button style defined on the overridden layout.
         val accentHighContrastColor = R.color.secondary_icon
 
         sitePermissionsFeature.set(
@@ -432,18 +367,11 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
                 storage = context.components.permissionStorage,
                 fragmentManager = parentFragmentManager,
                 promptsStyling = SitePermissionsFeature.PromptsStyling(
-                    gravity = android.view.Gravity.CENTER,
+                    gravity = Gravity.CENTER,
                     shouldWidthMatchParent = true,
                     positiveButtonBackgroundColor = accentHighContrastColor,
                     positiveButtonTextColor = R.color.photonWhite
                 ),
-                // Pre-check "Remember decision for this site" so Allow/Deny
-                // persists by default. AC's default is false (unchecked),
-                // which means a user who tapped Deny without first ticking
-                // the box ends up with a *temporary* decision - the prompt
-                // reappears on reload. The user's expected contract is
-                // "my choice sticks unless I say otherwise", so we flip
-                // the default. Matches Fenix's choice via `DialogConfig`.
                 dialogConfig = SitePermissionsFeature.DialogConfig(
                     shouldPreselectDoNotAskAgain = true,
                 ),
@@ -467,23 +395,16 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
                 requireContext().applicationContext,
                 store = components.store,
                 useCases = components.downloadsUseCases,
-                // Issue #71: fragmentManager was null which silently disabled
-                // the third-party download-app chooser. Upstream's
-                // DownloadsFeature.showAppDownloaderDialog / showDownloadDialog
-                // both early-return unless a non-null, non-destroyed
-                // FragmentManager is available. `childFragmentManager` is
-                // what Fenix and the custom-tab flow use for the same
-                // purpose - matches ExternalAppBrowserFragment.kt.
                 fragmentManager = childFragmentManager,
                 shouldForwardToThirdParties = { UserPreferences(requireContext()).promptExternalDownloader },
                 onDownloadStopped = { download, id, status ->
                     debug("Download ID#$id $download with status $status is done.")
                 },
-                downloadFileUtils = mozilla.components.support.utils.DefaultDownloadFileUtils(
+                downloadFileUtils = DefaultDownloadFileUtils(
                     context = requireContext().applicationContext,
                     downloadLocation = {
-                        android.os.Environment.getExternalStoragePublicDirectory(
-                            android.os.Environment.DIRECTORY_DOWNLOADS
+                        Environment.getExternalStoragePublicDirectory(
+                            Environment.DIRECTORY_DOWNLOADS
                         ).path
                     }
                 ),
@@ -515,14 +436,12 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
 
         expandToolbarOnNavigation(store)
 
-        // Setup swipe to refresh
         binding.swipeRefresh.isEnabled = shouldPullToRefreshBeEnabled()
 
         if (binding.swipeRefresh.isEnabled) {
             val primaryTextColor = ContextCompat.getColor(requireContext(), R.color.primary_icon)
             binding.swipeRefresh.setColorSchemeColors(primaryTextColor)
             
-            // Set the refresh icon to start from below the status bar
             val statusBarHeight = resources.getDimensionPixelSize(
                 resources.getIdentifier("status_bar_height", "dimen", "android")
             )
@@ -544,12 +463,10 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
                 view = view
             )
             
-            // Observe tab changes to re-enable swipe refresh when switching tabs
             consumeFlow(store) { flow ->
                 flow.map { state -> state.selectedTabId }
                     .distinctUntilChanged()
                     .collect {
-                        // Re-evaluate if swipe refresh should be enabled for this tab
                         binding.swipeRefresh.isEnabled = shouldPullToRefreshBeEnabled()
                     }
             }
@@ -572,40 +489,10 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
 
         initializeEngineView(toolbarHeight)
         
-        // Defer heavy feature initialization to visual completeness queue
         context.components.visualCompletenessQueue.runIfReadyOrQueue {
-            // Future: Additional feature initialization can go here
         }
     }
     
-    private fun setupFindInPage(view: View) {
-        val stub = view.findViewById<ViewStub>(R.id.stubFindInPage) ?: return
-        
-        findInPageIntegration.set(
-            feature = FindInPageIntegration(
-                store = requireContext().components.store,
-                sessionId = customTabSessionId,
-                stub = stub,
-                engineView = binding.engineView,
-                toolbarInfo = unifiedToolbar?.getBrowserToolbar()?.let { toolbar ->
-                    FindInPageIntegration.ToolbarInfo(
-                        toolbar = toolbar,
-                        isToolbarDynamic = true,
-                        isToolbarPlacedAtTop = true
-                    )
-                } ?: return,
-                prepareLayout = {
-                    // Layout adjustments when find in page opens
-                },
-                restorePreviousLayout = {
-                    // Layout restoration when find in page closes
-                }
-            ),
-            owner = this,
-            view = view
-        )
-    }
-
     private suspend fun provideAddons(): List<Addon> {
         return withContext(IO) {
             val addons = requireContext().components.addonManager.getAddons(allowCache = false)
@@ -623,26 +510,15 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
                     arrayOf(tab.content.url, tab.content.loadRequest)
                 }
                 .collect {
-                    findInPageIntegration.onBackPressed()
                     unifiedToolbar?.expand()
                 }
         }
     }
 
-    /**
-     * The tab associated with this fragment.
-     */
     val tab: SessionState
         get() = customTabSessionId?.let { components.store.state.findTabOrCustomTab(it) }
-        // Workaround for tab not existing temporarily.
             ?: createTab("about:blank")
 
-    /**
-     * Re-initializes [DynamicDownloadDialog] if the user hasn't dismissed the dialog
-     * before navigating away from it's original tab.
-     * onTryAgain it will use [ContentAction.UpdateDownloadAction] to re-enqueue the former failed
-     * download, because [DownloadsFeature] clears any queued downloads onStop.
-     * */
     @VisibleForTesting
     internal fun resumeDownloadDialogState(
         sessionId: String?
@@ -657,49 +533,30 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
         unifiedToolbar?.expand()
     }
 
-
-    
     @VisibleForTesting
     internal fun shouldPullToRefreshBeEnabled(): Boolean {
         return UserPreferences(requireContext()).swipeToRefresh
     }
 
-
-
     @VisibleForTesting
     internal fun initializeEngineView(toolbarHeight: Int) {
-        // Return if fragment is detached or binding is null
         if (context == null) return
         if (_binding == null) return
 
         val context = requireContext()
         val prefs = UserPreferences(context)
 
-        // Enable dynamic toolbar with toolbar height for content coordination
         binding.engineView.setDynamicToolbarMaxHeight(toolbarHeight)
         
-        // Get actual toolbar height (may differ from parameter if components are hidden)
-        // Use post to ensure toolbar is measured
         unifiedToolbar?.post {
-            // Guard: view may have been destroyed while this was queued
             if (_binding == null) return@post
 
             val actualToolbarHeight = unifiedToolbar?.height ?: toolbarHeight
 
-            // Reserve layout space for the pinned toolbar. BOTTOM-mode uses
-            // bottomMargin on swipeRefresh (which shortens the engine view's
-            // layout bounds so page content never draws under the toolbar);
-            // TOP-mode uses top padding (so SwipeRefreshLayout's own
-            // overscroll indicator still draws from the real top edge).
-            //
-            // UnifiedToolbar.reconcileEngineViewHeight() updates these
-            // values whenever the toolbar's visible height changes
-            // (minimal state toggle, rotation, font-scale), so this
-            // initial setup only has to seed the first-frame values.
             val swipeRefreshParams = binding.swipeRefresh.layoutParams as CoordinatorLayout.LayoutParams
 
             when (prefs.toolbarPosition) {
-                com.prirai.android.lr.components.toolbar.ToolbarPosition.BOTTOM.ordinal -> {
+                ToolbarPosition.BOTTOM.ordinal -> {
                     binding.swipeRefresh.setPadding(0, 0, 0, 0)
                     swipeRefreshParams.bottomMargin = actualToolbarHeight
                     swipeRefreshParams.topMargin = 0
@@ -725,34 +582,23 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
                 .distinctUntilChanged()
                 .collect { restored ->
                     if (restored) {
-                        // Synchronize LRU manager with restored tabs
-                        val lruManager = com.prirai.android.lr.browser.tabs.TabLRUManager.getInstance(requireContext())
+                        val lruManager = TabLRUManager.getInstance(requireContext())
                         val currentTabIds = store.state.tabs.map { it.id }
                         lruManager.synchronizeWithTabs(currentTabIds)
 
-                        // Read the CURRENT store state, not the emitted
-                        // snapshot: the tab-count observer below can receive
-                        // the very same empty-state emission and both must
-                        // not create a tab from it. Checking the live state
-                        // makes the creation idempotent - whichever collector
-                        // runs first dispatches addTab synchronously, and
-                        // the other sees the new tab and skips.
                         val current = store.state
                         val tabs =
                             current.getNormalOrPrivateTabs(
                                 activity.browsingModeManager.mode.isPrivate
                             )
                         if (tabs.isEmpty() || current.selectedTabId == null) {
-                            // Navigate to home fragment first
                             try {
                                 if (navController.currentDestination?.id != R.id.homeFragment) {
                                     navController.navigate(R.id.homeFragment)
                                 }
                             } catch (e: Exception) {
-                                // Navigation failed, create tab as fallback
                             }
 
-                            // Then create a new tab based on homepage preference
                             createHomepagePreferenceTab()
                         }
                     }
@@ -760,18 +606,9 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
         }
     }
 
-    /**
-     * The single "make sure a tab exists" path both startup observers share:
-     * navigates to the home fragment and creates one tab per the user's
-     * homepage preference. Callers must re-check the CURRENT store state
-     * right before calling - the AC RestoreAction reducer ADDS restored
-     * tabs to whatever already exists, so a tab created before the session
-     * restore lands survives forever.
-     */
     private fun createHomepagePreferenceTab() {
         when (UserPreferences(requireContext()).homepageType) {
             HomepageChoice.VIEW.ordinal -> {
-                // Load about:homepage in BrowserFragment (HTML homepage)
                 components.tabsUseCases.addTab.invoke(
                     "about:homepage",
                     selectTab = true
@@ -808,15 +645,6 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
                 }
         }
         
-        // Also observe when all tabs are closed. Gated on restoreComplete:
-        // before the session restore lands the store is legitimately empty,
-        // and creating a tab then permanently pollutes the session (the AC
-        // RestoreAction reducer ADDS restored tabs to whatever already
-        // exists - it never replaces). This was the "two new tabs on every
-        // start" bug: this collector and observeRestoreComplete could each
-        // receive the same empty-state emission and both create a tab.
-        // Reading the CURRENT state (not the emitted snapshot) at handling
-        // time makes the two observers idempotent against each other.
         val activity = activity as? BrowserActivity
         consumeFlow(store) { flow ->
             flow.map { state ->
@@ -832,17 +660,14 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
                         ).isNotEmpty()
                     ) return@collect
 
-                    // All tabs closed, navigate to home and create a new tab
                     try {
                         val navController = findNavController()
                         if (navController.currentDestination?.id != R.id.homeFragment) {
                             navController.navigate(R.id.homeFragment)
                         }
 
-                        // Create a new tab
                         createHomepagePreferenceTab()
                     } catch (e: Exception) {
-                        // Ignore navigation errors
                     }
                 }
         }
@@ -856,7 +681,6 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
         if (browserInitialized) {
             view?.let { view ->
                 fullScreenChanged(false)
-                // Expand unified toolbar instead of legacy toolbar
                 unifiedToolbar?.expand()
                 resumeDownloadDialogState(selectedTab.id)
             }
@@ -897,7 +721,6 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
 
         requireContext().components.store.state.findTabOrCustomTabOrSelectedTab(customTabSessionId)
             ?.let { session ->
-                // If we didn't enter PiP, exit full screen on stop
                 if (!session.content.pictureInPictureEnabled && fullScreenFeature.onBackPressed()) {
                     fullScreenChanged(false)
                 }
@@ -906,37 +729,24 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
 
     @CallSuper
     override fun onBackPressed(): Boolean {
-        // Check features in order of priority
-        if (findInPageIntegration.onBackPressed()) return true
         if (fullScreenFeature.onBackPressed()) return true
         if (promptsFeature.onBackPressed()) return true
         if (sessionFeature.onBackPressed()) return true
 
-        // As fallback, walk page history if possible.
         val currentTab = requireContext().components.store.state.findTabOrCustomTabOrSelectedTab(customTabSessionId)
         if (currentTab?.content?.canGoBack == true) {
             requireContext().components.sessionUseCases.goBack.invoke(currentTab.id)
             return true
         }
 
-        // No page history left: hand off to LastTabFeature, which mirrors the
-        // upstream contract - external / custom-tab sessions get finished,
-        // parent-tab-opened tabs reselect their parent, and anything else
-        // returns false so the host can navigate back to Home.
         return lastTabFeature.onBackPressed()
     }
 
-    /**
-     * Saves the external app session ID to be restored later in [onViewStateRestored].
-     */
     final override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putString(KEY_CUSTOM_TAB_SESSION_ID, customTabSessionId)
     }
 
-    /**
-     * Retrieves the external app session ID saved by [onSaveInstanceState].
-     */
     final override fun onViewStateRestored(savedInstanceState: Bundle?) {
         super.onViewStateRestored(savedInstanceState)
         savedInstanceState?.getString(KEY_CUSTOM_TAB_SESSION_ID)?.let {
@@ -946,9 +756,6 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
         }
     }
 
-    /**
-     * Forwards permission grant results to one of the features.
-     */
     final override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<String>,
@@ -963,9 +770,6 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
         feature?.onPermissionsResult(permissions, grantResults)
     }
 
-    /**
-     * Forwards activity results to the [ActivityResultHandler] features.
-     */
     override fun onActivityResult(requestCode: Int, data: Intent?, resultCode: Int): Boolean {
         return listOf(
             promptsFeature
@@ -976,14 +780,6 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
         promptsFeature.withFeature { it.onActivityResult(requestCode, data, resultCode) }
     }
 
-    // `removeSessionIfNeeded` was a hand-rolled copy of upstream's
-    // `LastTabFeature.onBackPressed` (mozilla.components.feature.tabs).
-    // It has been replaced by the `lastTabFeature` ViewBoundFeatureWrapper -
-    // see `onBackPressed()` above.
-
-    /**
-     * Set the activity normal/private theme to match the current session.
-     */
     @VisibleForTesting
     internal fun updateThemeForSession(session: SessionState) {
         val sessionMode = BrowsingMode.fromBoolean(session.content.private)
@@ -996,16 +792,6 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
     }
 
     override fun onHomePressed() = pipFeature?.onHomePressed() ?: false
-
-    /**
-     * Exit fullscreen mode when exiting PIP mode
-     */
-    private fun pipModeChanged(session: SessionState) {
-        if (!session.content.pictureInPictureEnabled && session.content.fullScreen) {
-            onBackPressed()
-            fullScreenChanged(false)
-        }
-    }
 
     final override fun onPictureInPictureModeChanged(enabled: Boolean) {
         pipFeature?.onPictureInPictureModeChanged(enabled)
@@ -1022,9 +808,6 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
     @VisibleForTesting
     internal open fun fullScreenChanged(inFullScreen: Boolean) {
         if (inFullScreen) {
-            // Close find in page bar if opened
-            findInPageIntegration.onBackPressed()
-
             requireActivity().enterImmersiveMode(
                 setOnApplyWindowInsetsListener = { key: String, listener: OnApplyWindowInsetsListener ->
                     binding.engineView.addWindowInsetsListener(key, listener)
@@ -1032,11 +815,9 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
             )
             (view as? SwipeGestureLayout)?.isSwipeEnabled = false
 
-            // Completely hide and collapse toolbar
             unifiedToolbar?.collapse()
             unifiedToolbar?.visibility = View.GONE
             
-            // Reset engine view layout - remove all margins and behaviors
             val browserEngine = binding.swipeRefresh.layoutParams as CoordinatorLayout.LayoutParams
             browserEngine.bottomMargin = 0
             browserEngine.topMargin = 0
@@ -1044,13 +825,10 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
             binding.swipeRefresh.translationY = 0f
             binding.swipeRefresh.layoutParams = browserEngine
             
-            // Remove padding from swipeRefresh for true fullscreen
             binding.swipeRefresh.setPadding(0, 0, 0, 0)
 
-            // Disable dynamic toolbar
             binding.engineView.setDynamicToolbarMaxHeight(0)
             
-            // Notify subclasses about fullscreen change (for modern toolbar system)
             onFullScreenModeChanged(true)
         } else {
             requireActivity().exitImmersiveMode(
@@ -1063,42 +841,20 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
             initializeEngineView(toolbarHeight)
             unifiedToolbar?.expand()
             
-            // Restore window insets padding to swipeRefresh
             binding.swipeRefresh.requestApplyInsets()
             
-            // Notify subclasses about fullscreen change (for modern toolbar system)
             onFullScreenModeChanged(false)
         }
 
-        // Keep swipe refresh disabled - we use custom gesture for fullscreen
         binding.swipeRefresh.isEnabled = false
     }
     
-    /**
-     * Hook for subclasses to handle fullscreen mode changes
-     * (e.g., BrowserFragment can hide/show modern toolbar system)
-     */
     protected open fun onFullScreenModeChanged(inFullScreen: Boolean) {
-        // Default: do nothing, subclasses can override
     }
     
-    /**
-     * Setup edge-to-edge for the fragment.
-     * Ensures proper inset handling for web content including:
-     * - System bars (status bar, navigation bar)
-     * - Toolbars (address bar, tab bar, contextual bar)
-     * - Keyboard (IME)
-     */
     private fun setupEdgeToEdgeForFragment() {
-        // Initialize web content position manager for comprehensive handling
-        // Uses callback functions to get toolbar heights dynamically
-        // The custom-tab fragment positions its own content (its header
-        // replaces the toolbar, so the main browser's toolbar-relative
-        // padding would double the status bar). ExternalAppBrowserFragment
-        // pads browserLayout for both the header and the opposite system
-        // bar in setupCustomTabContentPadding.
         if (customTabSessionId == null) {
-            webContentPositionManager = com.prirai.android.lr.browser.WebContentPositionManager(
+            webContentPositionManager = WebContentPositionManager(
                 engineView = binding.engineView,
                 swipeRefreshView = binding.swipeRefresh,
                 rootView = binding.root,
@@ -1108,24 +864,17 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
             webContentPositionManager?.initialize()
         }
         
-        // Make browserLayout pass insets through to children
         ViewCompat.setOnApplyWindowInsetsListener(binding.browserLayout) { _, insets ->
             insets
         }
     }
     
-    /**
-     * Get the current VISIBLE height of top toolbars (accounting for scroll/collapse)
-     */
     private fun getTopToolbarHeight(): Int {
         val prefs = UserPreferences(requireContext())
         return if (prefs.toolbarPosition == ToolbarPosition.TOP.ordinal) {
-            // The UnifiedToolbar itself is what scrolls (translationY)
             val toolbarView = unifiedToolbar
             if (toolbarView != null && toolbarView.height > 0) {
-                // Account for translationY - when toolbar scrolls up, translationY is negative
                 val visibleHeight = toolbarView.height + toolbarView.translationY.toInt()
-                // Ensure we don't return negative values
                 maxOf(0, visibleHeight)
             } else {
                 resources.getDimensionPixelSize(R.dimen.browser_toolbar_height)
@@ -1135,35 +884,28 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
         }
     }
     
-    /**
-     * Get the current height of bottom toolbars
-     */
     private fun getBottomToolbarHeight(): Int {
         val prefs = UserPreferences(requireContext())
         val isTopToolbar = prefs.toolbarPosition != ToolbarPosition.BOTTOM.ordinal
         
         return if (isTopToolbar) {
-            // In TOP mode: only bottom components (tab group bar) are at bottom
             var height = 0
             unifiedToolbar?.getTabGroupBar()?.takeIf { it.isVisible }?.let {
                 height += it.height
             }
             
-            // If not measured yet, estimate
             if (height == 0) {
                 resources.getDimensionPixelSize(R.dimen.contextual_toolbar_height)
             } else {
                 height
             }
         } else {
-            // In BOTTOM mode: address bar + tab group bar all at bottom
             var height = 0
             unifiedToolbar?.getToolbarView()?.let { height += it.height }
             unifiedToolbar?.getTabGroupBar()?.takeIf { it.isVisible }?.let {
                 height += it.height
             }
             
-            // If not measured yet, estimate
             if (height == 0) {
                 resources.getDimensionPixelSize(R.dimen.browser_toolbar_height)
             } else {
@@ -1172,28 +914,16 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
         }
     }
     
-    /**
-     * Request web content position update - should be called when toolbar visibility/size changes
-     */
     protected fun requestWebContentPositionUpdate() {
         webContentPositionManager?.requestUpdate()
     }
 
-    /*
-     * Dereference these views when the fragment view is destroyed to prevent memory leaks
-     */
-    /**
-     * Initialize UnifiedToolbar - can be overridden by subclasses for custom behavior
-     */
     protected open fun initializeUnifiedToolbar(view: View, tab: SessionState) {
-        // Default implementation - subclasses can override
-        // This is intentionally empty in the base class to allow subclasses full control
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
 
-        // Lifecycle-aware features cleaned up automatically
         webContentPositionManager?.destroy()
         webContentPositionManager = null
         _binding?.engineView?.setActivityContext(null)
@@ -1211,23 +941,11 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
     }
 
     override fun onAccessibilityStateChanged(enabled: Boolean) {
-        // Toolbar behavior is now handled by UnifiedToolbar
-        // No action needed here as UnifiedToolbar handles scroll behavior internally
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
 
-        // Dismiss menu from unified toolbar's browser toolbar
         unifiedToolbar?.getBrowserToolbar()?.dismissMenu()
-    }
-
-    // This method is called in response to native web extension messages from
-    // content scripts (e.g the reader view extension). By the time these
-    // messages are processed the fragment/view may no longer be attached.
-    internal fun safeInvalidateBrowserToolbarView() {
-        context?.let {
-            unifiedToolbar?.getBrowserToolbar()?.invalidateActions()
-        }
     }
 }

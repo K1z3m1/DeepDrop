@@ -15,23 +15,10 @@ import java.io.File
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
+import com.prirai.android.lr.theme.ColorConstants
+import java.io.ByteArrayOutputStream
 
-/**
- * Handles export and import of browser profiles as ZIP files.
- *
- * ZIP contents:
- *   manifest.json  — version/timestamp metadata
- *   profile.json   — BrowserProfile fields
- *   tabgroups.json — tab groups belonging to this profile (contextId-filtered)
- *   tabs.json      — tab ordering data from TabOrderManager
- *
- * Note: GeckoView session data (cookies, history, passwords) is NOT included
- * because it is stored internally by the engine and not accessible.
- * Tab IDs in tabs.json refer to sessions that will not exist on the target
- * device — the ordering structure is preserved for group name/color metadata.
- */
 class ProfileExportManager private constructor(private val context: Context) {
-
     companion object {
         private const val EXPORT_VERSION = 1
         private const val APP_VERSION = "lr-1.0"
@@ -49,14 +36,6 @@ class ProfileExportManager private constructor(private val context: Context) {
             }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Export
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Exports the given profile to a ZIP file stored in the app's cache dir.
-     * Returns a content:// URI via FileProvider suitable for sharing.
-     */
     suspend fun exportProfile(profile: BrowserProfile): Uri = withContext(Dispatchers.IO) {
         val contextId = profileToContextId(profile)
         val timestamp = System.currentTimeMillis()
@@ -147,16 +126,6 @@ class ProfileExportManager private constructor(private val context: Context) {
         }.toString()
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Import
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Imports a profile from a ZIP file URI.
-     * Returns the newly created [BrowserProfile].
-     *
-     * @throws IllegalArgumentException if the ZIP is not a valid LR export.
-     */
     suspend fun importProfile(zipUri: Uri): BrowserProfile = withContext(Dispatchers.IO) {
         val entries = readZipEntries(zipUri)
 
@@ -170,20 +139,17 @@ class ProfileExportManager private constructor(private val context: Context) {
         if (version < 1) throw IllegalArgumentException("Not a valid LR profile export")
 
         val profileObj = JSONObject(profileJson)
-        // SECURITY: imported data is untrusted - strip control chars and bound lengths.
         val profileName = profileObj.optString("name", "Imported Profile")
             .filter { !it.isISOControl() }.trim().take(50).ifBlank { "Imported Profile" }
         val color = profileObj.optInt("color", BrowserProfile.PROFILE_COLORS.first())
         val emoji = profileObj.optString("emoji", "👤").take(8).ifBlank { "👤" }
 
-        // Avoid duplicate names
         val profileManager = ProfileManager.getInstance(context)
         val existingNames = profileManager.getAllProfiles().map { it.name }
         val finalName = if (profileName in existingNames) "$profileName (imported)" else profileName
 
         val importedProfile = profileManager.createProfile(finalName, color, emoji)
 
-        // Import tab groups (metadata only; tab session IDs are not restorable)
         val tabGroupsJson = entries["tabgroups.json"]
         if (!tabGroupsJson.isNullOrBlank()) {
             importTabGroups(importedProfile, tabGroupsJson)
@@ -193,18 +159,7 @@ class ProfileExportManager private constructor(private val context: Context) {
     }
 
     private suspend fun importTabGroups(profile: BrowserProfile, tabGroupsJson: String) {
-        // Tab groups are exported as metadata for reference.
-        // Because GeckoView session data cannot be transferred between devices,
-        // groups cannot be meaningfully re-created on import (they would be empty).
-        // The exported tabgroups.json preserves group names/colors for future use
-        // if tab migration support is ever added.
-        //
-        // Currently: no-op — profile metadata is preserved, groups are not re-created.
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Helpers
-    // ─────────────────────────────────────────────────────────────────────────
 
     private fun readZipEntries(zipUri: Uri): Map<String, String> {
         val inputStream = context.contentResolver.openInputStream(zipUri)
@@ -215,9 +170,8 @@ class ProfileExportManager private constructor(private val context: Context) {
             var entry = zis.nextEntry
             var count = 0
             while (entry != null) {
-                // SECURITY: bound entry count and size to prevent zip-bomb OOM.
                 if (++count > MAX_ZIP_ENTRIES) throw IllegalArgumentException("Too many entries in archive")
-                val buf = java.io.ByteArrayOutputStream()
+                val buf = ByteArrayOutputStream()
                 val chunk = ByteArray(8 * 1024)
                 var total = 0
                 while (true) {
@@ -241,14 +195,12 @@ class ProfileExportManager private constructor(private val context: Context) {
         zos.closeEntry()
     }
 
-    /** Returns the contextId string used to filter DB/DataStore entries for a profile. */
     private fun profileToContextId(profile: BrowserProfile): String? =
         when {
             profile.isDefault || profile.id == "default" -> null // matches null and "profile_default"
             else -> "profile_${profile.id}"
         }
 
-    /** True if the group belongs to the given contextId (handles null == "profile_default"). */
     private fun matchesContext(group: TabGroupData, contextId: String?): Boolean =
         if (contextId == null) {
             group.contextId == null || group.contextId == "profile_default"
@@ -257,5 +209,5 @@ class ProfileExportManager private constructor(private val context: Context) {
         }
 
     private fun colorToName(color: Int): String =
-        com.prirai.android.lr.theme.ColorConstants.TabGroups.getColorName(color)
+        ColorConstants.TabGroups.getColorName(color)
 }

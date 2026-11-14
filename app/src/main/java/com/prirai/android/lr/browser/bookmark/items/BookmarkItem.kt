@@ -8,7 +8,6 @@ import java.io.IOException
 import java.io.Serializable
 
 abstract class BookmarkItem(var title: String?, val id: Long) : Serializable {
-
     protected abstract val type: Int
 
     @Throws(IOException::class)

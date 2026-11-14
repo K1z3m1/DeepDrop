@@ -5,7 +5,6 @@ import com.prirai.android.lr.R
 import java.util.concurrent.TimeUnit
 
 object HistoryTimeFormatter {
-
     fun getRelativeTimeString(context: Context, timestamp: Long): String {
         val diff = System.currentTimeMillis() - timestamp
 

@@ -7,7 +7,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.unit.dp
 
-/** Local copies of the few Material icons the app needs (replaces the huge material-icons-extended artifact). */
 internal object LRIconData {
     private fun icon(name: String, d: String, evenOdd: Boolean = false, mirror: Boolean = false) =
         ImageVector.Builder(name, 24.dp, 24.dp, 24f, 24f, autoMirror = mirror).addPath(

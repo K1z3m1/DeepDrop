@@ -66,26 +66,7 @@ import mozilla.components.concept.engine.permission.SitePermissions
 import mozilla.components.concept.engine.permission.SitePermissions.AutoplayStatus
 import mozilla.components.concept.engine.permission.SitePermissions.Status
 
-/**
- * Settings sub-screen that lists every origin with a per-site exception
- * (either an AC `SitePermissions` row with any non-default field, or a
- * LR cookie-retention policy, or both) and lets the user tap through
- * to the full [SitePermissionsBottomSheet] for that origin.
- *
- * The screen is deliberately read-mostly: there is no inline edit. The
- * only destructive action here is "Clear all exceptions", which wipes
- * both the AC permission storage (`permissionStorage.removeAll()`) and
- * the local cookie-policy table.
- *
- * Rows are grouped by origin (one row per unique origin, union of the
- * two sources). A row shows the origin, a one-line summary describing
- * which permissions deviate from defaults and whether a cookie-retention
- * policy exists, and a trailing "remove" button that drops this origin's
- * AC row and cookie policy (without touching other origins).
- */
 class SiteExceptionsFragment : Fragment() {
-
-    /** null while a (re)load is in flight — the loading indicator's slot. */
     private var rows by mutableStateOf<List<ExceptionRow>?>(null)
 
     override fun onCreateView(
@@ -117,8 +98,6 @@ class SiteExceptionsFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        // Reload unconditionally: picks up any changes made via the
-        // bottom sheet while this screen was on the back stack, too.
         reload()
     }
 
@@ -147,7 +126,6 @@ class SiteExceptionsFragment : Fragment() {
         val context = requireContext()
         viewLifecycleOwner.lifecycleScope.launch {
             withContext(Dispatchers.IO) {
-                // Remove the SitePermissions row if it exists.
                 runCatching {
                     val row = context.components.permissionStorage
                         .findSitePermissionsBy(origin, private = false)
@@ -155,7 +133,6 @@ class SiteExceptionsFragment : Fragment() {
                         context.components.permissionStorage.remove(row, private = false)
                     }
                 }
-                // Remove the LR cookie-retention policy.
                 CookiePolicyRepository.getInstance(context).remove(origin)
             }
             reload()
@@ -173,12 +150,6 @@ class SiteExceptionsFragment : Fragment() {
         }
     }
 
-    /**
-     * Build one [ExceptionRow] per unique origin by unioning
-     * `permissionStorage.all()` with the LR cookie-policy rows. The
-     * resulting list is sorted alphabetically for stability across
-     * reloads.
-     */
     private fun buildRows(
         permissions: List<SitePermissions>,
         policies: List<CookiePolicy>,
@@ -230,14 +201,8 @@ class SiteExceptionsFragment : Fragment() {
     }
 }
 
-/** One origin's exceptions: the origin plus a one-line summary of what deviates from defaults. */
 private data class ExceptionRow(val origin: String, val summary: String)
 
-/**
- * The Site Exceptions screen on the shared Material 3 Expressive stack:
- * an M3 top bar with the back arrow and the clear-all action (the old
- * toolbar overflow item), then a grouped [LRCardRow] list per origin.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SiteExceptionsScreen(
@@ -330,12 +295,6 @@ private fun SiteExceptionsScreen(
     }
 }
 
-/**
- * One origin on the shared grouped-card idiom. The summary of what
- * deviates from defaults travels in the trailing slot; tapping the row
- * opens the full permission sheet, the trailing close icon removes this
- * origin's exceptions only.
- */
 @Composable
 private fun SiteExceptionCardRow(
     row: ExceptionRow,
@@ -383,13 +342,6 @@ private fun SiteExceptionCardRow(
     )
 }
 
-/**
- * Count of permissions on this row that have deviated from their
- * `NO_DECISION` default (or, for autoplay, from `BLOCKED` which is the
- * Gecko default). Autoplay fields are tri-counted only if the user
- * explicitly flipped them to ALLOWED - BLOCKED is the ambient default
- * for every unvisited site.
- */
 private fun SitePermissions.nonDefaultCount(): Int {
     var n = 0
     if (location != Status.NO_DECISION) n++

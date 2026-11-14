@@ -47,10 +47,10 @@ import com.prirai.android.lr.settings.HomepageBackgroundChoice
 import com.prirai.android.lr.theme.applyAppTheme
 import com.prirai.android.lr.ui.components.LRAlertDialog
 import kotlin.math.roundToInt
-
+import android.os.Build
+import com.google.android.material.color.DynamicColors
 
 class CustomizationSettingsFragment : BaseSettingsFragment() {
-
     private lateinit var getBackgroundImageUri: ActivityResultLauncher<Intent>
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,7 +60,6 @@ class CustomizationSettingsFragment : BaseSettingsFragment() {
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
                 if (result.resultCode == Activity.RESULT_OK) {
                     val uri = result.data?.data
-                    // Handle the returned Uri
                     if (uri != null) {
                         requireContext().contentResolver.takePersistableUriPermission(
                             uri,
@@ -88,28 +87,23 @@ class CustomizationSettingsFragment : BaseSettingsFragment() {
     override fun onCreatePreferences(savedInstanceState: Bundle?, s: String?) {
         addPreferencesFromResource(R.xml.preferences_customization)
 
-        // Dynamic colors preference
         switchPreference(
             preference = "dynamic_colors",
             isChecked = UserPreferences(requireContext()).dynamicColors,
             onCheckChange = {
                 UserPreferences(requireContext()).dynamicColors = it
-                // Apply dynamic colors immediately
-                if (it && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                    com.google.android.material.color.DynamicColors.applyToActivitiesIfAvailable(requireActivity().application)
+                if (it && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    DynamicColors.applyToActivitiesIfAvailable(requireActivity().application)
                 }
-                // Recreate activity to apply changes
                 requireActivity().recreate()
             }
         )
 
-        // AMOLED mode preference
         switchPreference(
             preference = "amoled_mode",
             isChecked = UserPreferences(requireContext()).amoledMode,
             onCheckChange = {
                 UserPreferences(requireContext()).amoledMode = it
-                // Show toast to restart app
                 Toast.makeText(
                     requireContext(),
                     getString(R.string.app_restart),
@@ -139,7 +133,6 @@ class CustomizationSettingsFragment : BaseSettingsFragment() {
             }
         )
 
-
         switchPreference(
             preference = requireContext().resources.getString(R.string.key_show_protocol),
             isChecked = UserPreferences(requireContext()).showUrlProtocol,
@@ -152,7 +145,6 @@ class CustomizationSettingsFragment : BaseSettingsFragment() {
                 ).show()
             }
         )
-
 
         switchPreference(
             preference = requireContext().resources.getString(R.string.key_shortcuts_visible),
@@ -251,7 +243,6 @@ class CustomizationSettingsFragment : BaseSettingsFragment() {
                 ).show()
             }
         )
-
     }
 
     private fun pickHomepageBackground() {
@@ -268,7 +259,6 @@ class CustomizationSettingsFragment : BaseSettingsFragment() {
                 onItem = { which ->
                     when (which) {
                         0 -> {
-                            // None - immediate action
                             UserPreferences(requireContext()).homepageBackgroundChoice = HomepageBackgroundChoice.NONE.ordinal
                             updateHomepageBackgroundSummary()
                             Toast.makeText(
@@ -278,7 +268,6 @@ class CustomizationSettingsFragment : BaseSettingsFragment() {
                             ).show()
                         }
                         1 -> {
-                            // Choose from gallery - launch picker immediately
                             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                                 addCategory(Intent.CATEGORY_OPENABLE)
                                 type = "image/*"
@@ -289,7 +278,6 @@ class CustomizationSettingsFragment : BaseSettingsFragment() {
                             getBackgroundImageUri.launch(intent)
                         }
                         2 -> {
-                            // Enter URL - show input dialog immediately
                             showUrlInputDialog()
                         }
                     }
@@ -394,7 +382,6 @@ class CustomizationSettingsFragment : BaseSettingsFragment() {
             )
         }
     }
-
 }
 
 @Composable
@@ -549,11 +536,6 @@ private fun ThemeChoiceDialog(
     )
 }
 
-/**
- * The slider picker behind both "Toolbar Icon Size" and "Interface Font Size":
- * a live preview (a primary-tinted icon or a text sample) above a stepped
- * [Slider] bracketed by the "Small"/"Large" labels.
- */
 @Composable
 private fun SizePickerDialog(
     title: String,

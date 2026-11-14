@@ -24,7 +24,6 @@ class BrowserThumbnailView @JvmOverloads constructor(
     attrs: AttributeSet? = null,
     defStyle: Int = 0,
 ) : AppCompatImageView(context, attrs, defStyle) {
-
     private var matrixDrawable: Drawable? = null
     private var matrixDrawableWidth = 0
     private var matrixViewWidth = 0
@@ -60,7 +59,6 @@ class FakeTab @JvmOverloads constructor(
     attrs: AttributeSet? = null,
     defStyle: Int = 0
 ) : FrameLayout(context, attrs, defStyle) {
-
     private val fakeToolbar: View
     private val previewThumbnail: BrowserThumbnailView
 

@@ -72,17 +72,7 @@ import com.prirai.android.lr.ui.components.animateLRListItem
 import com.prirai.android.lr.ui.theme.LRTheme
 import mozilla.components.browser.state.state.TabSessionState
 
-/**
- * The unified search sheet, opened from the tab sheet's Search button: one query
- * searched across tabs, bookmarks and history, with the results grouped into
- * cards - tabs under their profile chip, bookmarks under their folder path chip,
- * history under its time-group chip.
- *
- * This is NOT the address-bar search dialog (`search/SearchDialogFragment`) - the
- * two surfaces are deliberately separate (see the LLM agent guide).
- */
 class TabSearchFragment : BottomSheetDialogFragment() {
-
     private val queryState = mutableStateOf("")
     private val resultsState = mutableStateOf<List<SearchResultItem>>(emptyList())
 
@@ -101,9 +91,6 @@ class TabSearchFragment : BottomSheetDialogFragment() {
                 dynamicColor = prefs.dynamicColors,
             ) {
                 val query = queryState.value
-                // Search fires per keystroke like the View implementation did; a new
-                // query cancels the previous round, so the slow grouped history query
-                // of a stale prefix never lands over a newer result set.
                 LaunchedEffect(query) { performSearch(query) }
                 TabSearchSheetContent(
                     query = query,
@@ -120,7 +107,6 @@ class TabSearchFragment : BottomSheetDialogFragment() {
     override fun onStart() {
         super.onStart()
 
-        // Match the TabsBottomSheetFragment height behavior: a tall, expanded sheet.
         val bottomSheetDialog = dialog as? BottomSheetDialog ?: return
         val behavior = bottomSheetDialog.behavior
 
@@ -220,7 +206,6 @@ class TabSearchFragment : BottomSheetDialogFragment() {
                 path = getString(R.string.action_bookmarks),
             )
         } catch (e: Exception) {
-            // A malformed bookmark tree yields no results rather than failing the search
         }
         return results.take(MAX_RESULTS_PER_SECTION)
     }
@@ -262,8 +247,6 @@ class TabSearchFragment : BottomSheetDialogFragment() {
     private suspend fun searchHistory(query: String): List<SearchResultItem.HistoryResult> {
         val results = mutableListOf<SearchResultItem.HistoryResult>()
         try {
-            // The detailed grouped history query is intentionally here and only here -
-            // it is too slow for the address-bar suggestion pipeline.
             val visits = requireContext().components.historyStorage
                 .getDetailedVisits(0, excludeTypes = emptyList())
             visits.forEach { visit ->
@@ -281,7 +264,6 @@ class TabSearchFragment : BottomSheetDialogFragment() {
                 }
             }
         } catch (e: Exception) {
-            // History storage being unavailable just yields no results
         }
         return results.take(MAX_RESULTS_PER_SECTION)
     }
@@ -303,7 +285,6 @@ class TabSearchFragment : BottomSheetDialogFragment() {
         when (item) {
             is SearchResultItem.HeaderResult, is SearchResultItem.SubHeaderResult -> Unit
             is SearchResultItem.TabResult -> {
-                // Switch to the tab
                 requireContext().components.tabsUseCases.selectTab(item.tab.id)
                 try {
                     val navController = NavHostFragment.findNavController(this)
@@ -314,7 +295,6 @@ class TabSearchFragment : BottomSheetDialogFragment() {
                         )
                     }
                 } catch (e: Exception) {
-                    // Navigation is best-effort; the tab is already selected
                 }
                 dismiss()
             }
@@ -340,8 +320,6 @@ class TabSearchFragment : BottomSheetDialogFragment() {
 
     private fun onTabCloseClicked(tabResult: SearchResultItem.TabResult) {
         requireContext().components.tabsUseCases.removeTab(tabResult.tab.id)
-        // Drop the row synchronously (before the store's async removal lands) and
-        // prune any sub-header or header its removal left empty.
         val withoutTab = resultsState.value.filterNot {
             it is SearchResultItem.TabResult && it.tab.id == tabResult.tab.id
         }
@@ -351,7 +329,6 @@ class TabSearchFragment : BottomSheetDialogFragment() {
     private fun pruneEmptyGroups(items: List<SearchResultItem>): List<SearchResultItem> {
         val pruned = items.toMutableList()
 
-        // Sub-headers followed by nothing, another sub-header or a header are empty
         var i = pruned.lastIndex
         while (i >= 0) {
             if (pruned[i] is SearchResultItem.SubHeaderResult) {
@@ -366,7 +343,6 @@ class TabSearchFragment : BottomSheetDialogFragment() {
             i--
         }
 
-        // Headers followed by nothing or another header are empty
         i = pruned.lastIndex
         while (i >= 0) {
             if (pruned[i] is SearchResultItem.HeaderResult) {
@@ -414,7 +390,6 @@ sealed class SearchResultItem {
     ) : SearchResultItem()
 }
 
-/** Unique across the mixed-type list: the prefixed index disambiguates non-tab rows. */
 private fun SearchResultItem.lazyKey(index: Int): String = when (this) {
     is SearchResultItem.HeaderResult -> "header-$index"
     is SearchResultItem.SubHeaderResult -> "subheader-$index"
@@ -442,11 +417,6 @@ private fun isLastInMainGroup(items: List<SearchResultItem>, index: Int): Boolea
     return next == null || next is SearchResultItem.HeaderResult
 }
 
-/**
- * The Compose body of the unified search sheet: the shared sheet header, the pill
- * search field, and the grouped result cards. The sheet chrome (rounded corners,
- * surface color) comes from the dialog theme, so the content is a bare Column.
- */
 @Composable
 private fun TabSearchSheetContent(
     query: String,
@@ -457,7 +427,6 @@ private fun TabSearchSheetContent(
     onDismiss: () -> Unit,
 ) {
     val focusRequester = remember { FocusRequester() }
-    // Auto-focus the field so the keyboard is up when the sheet opens.
     LaunchedEffect(focusRequester) { focusRequester.requestFocus() }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -607,7 +576,6 @@ private fun SectionHeader(
     )
 }
 
-/** The profile / folder / date chip that labels one result sub-group. */
 @Composable
 private fun SubHeaderChip(
     title: String,
@@ -636,7 +604,6 @@ private fun SubHeaderChip(
     }
 }
 
-/** The small tab-group label a tab row carries next to its close button. */
 @Composable
 private fun GroupChip(label: String) {
     FilterChip(
@@ -658,7 +625,6 @@ private fun GroupChip(label: String) {
     )
 }
 
-/** One result row on the shared grouped-card idiom, with the site's favicon. */
 @Composable
 private fun ResultRow(
     title: String,

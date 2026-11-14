@@ -37,17 +37,6 @@ import com.prirai.android.lr.ui.components.thumbnailGradientOverlay
 import kotlinx.coroutines.launch
 import mozilla.components.browser.state.state.TabSessionState
 
-/**
- * Reusable grid card component for both grouped and ungrouped tabs.
- * Provides consistent UI with thumbnail, bottom-gradient overlay, and layered content.
- *
- * @param tab The tab session state
- * @param isSelected Whether this tab is currently selected
- * @param groupColor Optional group color for border/styling
- * @param onTabClick Callback when tab is clicked
- * @param onTabClose Callback when close button is clicked
- * @param modifier Additional modifiers to apply
- */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun TabGridCard(
@@ -74,17 +63,12 @@ fun TabGridCard(
                 },
         shape = RoundedCornerShape(12.dp),
         color = when {
-            // One selection language: the focused card is always the
-            // primaryContainer, grouped or not; the group color speaks
-            // through the container's accent strip and badge.
             isSelected -> MaterialTheme.colorScheme.primaryContainer
             groupColor != null -> Color(groupColor).copy(alpha = 0.05f)
             else -> MaterialTheme.colorScheme.surfaceContainerHighest
         },
         tonalElevation = if (isSelected) 2.dp else 0.dp,
         border = when {
-            // Group identity on a resting grouped card; the selected state
-            // speaks through its primaryContainer, never an accent stroke.
             !isSelected && groupColor != null -> BorderStroke(1.dp, Color(groupColor).copy(alpha = 0.3f))
             else -> null
         }
@@ -94,20 +78,17 @@ fun TabGridCard(
                 .fillMaxSize()
                 .clickable(interactionSource = interactionSource) { onTabClick() }
         ) {
-            // Thumbnail fills the full card
             ThumbnailImageView(
                 tab = tab,
                 modifier = Modifier.fillMaxSize()
             )
 
-            // Bottom-focused scrim so the title overlay stays legible on light frames
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .thumbnailGradientOverlay()
             )
 
-            // Close button — small, semi-transparent, top-right corner
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
@@ -138,7 +119,6 @@ fun TabGridCard(
                 }
             }
 
-            // Frosted-glass title overlay at the bottom — favicon + title in one row
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomStart)

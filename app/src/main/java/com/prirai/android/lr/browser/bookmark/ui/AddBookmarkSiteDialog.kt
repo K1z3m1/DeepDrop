@@ -15,19 +15,6 @@ import com.prirai.android.lr.preferences.UserPreferences
 import com.prirai.android.lr.theme.ThemeManager
 import com.prirai.android.lr.ui.theme.LRTheme
 
-/**
- * View-framework entry point for adding (or editing) a single bookmark, kept
- * for callers that still reach the bookmark feature from fragment code —
- * BrowserFragment's "Add Bookmark" menu action constructs it with a context,
- * a title and a URL.
- *
- * The class keeps the constructor, `setOnClickListener` and `show` surface of
- * the old View-based dialog; `show` hosts the Compose
- * [BookmarkSiteEditDialog] in a [ComposeView] attached to the activity
- * content — the same hosting pattern TabsBottomSheetFragment uses for its
- * profile dialogs — and removes the view again once the dialog is dismissed
- * or saved.
- */
 class AddBookmarkSiteDialog private constructor(
     private val context: Context,
     private val manager: BookmarkManager?,
@@ -84,11 +71,6 @@ class AddBookmarkSiteDialog private constructor(
         (composeView.parent as? ViewGroup)?.removeView(composeView)
     }
 
-    /**
-     * The Compose dialog replaces the platform dialog whose reference the
-     * old listener signature carried; the shipped callers ignore it, so a
-     * no-op satisfies the interface.
-     */
     private object DialogSentinel : DialogInterface {
         override fun dismiss() {
         }

@@ -24,6 +24,7 @@ import com.prirai.android.lr.ui.components.pressScale
 import com.prirai.android.lr.ui.components.mutedAdaptive
 import com.prirai.android.lr.browser.profile.ProfileIcons
 import com.prirai.android.lr.R
+import androidx.compose.foundation.interaction.MutableInteractionSource
 
 @Composable
 fun ProfileCreateDialog(
@@ -118,16 +119,12 @@ fun CombinedEmojiColorOption(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val interactionSource = remember { MutableInteractionSource() }
     Box(
         modifier = Modifier
             .pressScale(interactionSource)
             .size(64.dp)
             .clip(RoundedCornerShape(16.dp))
-            // One selection language, the same as focused tab pills: the
-            // selected option is the primaryContainer, resting options are
-            // fully transparent - no tinted fill, no accent stroke. The
-            // icon's muted color carries the palette identity.
             .background(
                 if (selected) {
                     MaterialTheme.colorScheme.primaryContainer
@@ -141,9 +138,6 @@ fun CombinedEmojiColorOption(
             ),
         contentAlignment = Alignment.Center
     ) {
-        // Icon avatar, not emoji - the stored key maps through ProfileIcons.
-        // The tint is the muted, theme-adaptive variant of the palette
-        // color, never the raw saturated accent.
         Icon(
             imageVector = ProfileIcons.iconFor(emoji),
             contentDescription = null,

@@ -70,15 +70,7 @@ import kotlinx.coroutines.launch
 import mozilla.components.concept.storage.VisitInfo
 import mozilla.components.support.ktx.kotlin.tryGetHostFromUrl
 
-/**
- * The full-screen browsing-history page, rendered with the shared Material 3
- * Expressive Compose stack: a [TopAppBar] with the back arrow, the [LRSearchField]
- * and a grouped [LRCardRow] list per date section. Tapping a row loads its URL
- * in the current tab; the trailing overflow menu carries the row actions the old
- * long-press dialog exposed (open in (private) tab, share, copy, remove).
- */
 class HistoryActivity : AppCompatActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdgeMode()
@@ -103,7 +95,6 @@ private fun HistoryScreen(onBack: () -> Unit) {
     val components = context.components
     val scope = rememberCoroutineScope()
 
-    // null while the first load is still in flight - the loading indicator's slot.
     var history by remember { mutableStateOf<List<VisitInfo>?>(null) }
     var query by remember { mutableStateOf("") }
 
@@ -210,10 +201,6 @@ private fun HistoryScreen(onBack: () -> Unit) {
     }
 }
 
-/**
- * One history visit on the shared grouped-card idiom, with the favicon, the
- * relative time and the overflow menu the long-press dialog used to carry.
- */
 @Composable
 private fun HistoryCardRow(
     item: HistoryItem.Visit,
@@ -317,10 +304,6 @@ private fun HistoryCardRow(
     )
 }
 
-/**
- * The row favicon on the history page's loader - memory, disk, then `BrowserIcons`
- * - with the history glyph as its placeholder while the load is in flight.
- */
 @Composable
 private fun HistoryFavicon(url: String) {
     val context = LocalContext.current

@@ -14,10 +14,8 @@ import mozilla.components.lib.state.ext.flowScoped
 import mozilla.components.support.base.feature.LifecycleAwareFeature
 import mozilla.components.support.ktx.android.content.getColorFromAttr
 import mozilla.components.support.ktx.kotlinx.coroutines.flow.ifAnyChanged
+import kotlinx.coroutines.Dispatchers
 
-/**
- * Integration that adds a reload/stop button to the toolbar that changes based on loading state
- */
 @ExperimentalCoroutinesApi
 class ReloadStopButtonIntegration(
     private val context: Context,
@@ -26,7 +24,6 @@ class ReloadStopButtonIntegration(
     private val onReload: () -> Unit,
     private val onStop: () -> Unit
 ) : LifecycleAwareFeature {
-
     private var scope: CoroutineScope? = null
 
     private val reloadStopButton = BrowserToolbar.TwoStateButton(
@@ -53,7 +50,7 @@ class ReloadStopButtonIntegration(
     }
 
     override fun start() {
-        scope = store.flowScoped(dispatcher = kotlinx.coroutines.Dispatchers.Main) { flow ->
+        scope = store.flowScoped(dispatcher = Dispatchers.Main) { flow ->
             flow.mapNotNull { state -> state.selectedTab }
                 .ifAnyChanged { tab ->
                     arrayOf(tab.content.loading)

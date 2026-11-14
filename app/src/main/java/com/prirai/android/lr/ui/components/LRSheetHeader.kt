@@ -30,7 +30,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.prirai.android.lr.R
 
-/** The values every LR bottom sheet header shares; a caller overrides only where it differs. */
 object LRSheetHeaderDefaults {
     val ContentPadding: PaddingValues = PaddingValues(start = 16.dp, end = 16.dp, bottom = 6.dp)
     val CloseButtonSize: Dp = 40.dp
@@ -43,15 +42,6 @@ object LRSheetHeaderDefaults {
         @Composable get() = MaterialTheme.typography.labelMedium
 }
 
-/**
- * The header a LR bottom sheet draws when it is a titled sheet: the M3 drag handle, a
- * title row, and the divider that separates it from the sheet body.
- *
- * @param closeButtonSize fixed size for the close button, or null to leave it at the `IconButton`
- *   default.
- * @param dividerAlpha alpha for the `outlineVariant` divider, or null for a header with no divider.
- * @param showDragHandle false inside a `ModalBottomSheet`, which already draws its own handle.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LRSheetHeader(
@@ -88,7 +78,6 @@ fun LRSheetHeader(
                     .fillMaxWidth()
                     .padding(contentPadding),
             verticalAlignment = Alignment.CenterVertically,
-            // A leading icon sits in a header that spaces every child, including the close button.
             horizontalArrangement = if (leadingIcon != null) Arrangement.spacedBy(12.dp) else Arrangement.Start,
         ) {
             if (onBack != null) {

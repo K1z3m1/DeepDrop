@@ -74,6 +74,7 @@ import mozilla.components.browser.state.action.DownloadAction
 import mozilla.components.browser.state.state.content.DownloadState
 import mozilla.components.lib.state.ext.observeAsComposableState
 import java.util.UUID
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -110,8 +111,6 @@ fun DownloadsScreen(onDismiss: () -> Unit) {
         }
         .sortedByDescending { it.createdTime }
 
-    // The dialog theme's rounded_bottom_sheet provides the sheet chrome
-    // (28dp top corners, colorSurface); the content draws no second surface.
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -299,7 +298,6 @@ fun DownloadListItem(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // File type icon
             Surface(
                 modifier = Modifier.size(44.dp),
                 shape = RoundedCornerShape(10.dp),
@@ -446,7 +444,6 @@ fun DownloadListItem(
                 }
 
                 else -> {
-                    // FAILED, PAUSED, CANCELLED — show status chip
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = download.fileName ?: urlToFileName(download.url),
@@ -506,7 +503,6 @@ fun DownloadListItem(
                 }
             }
 
-            // Three-dot overflow menu — hidden while awaiting download confirmation
             if (download.status != DownloadState.Status.INITIATED) {
                 Spacer(Modifier.width(4.dp))
                 Box {
@@ -555,7 +551,7 @@ fun DownloadListItem(
                                 showMenu = false
                                 onDelete(download.id)
                                 download.filePath?.let { path ->
-                                    try { java.io.File(path).delete() } catch (e: Exception) { /* ignore */ }
+                                    try { File(path).delete() } catch (e: Exception) { /* ignore */ }
                                 }
                             }
                         )
@@ -581,8 +577,8 @@ fun DownloadListItem(
                     showRenameDialog = false
                     download.filePath?.let { path ->
                         try {
-                            val file = java.io.File(path)
-                            val newFile = java.io.File(file.parent, renameText)
+                            val file = File(path)
+                            val newFile = File(file.parent, renameText)
                             file.renameTo(newFile)
                         } catch (e: Exception) { /* ignore */ }
                     }
@@ -647,8 +643,6 @@ fun StatusChip(status: DownloadState.Status) {
     )
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
 private fun fileIconForMimeType(mimeType: String?): ImageVector {
     if (mimeType == null) return Icons.Default.InsertDriveFile
     return when {
@@ -677,7 +671,7 @@ private fun urlToFileName(url: String): String {
     return url.substringAfterLast('/').substringBefore('?').ifBlank { "download" }
 }
 
-private fun openDownloadedFile(context: android.content.Context, download: DownloadState) {
+private fun openDownloadedFile(context: Context, download: DownloadState) {
     context.components.downloadsUseCases.openAlreadyDownloadedFile(
         download.sessionId ?: "",
         download,

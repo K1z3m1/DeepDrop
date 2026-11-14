@@ -39,44 +39,9 @@ import mozilla.components.support.utils.DefaultDownloadFileUtils
 import java.io.File
 import java.io.IOException
 import java.io.RandomAccessFile
+import android.app.DownloadManager
 
-/**
- * Foreground service that runs multi-threaded HTTP range downloads.
- *
- * Chosen by [DownloadController.start] when the download is large enough
- * (>= [DownloadController.PARALLEL_MIN_BYTES]) and the server supports
- * Range requests (verified via a `bytes=0-0` probe at the top of
- * [runDownload]).
- *
- * # Reliability contract
- * The previous revision silently accepted truncated downloads: a
- * mid-stream HTTP/2 reset or TCP RST would make `input.read()` return
- * `-1` without throwing, the loop would exit, and the chunk was marked
- * complete even though it was short. Combined with the lack of a
- * total-length check, this produced the "APK fails at the very end when
- * fully downloaded" symptom reported in GitHub Issues: the sheet showed
- * COMPLETED, the user tapped the file, and Android's PackageManager
- * rejected the truncated archive.
- *
- * The current implementation:
- *  - [downloadChunk] tracks exactly how many bytes were written to each
- *    part file. If the count doesn't match `end - start + 1` after the
- *    HTTP body closes, it throws [IOException] so the enclosing
- *    `coroutineScope` in [runDownload] propagates the failure to
- *    `awaitAll` and the download is marked FAILED with a cause logged.
- *  - [RandomAccessFile.fd]`.sync()` is called before the chunk is
- *    considered final, so a process-kill-and-restart doesn't resurrect
- *    a part file that only has in-flight-cached tail bytes.
- *  - [assembleAndPublish] re-verifies `assembled.length() == total`
- *    before dispatching COMPLETED.
- *  - The exception handler in [startOrResume] logs the cause via
- *    `android.util.Log` instead of swallowing silently, so adb logcat
- *    actually shows what went wrong.
- *  - Sidecar lives under [filesDir], not [cacheDir], so a system cache
- *    purge during a long download does not nuke the parts.
- */
 class ParallelDownloadService : Service() {
-
     private val serviceJob = SupervisorJob()
     private val scope = CoroutineScope(serviceJob + Dispatchers.IO)
     private val jobs = mutableMapOf<String, Job>()
@@ -101,10 +66,6 @@ class ParallelDownloadService : Service() {
     override fun onCreate() {
         super.onCreate()
         ensureChannel()
-        // Explicit foreground-service type is mandatory on Android 14 /
-        // API 34; omitting it throws MissingForegroundServiceTypeException
-        // at runtime. The manifest already declares
-        // foregroundServiceType="dataSync"; we pass the same bit here.
         ServiceCompat.startForeground(
             this,
             NOTIFICATION_ID,
@@ -128,7 +89,7 @@ class ParallelDownloadService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val id = intent?.getStringExtra(INTENT_EXTRA_DOWNLOAD_ID)
-            ?: intent?.getStringExtra(android.app.DownloadManager.EXTRA_DOWNLOAD_ID)
+            ?: intent?.getStringExtra(DownloadManager.EXTRA_DOWNLOAD_ID)
             ?: return START_NOT_STICKY
         val download = components.store.state.downloads[id] ?: return START_NOT_STICKY
         when (intent?.action) {
@@ -154,14 +115,8 @@ class ParallelDownloadService : Service() {
             try {
                 runDownload(download)
             } catch (ce: CancellationException) {
-                // Expected on pause/cancel; let the respective handlers
-                // (pause / cancelDownload) manage state. Rethrow so the
-                // coroutine machinery handles unwinding correctly.
                 throw ce
             } catch (t: Throwable) {
-                // Log the full cause so the user / developer can see
-                // WHY a download failed at the end. The previous blanket
-                // `catch (_: Exception)` discarded this.
                 Log.e(TAG, "Download ${download.id} (${download.fileName ?: download.url}) failed", t)
                 update(download.id) { it.copy(status = DownloadState.Status.FAILED) }
             } finally {
@@ -202,11 +157,6 @@ class ParallelDownloadService : Service() {
             return
         }
 
-        // Guarantee the DownloadState carries the correct MIME type for
-        // APKs before we hand it to DefaultDownloadFileWriter. Many
-        // mirrors / CDNs serve application/octet-stream for .apk, and
-        // MediaStore's row inherits that; Android's PackageInstaller
-        // intent filter won't match octet-stream.
         val download = initial.copy(
             status = DownloadState.Status.DOWNLOADING,
             contentLength = total,
@@ -246,9 +196,6 @@ class ParallelDownloadService : Service() {
             }
         }
 
-        // Sanity-check assembled bytes against expected total before we
-        // claim success. If any chunk silently truncated we throw here
-        // and let [startOrResume]'s catch block mark the download FAILED.
         verifyParts(dir, threadCount, total)
 
         assembleAndPublish(download.copy(contentLength = total), dir, threadCount, total)
@@ -264,8 +211,6 @@ class ParallelDownloadService : Service() {
         val expected = end - start + 1
         if (existing >= expected) {
             if (existing > expected) {
-                // Resuming from a corrupt sidecar - truncate down so the
-                // next copy is byte-exact.
                 RandomAccessFile(part, "rw").use { it.setLength(expected) }
             }
             return
@@ -285,12 +230,6 @@ class ParallelDownloadService : Service() {
             throw IOException("Chunk [$rangeStart-$end]: expected 206 Partial Content, got ${response.status}")
         }
         val job = currentCoroutineContext()[Job]
-        // Track actual bytes written. The previous revision trusted
-        // `input.read() == -1` as a sentinel for "chunk complete", which
-        // is unsafe: HTTP/2 stream resets, TCP RSTs, and server-side
-        // truncations also return -1 without throwing. If the server
-        // closed the body before sending `expected` bytes we throw and
-        // the enclosing coroutineScope cancels its siblings.
         var writtenThisPass = 0L
         response.body.useStream { input ->
             RandomAccessFile(part, "rw").use { raf ->
@@ -302,9 +241,6 @@ class ParallelDownloadService : Service() {
                     raf.write(buffer, 0, read)
                     writtenThisPass += read
                 }
-                // Flush to the storage layer. Without this a kill-and-
-                // restart can observe raf.length() == expected but with
-                // uninitialised tail bytes.
                 raf.fd.sync()
             }
         }
@@ -321,12 +257,6 @@ class ParallelDownloadService : Service() {
         }
     }
 
-    /**
-     * After `awaitAll` returns, every chunk should have reported exact
-     * length. This is a belt-and-braces check against lower-level
-     * filesystem shenanigans (e.g. encrypted FS reporting lies) before
-     * we assemble.
-     */
     private fun verifyParts(dir: File, threadCount: Int, total: Long) {
         val chunkSize = total / threadCount
         val sum = (0 until threadCount).sumOf { index ->
@@ -356,9 +286,6 @@ class ParallelDownloadService : Service() {
                 part.inputStream().use { it.copyTo(out) }
             }
             out.flush()
-            // Match the per-chunk sync so a crash between assemble and
-            // writer.useFileStream cannot land us with a truncated
-            // intermediate. File.outputStream() returns a FileOutputStream.
             out.fd.sync()
         }
         if (assembled.length() != total) {
@@ -434,13 +361,6 @@ class ParallelDownloadService : Service() {
             .build()
     }
 
-    /**
-     * Return a MIME type we'd want MediaStore to record for this
-     * download. If the file name suggests an APK we force the
-     * well-known Android package MIME so the completion-open intent can
-     * resolve to the package installer. Otherwise we trust whatever
-     * GeckoView already captured from `Content-Type`.
-     */
     private fun normaliseContentType(download: DownloadState): String? {
         val existing = download.contentType
         val name = download.fileName ?: return existing
@@ -456,20 +376,8 @@ class ParallelDownloadService : Service() {
         private const val CHANNEL_ID = "lr_parallel_downloads"
         private const val NOTIFICATION_ID = 7101
 
-        /**
-         * Canonical Android APK MIME. See
-         * `android.content.pm.PackageInstaller.SessionParams` and the
-         * `.apk` row of `/system/etc/mime.types`.
-         */
         const val APK_MIME: String = "application/vnd.android.package-archive"
 
-        /**
-         * Sidecar location: in-progress part files for an active or
-         * paused parallel download. Lives under [Context.getFilesDir]
-         * (not [Context.getCacheDir]) because the OS can purge the
-         * cache at any time, and a mid-download cache purge used to
-         * destroy multi-gigabyte in-progress downloads with no warning.
-         */
         fun sidecarDir(context: Context, id: String): File =
             File(context.filesDir, "lr-dl/$id")
 

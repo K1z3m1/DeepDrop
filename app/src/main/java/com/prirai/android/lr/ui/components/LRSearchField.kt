@@ -41,16 +41,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.prirai.android.lr.R
 import kotlinx.coroutines.flow.drop
+import androidx.compose.foundation.interaction.MutableInteractionSource
 
-/**
- * LR's one search field: a slim pill carrying the query, its clear button and whatever the
- * surface wants beside them. Port of Flow's FlowSearchField.
- *
- * Built on [BasicTextField] rather than `SearchBarDefaults.InputField` because every overload of
- * that API applies `Modifier.sizeIn(minWidth = 360.dp, minHeight = 56.dp, maxWidth = 720.dp)`
- * internally and exposes no height parameter, so the 40 dp pill LR uses is not reachable
- * through it. Everything else — shape, colours, type, motion — still comes from the theme.
- */
 @Composable
 fun LRSearchField(
     state: TextFieldState,
@@ -63,7 +55,7 @@ fun LRSearchField(
     leadingIcon: (@Composable () -> Unit)? = null,
     trailingContent: (@Composable RowScope.() -> Unit)? = null,
 ) {
-    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val interactionSource = remember { MutableInteractionSource() }
     val shape = MaterialTheme.shapes.extraLarge
     Surface(
         modifier = modifier.height(PillHeight),
@@ -132,10 +124,6 @@ fun LRSearchField(
     }
 }
 
-/**
- * Overload for surfaces whose query lives in a ViewModel as a [String]. The field still owns a
- * [TextFieldState] internally — the two are kept in step in both directions.
- */
 @Composable
 fun LRSearchField(
     query: String,
@@ -153,8 +141,6 @@ fun LRSearchField(
     val echoes = remember { QueryEchoFilter() }
     val currentOnQueryChange by rememberUpdatedState(onQueryChange)
 
-    // drop(1) discards snapshotFlow's replay of the text the field was seeded with, so the caller
-    // only ever hears about real edits and no surface re-fires its query work on first composition.
     LaunchedEffect(state) {
         snapshotFlow { state.text.toString() }
             .drop(1)
@@ -181,11 +167,6 @@ fun LRSearchField(
     )
 }
 
-/**
- * Tells a late echo of the field's own edit from a query the caller set. A caller whose query comes
- * back through a slow pipeline hands "a" back after the field already holds "ab"; applying it
- * rewinds the text, the field reports "a" again, and the two trade places while the user types.
- */
 private class QueryEchoFilter {
     private val pending = ArrayDeque<String>()
 

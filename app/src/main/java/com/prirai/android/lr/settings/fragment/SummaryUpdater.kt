@@ -1,9 +1,9 @@
 package com.prirai.android.lr.settings.fragment
 
-class SummaryUpdater(private val preference: androidx.preference.Preference) {
+import androidx.preference.Preference
 
+class SummaryUpdater(private val preference: Preference) {
     fun updateSummary(text: String) {
         preference.summary = text
     }
-
 }

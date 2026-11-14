@@ -67,9 +67,9 @@ android {
 
     androidResources {
         noCompress += 'ja'
-        // Only keep the languages the app itself ships (drops hundreds of
-        // library locale files -> faster resource merge / smaller APK)
-        localeFilters += ['en', 'ar', 'fr', 'it', 'ja', 'pl', 'pt', 'pt-rBR', 'ru', 'tr', 'vi', 'zh-rCN']
+        // English only (drops every library locale file ->
+        // faster resource merge / smaller APK)
+        localeFilters += ['en']
     }
 
     lint {
@@ -82,27 +82,24 @@ android {
         jniLibs {
             useLegacyPackaging true
         }
-    }
-}
-
-def abiBaseMap = ["arm64-v8a"  : 1,
-                  "armeabi-v7a": 2
-]
-
-androidComponents {
-    onVariants(selector().all()) { variant ->
-        variant.outputs.each { output ->
-            def abi = output.filters.find { it.filterType.toString() == 'ABI' }?.identifier
-
-            if (abi != null) {
-                def base = abiBaseMap[abi] ?: 0
-                def orig = output.versionCode.get()
-                output.versionCode.set(base * 1000 + orig)
-            }
+        resources {
+            excludes += [
+                '/META-INF/{AL2.0,LGPL2.1}',
+                '/META-INF/*.version',
+                '/META-INF/DEPENDENCIES',
+                '/META-INF/INDEX.LIST',
+                '/META-INF/LICENSE*',
+                '/META-INF/NOTICE*',
+                '/META-INF/*.kotlin_module',
+                '/META-INF/com/android/build/gradle/aar-metadata.properties',
+                '/DebugProbesKt.bin',
+                '/kotlin/**',
+                '/kotlin-tooling-metadata.json',
+                '/**/*.kotlin_builtins'
+            ]
         }
     }
 }
-
 
 dependencies {
     implementation libs.material
@@ -116,10 +113,8 @@ dependencies {
     implementation libs.androidx.core.ktx
     implementation libs.androidx.constraintlayout
     implementation libs.androidx.preference.ktx
-    implementation libs.androidx.annotation
     implementation libs.androidx.appcompat
     implementation libs.androidx.navigation.fragment.ktx
-    implementation libs.androidx.navigation.ui.ktx
 
     // Room
     implementation libs.androidx.room.runtime
@@ -171,22 +166,15 @@ dependencies {
     implementation libs.feature.customtabs
     implementation libs.feature.prompts
     implementation libs.feature.sitepermissions
-    // Removed: feature-webauthn - replaced with androidx.credentials Credential Manager API
-    implementation libs.feature.webcompat
-    implementation libs.feature.webnotifications
     implementation libs.feature.addons
-    implementation libs.feature.findinpage
-    implementation libs.feature.recentlyclosed
 
     // Mozilla service components
-    implementation libs.service.location
 
     // Mozilla support components
     implementation libs.support.base
     implementation libs.support.utils
     implementation libs.support.webextensions
     implementation libs.support.ktx
-    implementation libs.support.locale
     implementation libs.support.remotesettings
     implementation libs.remotesettings
 
@@ -213,7 +201,6 @@ dependencies {
     // BackgroundPlaybackGuard to intercept ON_STOP and pause tabs
     // whose origin isn't on the bg-playback allow-list).
     implementation libs.androidx.lifecycle.process
-    implementation libs.coil.compose
 
 }
 

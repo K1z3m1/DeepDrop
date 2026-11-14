@@ -23,8 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
+import com.prirai.android.lr.ui.components.RemoteImage
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.prirai.android.lr.R
 import com.prirai.android.lr.ext.components
@@ -38,9 +37,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import mozilla.components.feature.addons.Addon
 import mozilla.components.feature.addons.ui.translateName
+import com.prirai.android.lr.theme.ThemeManager
 
 class SearchExtensionsBottomSheet : BottomSheetDialogFragment() {
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -53,7 +52,7 @@ class SearchExtensionsBottomSheet : BottomSheetDialogFragment() {
                 val prefs = UserPreferences(context)
                 
                 LRTheme(
-                    darkTheme = com.prirai.android.lr.theme.ThemeManager.isDarkMode(context),
+                    darkTheme = ThemeManager.isDarkMode(context),
                     amoledMode = prefs.amoledMode,
                     dynamicColor = prefs.dynamicColors
                 ) {
@@ -93,7 +92,6 @@ fun SearchExtensionsContent(
                 val addons = context.components.addonManager.getAddons()
                 allAddons.value = addons
             } catch (e: Exception) {
-                // Handle error
             } finally {
                 isLoading.value = false
             }
@@ -112,8 +110,6 @@ fun SearchExtensionsContent(
         }
     }
 
-    // The dialog theme's rounded_bottom_sheet provides the sheet chrome
-    // (28dp top corners, colorSurface); the content draws no second surface.
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -126,7 +122,6 @@ fun SearchExtensionsContent(
                 dividerAlpha = null,
             )
 
-            // Search field
             LRSearchField(
                 query = searchQuery.value,
                 onQueryChange = { searchQuery.value = it },
@@ -143,7 +138,6 @@ fun SearchExtensionsContent(
                     .padding(top = 8.dp),
             )
 
-            // Results
             if (isLoading.value) {
                 Box(
                     modifier = Modifier
@@ -211,7 +205,6 @@ fun SearchExtensionItem(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Extension icon
             Surface(
                 modifier = Modifier.size(40.dp),
                 shape = RoundedCornerShape(8.dp),
@@ -222,11 +215,8 @@ fun SearchExtensionItem(
                 
                 when {
                     iconToUse != null -> {
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(iconToUse)
-                                .crossfade(true)
-                                .build(),
+                        RemoteImage(
+ model = iconToUse,
                             contentDescription = null,
                             modifier = Modifier
                                 .fillMaxSize()
@@ -234,11 +224,8 @@ fun SearchExtensionItem(
                         )
                     }
                     iconUrlToUse.isNotEmpty() -> {
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(iconUrlToUse)
-                                .crossfade(true)
-                                .build(),
+                        RemoteImage(
+ model = iconUrlToUse,
                             contentDescription = null,
                             modifier = Modifier
                                 .fillMaxSize()
@@ -263,7 +250,6 @@ fun SearchExtensionItem(
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Extension info
             Column(
                 modifier = Modifier.weight(1f)
             ) {

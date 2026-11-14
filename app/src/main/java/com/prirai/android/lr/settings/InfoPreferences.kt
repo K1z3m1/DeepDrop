@@ -7,20 +7,12 @@ import androidx.preference.PreferenceViewHolder
 import com.prirai.android.lr.R
 import com.prirai.android.lr.settings.fragment.showLRInfoDialog
 
-/**
- * A preference whose explanatory summary lives behind an info icon instead
- * of the row itself: the list stays clean (title only), and the 'i' glyph
- * in the widget area opens a [com.prirai.android.lr.ui.components.LRAlertDialog]
- * with the explanation (`app:infoText`). Tapping the icon never triggers
- * the row's own click behavior.
- */
 open class InfoPreference @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = androidx.preference.R.attr.preferenceStyle,
     defStyleRes: Int = 0
 ) : Preference(context, attrs, defStyleAttr, defStyleRes) {
-
     private var infoTextRes: Int = 0
 
     init {
@@ -41,18 +33,12 @@ open class InfoPreference @JvmOverloads constructor(
     }
 }
 
-/**
- * [MaterialSwitchPreference] with the same info-icon affordance: the
- * switch keeps its `@android:id/switch_widget` binding, the trailing 'i'
- * glyph opens the explanation dialog.
- */
 class InfoSwitchPreference @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = androidx.preference.R.attr.switchPreferenceCompatStyle,
     defStyleRes: Int = 0
 ) : MaterialSwitchPreference(context, attrs, defStyleAttr, defStyleRes) {
-
     private var infoTextRes: Int = 0
 
     init {

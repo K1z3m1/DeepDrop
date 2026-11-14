@@ -38,11 +38,11 @@ import mozilla.components.concept.awesomebar.AwesomeBar.GroupedSuggestion
 import mozilla.components.concept.awesomebar.AwesomeBar.Suggestion
 import mozilla.components.concept.awesomebar.AwesomeBar.SuggestionProvider
 import mozilla.components.concept.awesomebar.AwesomeBar.SuggestionProviderGroup
+import mozilla.components.feature.awesomebar.provider.BookmarksStorageSuggestionProvider
+import mozilla.components.feature.awesomebar.provider.SearchSuggestionProvider
 
 private val GroupCornerRadius = 24.dp
-private val CardHorizontalPadding = 8.dp
 
-/** Delay before provider queries run, coalescing rapid input changes. */
 private const val INPUT_DEBOUNCE_MS = 120L
 
 private data class SuggestionSection(
@@ -66,13 +66,6 @@ fun LRAwesomeBar(
             sections = emptyList()
             return@LaunchedEffect
         }
-        // Debounce: every input round cancels the in-flight provider
-        // queries and restarts their favicon loads, which is what made the
-        // list flicker and janked the input while typing fast or holding
-        // backspace. Coalescing rapid input changes into one query round
-        // per pause keeps the suggestions responsive without the churn -
-        // restarting this effect on each text change cancels the pending
-        // round automatically.
         delay(INPUT_DEBOUNCE_MS)
         fetchSections(text, providers) { fetched ->
             sections = fetched
@@ -171,17 +164,6 @@ private fun SuggestionCardRow(
     )
 }
 
-/**
- * Fetches suggestions from [providers] for [text], emitting the currently
- * completed sections to [onSections] each time a group finishes.
- *
- * Emission is incremental: fast local providers (tabs, history, bookmarks)
- * render their results immediately instead of waiting for the slowest
- * group - network search suggestions - which previously gated the whole
- * list behind its round-trip and made typing feel laggy. All async blocks
- * run inside the caller's (main) coroutine context, so the completed map
- * needs no synchronization.
- */
 private suspend fun fetchSections(
     text: String,
     providers: List<SuggestionProvider>,
@@ -232,16 +214,12 @@ internal class HeaderedSuggestionProvider(
 }
 
 internal fun providerPriority(provider: SuggestionProvider): Int {
-    // SearchForQueryProvider (priority 50) has been removed - the "Search for
-    // '<query>'" row caused per-keystroke UI churn. All remaining priorities
-    // stay unchanged so section ordering (search suggestions, then tabs,
-    // history, bookmarks) is preserved.
     return when (provider) {
         is HeaderedSuggestionProvider -> provider.priority
-        is mozilla.components.feature.awesomebar.provider.SearchSuggestionProvider -> 40
+        is SearchSuggestionProvider -> 40
         is LRTabSuggestionProvider -> 30
         is LRHistorySuggestionProvider -> 20
-        is mozilla.components.feature.awesomebar.provider.BookmarksStorageSuggestionProvider -> 10
+        is BookmarksStorageSuggestionProvider -> 10
         else -> 0
     }
 }

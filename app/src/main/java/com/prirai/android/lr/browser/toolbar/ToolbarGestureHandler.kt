@@ -31,6 +31,8 @@ import mozilla.components.support.ktx.android.view.getRectWithViewLocation
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
+import com.prirai.android.lr.browser.profile.BrowserProfile
+import com.prirai.android.lr.browser.profile.ProfileManager
 
 class ToolbarGestureHandler(
     private val activity: Activity,
@@ -40,7 +42,6 @@ class ToolbarGestureHandler(
     private val store: BrowserStore,
     private val selectTabUseCase: TabsUseCases.SelectTabUseCase
 ) : SwipeGestureListener {
-
     private val lruManager by lazy { 
         TabLRUManager.getInstance(activity) 
     }
@@ -112,8 +113,6 @@ class ToolbarGestureHandler(
                 }
             }
             is Destination.None -> {
-                // If there is no "next" tab to swipe to in the gesture direction, only do a
-                // partial animation to show that we are at the end of the tab list
                 val maxContentHidden = contentLayout.width * OVERSCROLL_HIDE_PERCENT
                 contentLayout.translationX = when (gestureDirection) {
                     GestureDirection.RIGHT_TO_LEFT -> max(
@@ -145,17 +144,13 @@ class ToolbarGestureHandler(
         val isLtr = activity.resources.configuration.layoutDirection == View.LAYOUT_DIRECTION_LTR
         val currentTab = store.state.selectedTab ?: return Destination.None
         
-        // Left swipe = go to newer tabs (smaller LRU offset: -1)
-        // Right swipe = go to older tabs (larger LRU offset: +1)
         val nextTabId = when (gestureDirection) {
             GestureDirection.RIGHT_TO_LEFT -> if (isLtr) {
-                // Swiping left in LTR = go to newer tab
                 lruManager.getTabAtLRUOffset(currentTab.id, -1)
             } else {
                 lruManager.getTabAtLRUOffset(currentTab.id, 1)
             }
             GestureDirection.LEFT_TO_RIGHT -> if (isLtr) {
-                // Swiping right in LTR = go to older tab
                 lruManager.getTabAtLRUOffset(currentTab.id, 1)
             } else {
                 lruManager.getTabAtLRUOffset(currentTab.id, -1)
@@ -228,11 +223,6 @@ class ToolbarGestureHandler(
                 contentLayout.translationX = 0f
 
                 lruManager.markAsSwipeNavigation(tab.id)
-                // The LRU queue spans every profile, so the destination tab
-                // may belong to a different profile than the active one. The
-                // active profile must follow the destination BEFORE the
-                // selection dispatches: the tab bar re-filters on that same
-                // store emission, reading the profile from preferences.
                 syncProfileToTabPartition(tab)
                 selectTabUseCase(tab.id)
 
@@ -250,28 +240,22 @@ class ToolbarGestureHandler(
         }.start()
     }
 
-    /**
-     * Points the active profile at [tab]'s partition: `profile_<id>`
-     * contextIds map to that profile, `null`/`profile_default` to the
-     * default profile. Swipes never cross the private/normal boundary
-     * (see [getDestination]), so the private branch is defensive only.
-     */
     private fun syncProfileToTabPartition(tab: TabSessionState) {
         val profileManager =
-            com.prirai.android.lr.browser.profile.ProfileManager.getInstance(activity)
+            ProfileManager.getInstance(activity)
         if (tab.content.private || tab.contextId == "private") {
             profileManager.setPrivateMode(true)
             return
         }
         when (tab.contextId) {
             null, "profile_default" -> profileManager.setActiveProfile(
-                com.prirai.android.lr.browser.profile.BrowserProfile.getDefaultProfile()
+                BrowserProfile.getDefaultProfile()
             )
             else -> {
                 val profileId = tab.contextId!!.removePrefix("profile_")
                 val profile = profileManager.getAllProfiles().find { it.id == profileId }
                 profileManager.setActiveProfile(
-                    profile ?: com.prirai.android.lr.browser.profile.BrowserProfile.getDefaultProfile()
+                    profile ?: BrowserProfile.getDefaultProfile()
                 )
             }
         }
@@ -294,8 +278,6 @@ class ToolbarGestureHandler(
 
     private fun PointF.isInToolbar(): Boolean {
         val toolbarLocation = toolbarLayout.getRectWithScreenLocation()
-        // In Android 10, the system gesture touch area overlaps the bottom of the toolbar, so
-        // lets make our swipe area taller by that amount
         activity.window.decorView.getWindowInsets()?.let { insets ->
             if (UserPreferences(activity).toolbarPosition == ToolbarPosition.BOTTOM.ordinal) {
                 toolbarLocation.top -= (insets.mandatorySystemGestureInsets.bottom - insets.stableInsetBottom)
@@ -312,31 +294,14 @@ class ToolbarGestureHandler(
         }
 
     companion object {
-        /**
-         * The percentage of the tab preview that needs to be visible to consider the
-         * tab switching gesture complete.
-         */
         private const val GESTURE_FINISH_PERCENT = 0.25
 
-        /**
-         * The percentage of the content view that can be hidden by the tab switching gesture if
-         * there is not tab available to switch to
-         */
         private const val OVERSCROLL_HIDE_PERCENT = 0.20
 
-        /**
-         * Animation duration when switching to another tab
-         */
         private const val FINISHED_GESTURE_ANIMATION_DURATION = 250L
 
-        /**
-         * Animation duration gesture is canceled due to the swipe not being far enough
-         */
         private const val CANCELED_GESTURE_ANIMATION_DURATION = 200L
 
-        /**
-         * Animation duration gesture is canceled due to a swipe in the opposite direction
-         */
         private const val CANCELED_FLING_ANIMATION_DURATION = 150L
     }
 }

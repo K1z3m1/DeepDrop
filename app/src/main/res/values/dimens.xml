@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <resources>
+    <!-- dimens.xml -->
     <dimen name="icon_width">24dp</dimen>
     <!--
       56dp matches Fenix's browser_toolbar_height and AC's default
@@ -13,4 +14,6 @@
 
     <!-- Unified Toolbar dimensions -->
     <dimen name="contextual_toolbar_height">56dp</dimen>
+
+    <!-- tab_dimens.xml -->
 </resources>

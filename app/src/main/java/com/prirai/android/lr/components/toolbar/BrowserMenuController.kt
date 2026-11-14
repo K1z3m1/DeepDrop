@@ -20,7 +20,13 @@ import mozilla.components.browser.state.selector.findCustomTabOrSelectedTab
 import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.EngineSession.LoadUrlFlags
-
+import android.widget.Toast
+import com.prirai.android.lr.browser.BrowsingMode
+import com.prirai.android.lr.browser.bookmark.ui.BookmarksBottomSheetFragment
+import com.prirai.android.lr.browser.profile.BrowserProfile
+import com.prirai.android.lr.browser.profile.ProfileManager
+import com.prirai.android.lr.utils.HomescreenShortcut
+import mozilla.components.browser.icons.IconRequest
 
 interface BrowserToolbarMenuController {
     fun handleToolbarItemInteraction(item: ToolbarMenu.Item)
@@ -30,11 +36,9 @@ class DefaultBrowserToolbarMenuController(
     private val store: BrowserStore,
     private val activity: BrowserActivity,
     private val navController: NavController,
-    private val findInPageLauncher: () -> Unit,
     private val browserAnimator: BrowserAnimator,
     private val customTabSessionId: String?
 ) : BrowserToolbarMenuController {
-
     private val currentSession
         get() = store.state.findCustomTabOrSelectedTab(customTabSessionId)
 
@@ -44,9 +48,6 @@ class DefaultBrowserToolbarMenuController(
         when (item) {
             is ToolbarMenu.Item.Back -> {
                 if (item.viewHistory) {
-                    // Long-press on back: open the tab-history popup (the
-                    // long-press view already gave haptic feedback). Shown
-                    // only when there is at least one back entry.
                     TabHistoryBottomSheet.showIfAvailable(
                         activity.supportFragmentManager,
                         store,
@@ -142,24 +143,22 @@ class DefaultBrowserToolbarMenuController(
             is ToolbarMenu.Item.AddToHomeScreen -> {
                 currentSession?.let { session ->
                     MainScope().launch {
-                        // Get icon
                         val icon = activity.components.icons.loadIcon(
-                            mozilla.components.browser.icons.IconRequest(
+                            IconRequest(
                                 url = session.content.url
                             )
                         ).await()?.bitmap
                         
-                        // Add regular shortcut using our custom installer
-                        com.prirai.android.lr.utils.HomescreenShortcut.add(
+                        HomescreenShortcut.add(
                             activity,
                             session,
                             icon
                         )
                         
-                        android.widget.Toast.makeText(
+                        Toast.makeText(
                             activity,
                             "Shortcut added",
-                            android.widget.Toast.LENGTH_SHORT
+                            Toast.LENGTH_SHORT
                         ).show()
                     }
                 }
@@ -186,10 +185,6 @@ class DefaultBrowserToolbarMenuController(
                 }
             }
 
-            is ToolbarMenu.Item.FindInPage -> {
-                findInPageLauncher()
-            }
-
             is ToolbarMenu.Item.OpenInApp -> {
                 val appLinksUseCases = activity.components.appLinksUseCases
                 val getRedirect = appLinksUseCases.appLinkRedirect
@@ -203,7 +198,7 @@ class DefaultBrowserToolbarMenuController(
 
             is ToolbarMenu.Item.Bookmarks -> {
                 val bookmarksBottomSheet =
-                    com.prirai.android.lr.browser.bookmark.ui.BookmarksBottomSheetFragment.newInstance()
+                    BookmarksBottomSheetFragment.newInstance()
                 bookmarksBottomSheet.show(activity.supportFragmentManager, "BookmarksBottomSheet")
             }
 
@@ -214,9 +209,9 @@ class DefaultBrowserToolbarMenuController(
             }
 
             is ToolbarMenu.Item.NewTab -> {
-                val profileManager = com.prirai.android.lr.browser.profile.ProfileManager.getInstance(activity)
+                val profileManager = ProfileManager.getInstance(activity)
                 val currentProfile = profileManager.getActiveProfile()
-                val contextId = com.prirai.android.lr.browser.profile.BrowserProfile
+                val contextId = BrowserProfile
                     .contextIdFor(currentProfile, isPrivate = false)
 
                 activity.components.tabsUseCases.addTab.invoke(
@@ -227,7 +222,7 @@ class DefaultBrowserToolbarMenuController(
             }
 
             is ToolbarMenu.Item.NewPrivateTab -> {
-                activity.browsingModeManager.mode = com.prirai.android.lr.browser.BrowsingMode.Private
+                activity.browsingModeManager.mode = BrowsingMode.Private
                 
                 activity.components.tabsUseCases.addTab.invoke(
                     "about:homepage",

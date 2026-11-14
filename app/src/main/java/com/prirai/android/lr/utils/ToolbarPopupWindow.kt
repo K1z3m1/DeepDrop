@@ -46,25 +46,12 @@ import mozilla.components.browser.state.selector.findCustomTab
 import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.store.BrowserStore
 import java.lang.ref.WeakReference
+import androidx.activity.ComponentActivity
+import com.prirai.android.lr.preferences.UserPreferences
 
-/**
- * The toolbar long-press clipboard menu (copy / paste / paste-and-go).
- *
- * The PopupWindow mechanics are unchanged (drop-down over the toolbar, outside-touch
- * dismissal, transparent background, mozac menu elevation); the content now renders
- * in Compose with the house grouped-card menu idiom ([LRCardRow], like the tab
- * menu). The `show(...)` signature BrowserToolbarView calls is untouched.
- */
 object ToolbarPopupWindow {
-
-    /** Fixed menu width, matching Material3BrowserMenu's menu. */
     private const val MENU_WIDTH_DP = 280
 
-    /**
-     * Standalone recomposer used only when no ComposeView has ever attached in the
-     * anchor's window (every Compose toolbar surface disabled). Cached process-wide
-     * and cancelled when the owning activity is destroyed.
-     */
     @Volatile
     private var fallbackRecomposer: Recomposer? = null
 
@@ -84,25 +71,15 @@ object ToolbarPopupWindow {
         val showPasteRows = !clipboard.text.isNullOrEmpty() && !isCustomTabSession
         if (!copyVisible && !showPasteRows) return
 
-        // ComponentActivity provides all three ViewTree owners (lifecycle,
-        // view-model store, saved-state registry) the popup composition needs.
-        val activity = findActivity(context) as? androidx.activity.ComponentActivity
+        val activity = findActivity(context) as? ComponentActivity
         val compositionContext = resolveCompositionContext(anchor, activity)
         if (activity == null || compositionContext == null) {
-            // The popup window cannot host a composition without a lifecycle and a
-            // recomposer. Unreachable in practice: the anchor always lives in the
-            // BrowserActivity window, which provides both.
             return
         }
 
         val composeView = ComposeView(context).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
 
-            // A PopupWindow renders its content in a separate window whose decor
-            // view carries no ViewTree owners, so compose cannot resolve a
-            // lifecycle or a recomposer through the normal parent chain (it
-            // would throw "ViewTreeLifecycleOwner not found"). Bridge both
-            // against the anchor's activity/window explicitly.
             setViewTreeLifecycleOwner(activity)
             setViewTreeViewModelStoreOwner(activity)
             setViewTreeSavedStateRegistryOwner(activity)
@@ -115,7 +92,7 @@ object ToolbarPopupWindow {
         val popupWindow = PopupWindow(composeView, menuWidthPx, 0, true)
 
         composeView.setContent {
-            LRTheme(amoledMode = com.prirai.android.lr.preferences.UserPreferences(context).amoledMode) {
+            LRTheme(amoledMode = UserPreferences(context).amoledMode) {
                 ToolbarClipboardMenu(
                     copyVisible = copyVisible,
                     pasteVisible = showPasteRows,
@@ -146,12 +123,6 @@ object ToolbarPopupWindow {
             }
         }
 
-        // Compose only composes once the view attaches to the popup window,
-        // so measuring the ComposeView here would read 0 and open a
-        // zero-height popup (the bug this replaces). Every row renders at a
-        // fixed 48dp minimum with 1dp dividers and 8dp of vertical padding,
-        // so the natural content height is a deterministic dp sum - the same
-        // pattern as Material3BrowserMenu.show.
         val rowCount = (if (copyVisible) 1 else 0) + (if (showPasteRows) 2 else 0)
         val menuHeightPx =
             ((16 + rowCount * 48 + (rowCount - 1).coerceAtLeast(0)) * density).roundToInt()
@@ -170,12 +141,6 @@ object ToolbarPopupWindow {
         )
     }
 
-    /**
-     * The clipboard menu rows rendered with the house grouped-card idiom: one
-     * surfaceContainerHigh card, rounded corners on the first/last row only and a
-     * divider between rows (the same pattern as the tab-history chart and the
-     * awesome bar).
-     */
     @Composable
     private fun ToolbarClipboardMenu(
         copyVisible: Boolean,
@@ -213,7 +178,6 @@ object ToolbarPopupWindow {
                     showDivider = index < rows.lastIndex,
                     onClick = row.onClick,
                     leading = {
-                        // Decorative icon next to a labelled row.
                         Icon(imageVector = row.icon, contentDescription = null)
                     }
                 )
@@ -227,11 +191,6 @@ object ToolbarPopupWindow {
         val onClick: () -> Unit
     )
 
-    /**
-     * Unwraps [ContextWrapper] chains to the hosting activity, which provides the
-     * lifecycle / view-model / saved-state owners for the popup's composition.
-     * Never casts directly - toolbar contexts are themed wrappers.
-     */
     private fun findActivity(context: Context): Activity? {
         var current: Context? = context
         while (current is ContextWrapper) {
@@ -241,13 +200,6 @@ object ToolbarPopupWindow {
         return current as? Activity
     }
 
-    /**
-     * The anchor window's Recomposer: the first ComposeView that attaches in a
-     * window installs it as a composition-context tag on the window's content child
-     * (androidx.compose.ui's WindowRecomposer mechanism). The popup's ComposeView
-     * lives in its own window, so it reuses the anchor window's instead of trying -
-     * and failing - to create one for the popup decor.
-     */
     private fun resolveCompositionContext(
         anchor: View,
         activity: Activity?
@@ -258,8 +210,6 @@ object ToolbarPopupWindow {
                 as? CompositionContext)?.let { return it }
             current = current.parent as? View
         }
-        // No ComposeView ever attached in this window (every Compose toolbar
-        // surface disabled): fall back to a standalone recomposer.
         return activity?.let { fallbackCompositionContext(it) }
     }
 

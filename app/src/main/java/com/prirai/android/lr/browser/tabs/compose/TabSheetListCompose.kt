@@ -36,11 +36,8 @@ import com.prirai.android.lr.browser.tabs.compose.InsertionIndicator
 import com.prirai.android.lr.browser.tabs.compose.draggableItem
 import com.prirai.android.lr.browser.tabs.compose.dropTarget
 import com.prirai.android.lr.browser.tabs.compose.rememberDragCoordinator
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 
-/**
- * List view for tab sheet
- * Refactored to use UnifiedItemBuilder and custom drag system
- */
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun TabSheetListView(
@@ -62,21 +59,16 @@ fun TabSheetListView(
     val scope = rememberCoroutineScope()
     val listState = rememberLazyGridState()
 
-    // Create drag coordinator
     val coordinator = rememberDragCoordinator(
         scope = scope,
         viewModel = viewModel,
         orderManager = orderManager
     )
 
-    // Menu state
     val menuState = rememberTabSheetMenuState()
 
-    // Build + deduplicate unified items
     val uniqueItems = rememberUnifiedSheetItems(tabs, groups, expandedGroups, currentOrder)
 
-    // Calculate position mapping for dividers
-    // Maps UI item index to actual primary order position
     val positionMapping = remember(uniqueItems, currentOrder) {
         val mapping = mutableMapOf<Int, Int>()
         var orderPosition = 0
@@ -84,7 +76,6 @@ fun TabSheetListView(
         uniqueItems.forEachIndexed { index, item ->
             when (item) {
                 is UnifiedItem.GroupContainer -> {
-                    // Group container counts as one position
                     mapping[index] = orderPosition
                     orderPosition++
                 }
@@ -95,7 +86,6 @@ fun TabSheetListView(
                 }
 
                 is UnifiedItem.GroupedTab -> {
-                    // Grouped tabs don't occupy a position in primary order
                     mapping[index] = orderPosition - 1 // Use parent group's position
                 }
 
@@ -110,23 +100,15 @@ fun TabSheetListView(
         mapping
     }
 
-    // Use derivedStateOf to avoid unnecessary recomposition
     val isDragging by remember {
         derivedStateOf { coordinator.dragState.value.isDragging }
     }
 
-    // Hover state manager for contextual drag feedback
     val hoverState = rememberTabSheetHoverState(coordinator, uniqueItems)
     val hoveredGroupId = hoverState.getHoveredGroupIdForUngroupedDrag()
 
-    // Track if LazyColumn is currently scrolling to prevent position updates during scroll
     val isScrolling = listState.isScrollInProgress
 
-    // Auto-scroll disabled - needs proper implementation to avoid conflicts
-    // The drag system works fine without it for now
-
-
-    // Pass scroll state to coordinator to prevent updates during scroll
     LaunchedEffect(isScrolling) {
         coordinator.setIsScrolling(isScrolling)
     }
@@ -150,12 +132,10 @@ fun TabSheetListView(
         modifier = modifier
             .fillMaxSize()
             .onGloballyPositioned { layoutCoordinates ->
-                // Track scroll container bounds for auto-scroll
                 val bounds = layoutCoordinates.boundsInRoot()
                 coordinator.setScrollContainerBounds(bounds)
             }
     ) {
-        // Static layer - using LazyVerticalGrid with 1 column (works better than LazyColumn for drag)
         LazyVerticalGrid(
             columns = GridCells.Fixed(1),
             state = listState,
@@ -167,17 +147,13 @@ fun TabSheetListView(
             itemsIndexed(
                 items = uniqueItems,
                 key = { _, item -> item.id },
-                span = { _, _ -> androidx.compose.foundation.lazy.grid.GridItemSpan(1) }
+                span = { _, _ -> GridItemSpan(1) }
             ) { index, item ->
                 val currentOrderPosition = positionMapping[index] ?: index
-                val isLastItemInGroup = item is UnifiedItem.GroupedTab && item.isLastInGroup
-                val isGroupHeader = item is UnifiedItem.GroupHeader || item is UnifiedItem.GroupContainer
 
-                // Check if we should show divider before this item using hover state logic
                 val previousItem = if (index > 0) uniqueItems.getOrNull(index - 1) else null
                 val showDivider = hoverState.shouldShowDivider(index, item, previousItem)
 
-                // Divider zone BEFORE item - always present, visible only during drag
                 if (showDivider) {
                     val isHovering = isDragging && coordinator.isHoveringOver("divider_$currentOrderPosition")
 
@@ -222,7 +198,6 @@ fun TabSheetListView(
 
                 when (item) {
                     is UnifiedItem.GroupContainer -> {
-                        // New unified group structure - header as parent with child tabs
                         GroupContainerListItem(
                             groupId = item.groupId,
                             title = item.title,
@@ -306,7 +281,6 @@ fun TabSheetListView(
                                 onTabClick = { onTabClick(item.tab.id) },
                                 onTabClose = { onTabClose(item.tab.id) },
                                 onTabLongPress = {
-                                    // Long press now only used for drag - menu via swipe right
                                 },
                                 isDragging = isDragging,
                                 modifier = Modifier
@@ -353,7 +327,6 @@ fun TabSheetListView(
                                 onTabClick = { onTabClick(item.tab.id) },
                                 onTabClose = { onTabClose(item.tab.id) },
                                 onTabLongPress = {
-                                    // Long press now only used for drag - menu via swipe right
                                 },
                                 isDragging = isDragging,
                                 modifier = Modifier
@@ -373,11 +346,9 @@ fun TabSheetListView(
                     }
 
                     is UnifiedItem.GroupRow -> {
-                        // GroupRow is not used in list view
                     }
                 }
 
-                // Divider zone AFTER last item during drag
                 if (isDragging && index == uniqueItems.lastIndex) {
                     val afterLastPosition = currentOrderPosition + 1
                     val isHovering = coordinator.isHoveringOver("divider_$afterLastPosition")
@@ -416,10 +387,8 @@ fun TabSheetListView(
             }
         }
 
-        // Insertion indicator layer
         InsertionIndicator(coordinator = coordinator)
 
-        // Drag layer - show full item pills with proper width
         DragLayer(coordinator = coordinator) { draggedItem ->
             when (draggedItem) {
                 is DraggableItemType.Tab -> {
@@ -435,7 +404,6 @@ fun TabSheetListView(
                     if (tab != null) {
                         when (item) {
                             is UnifiedItem.GroupContainer -> {
-                                // Find the tab within the container
                                 TabListItem(
                                     tab = tab,
                                     isSelected = false,
@@ -521,13 +489,9 @@ fun TabSheetListView(
         }
     }
 
-    // Show tab + group context menus
     TabSheetMenuHost(menuState = menuState, viewModel = viewModel, scope = scope)
 }
 
-/**
- * Individual tab list item
- */
 @Composable
 private fun TabListItem(
     tab: TabSessionState,
@@ -545,15 +509,11 @@ private fun TabListItem(
     val effectiveIsInGroup = isInGroup && groupId != null
     val effectiveIsLastInGroup = effectiveIsInGroup && isLastInGroup
 
-    // Background color - one selection language: the focused row is always
-    // the primaryContainer, grouped or not; the group color remains on the
-    // container's accent strip, name and badge.
     val backgroundColor = when {
         isSelected -> MaterialTheme.colorScheme.primaryContainer
         else -> MaterialTheme.colorScheme.surface
     }
 
-    // Shape based on position in group
     val shape = when {
         !effectiveIsInGroup -> RoundedCornerShape(12.dp)
         effectiveIsLastInGroup -> RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp)
@@ -571,8 +531,6 @@ private fun TabListItem(
         color = backgroundColor,
         tonalElevation = if (isSelected) 2.dp else 0.dp,
         border = when {
-            // Group identity on a resting grouped row; the selected state
-            // speaks through its primaryContainer, never an accent stroke.
             !isSelected && effectiveIsInGroup && groupColor != null ->
                 BorderStroke(1.dp, Color(groupColor).copy(alpha = 0.2f))
             else -> null
@@ -595,14 +553,12 @@ private fun TabListItem(
                         interactionSource = remember { MutableInteractionSource() }
                     ) { onTabClick() }
             ) {
-                // Favicon - use centralized FaviconImage for consistent globe icon fallback
                 FaviconImage(
                     tab = tab,
                     size = 24.dp,
                     modifier = Modifier.clip(RoundedCornerShape(4.dp))
                 )
 
-                // Title and URL
                 Column(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -620,7 +576,6 @@ private fun TabListItem(
                         overflow = TextOverflow.Ellipsis
                     )
 
-                    // Always show URL (spacing is always present, not just during drag)
                     if (tab.content.url.isNotEmpty()) {
                         Text(
                             text = tab.content.url,
@@ -633,7 +588,6 @@ private fun TabListItem(
                 }
             }
 
-            // Drag handle - drag is handled by draggableItem modifier on parent
             Icon(
                 imageVector = Icons.Default.DragHandle,
                 contentDescription = stringResource(R.string.drag_to_reorder),

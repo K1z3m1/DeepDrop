@@ -24,19 +24,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 
-/**
- * Adds a subtle press-scale animation to any composable.
- * When the user presses down, the element shrinks to [pressedScale] on the theme's fast spatial
- * spring, giving tactile depth feedback without any layout shift.
- *
- * Usage: `Modifier.pressScale(interactionSource)`
- * The interactionSource should be the same one passed to clickable/combinedClickable.
- *
- * Composable rather than `composed {}`: the latter is opaque to Modifier equality, so every
- * item in a list re-materialised its whole chain on each recomposition. The spring is read
- * inside the [graphicsLayer] block instead of the composition, which keeps its per-frame
- * updates off the composition and layout phases entirely — only the layer block re-runs.
- */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun Modifier.pressScale(
@@ -56,13 +43,6 @@ fun Modifier.pressScale(
     }
 }
 
-/**
- * The item animation every LR lazy list shares: content fades with Material easings and
- * placement follows a soft spring, so reorder, insert and remove all move the same way.
- *
- * Must keep a stable `key` on the item and must not be toggled after first composition
- * (that crashes `LazyLayoutItemAnimator`).
- */
 fun LazyItemScope.animateLRListItem(): Modifier =
     Modifier.animateItem(
         fadeInSpec = tween(ITEM_FADE_IN_MILLIS, easing = EaseOutCubic),
@@ -74,7 +54,6 @@ private const val ITEM_FADE_IN_MILLIS = 300
 private const val ITEM_FADE_OUT_MILLIS = 200
 private const val ITEM_PLACEMENT_DAMPING = 0.8f
 
-/** [animateLRListItem] for an item of a lazy grid. */
 fun LazyGridItemScope.animateLRGridItem(): Modifier =
     Modifier.animateItem(
         fadeInSpec = tween(ITEM_FADE_IN_MILLIS, easing = EaseOutCubic),
@@ -82,14 +61,6 @@ fun LazyGridItemScope.animateLRGridItem(): Modifier =
         placementSpec = spring(dampingRatio = ITEM_PLACEMENT_DAMPING, stiffness = Spring.StiffnessLow),
     )
 
-/**
- * Scrim over the bottom of a tab thumbnail so the title overlay stays legible on light frames.
- * A legibility device, not decoration: the only gradient LR carries, matching the scrim
- * behind Flow's duration pills.
- *
- * Built in [drawWithCache] because the brush depends only on the layout size: created per draw it
- * would allocate a Brush and its colour list for every visible card on every frame of a scroll.
- */
 fun Modifier.thumbnailGradientOverlay(
     color: Color = Color.Black,
     alpha: Float = 0.75f,
@@ -112,13 +83,6 @@ fun Modifier.thumbnailGradientOverlay(
         }
     }
 
-/**
- * Returns a [SheetState] configured for a smooth, polished bottom sheet experience:
- * [skipPartiallyExpanded] defaults to true, so sheets always open fully without
- * stopping at the awkward half-expanded state.
- *
- * Usage: `sheetState = rememberLRSheetState()`
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun rememberLRSheetState(skipPartiallyExpanded: Boolean = true): SheetState =

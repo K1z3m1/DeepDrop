@@ -9,7 +9,6 @@ import androidx.core.graphics.drawable.IconCompat
 import androidx.core.net.toUri
 import mozilla.components.browser.state.state.SessionState
 
-/** Pins a regular shortcut that opens the page in the main browser. */
 object HomescreenShortcut {
     fun add(context: Context, session: SessionState, icon: Bitmap?) {
         val url = session.content.url

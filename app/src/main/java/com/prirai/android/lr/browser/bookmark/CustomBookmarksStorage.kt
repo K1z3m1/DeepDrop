@@ -8,9 +8,11 @@ import mozilla.components.concept.storage.BookmarkNode
 import mozilla.components.concept.storage.BookmarkNodeType
 import mozilla.components.concept.storage.BookmarksStorage
 import java.util.UUID
+import com.prirai.android.lr.browser.bookmark.items.BookmarkFolderItem
+import com.prirai.android.lr.utils.BookmarkUtils
+import mozilla.components.concept.storage.bookmarks.InsertableBookmarkTreeRoot
 
 class CustomBookmarksStorage(context: Context): BookmarksStorage {
-
     private val manager = BookmarkManager.getInstance(context)
 
     override suspend fun addFolder(parentGuid: String, title: String, position: UInt?): Result<String> {
@@ -31,17 +33,15 @@ class CustomBookmarksStorage(context: Context): BookmarksStorage {
     }
 
     override fun cleanup() {
-        // No-op: Bookmark cleanup handled by BookmarkManager save/load cycle
     }
 
     override suspend fun countBookmarksInTrees(guids: List<String>): UInt {
-        // Count all bookmarks recursively
         var count = 0u
-        fun countInFolder(folder: com.prirai.android.lr.browser.bookmark.items.BookmarkFolderItem) {
+        fun countInFolder(folder: BookmarkFolderItem) {
             folder.list.forEach { item ->
                 when (item) {
                     is BookmarkSiteItem -> count++
-                    is com.prirai.android.lr.browser.bookmark.items.BookmarkFolderItem -> countInFolder(item)
+                    is BookmarkFolderItem -> countInFolder(item)
                 }
             }
         }
@@ -65,9 +65,6 @@ class CustomBookmarksStorage(context: Context): BookmarksStorage {
         limit: Int,
         maxAge: Long?,
     ): Result<List<BookmarkNode>> {
-        // AC 156 dropped the `currentTime: Long` parameter from this
-        // interface method. `PlacesBookmarksStorage` computes the current
-        // time internally; callers no longer pass it in.
         return Result.failure(NotImplementedError("Not yet implemented"))
     }
 
@@ -76,7 +73,6 @@ class CustomBookmarksStorage(context: Context): BookmarksStorage {
     }
 
     override suspend fun runMaintenance(dbSizeLimit: UInt) {
-        // Perform basic maintenance: save bookmarks to ensure data persistence
         manager.save()
     }
 
@@ -101,16 +97,13 @@ class CustomBookmarksStorage(context: Context): BookmarksStorage {
         return Result.failure(NotImplementedError("Not yet implemented"))
     }
 
-    override suspend fun insertTree(tree: mozilla.components.concept.storage.bookmarks.InsertableBookmarkTreeRoot): Result<String> {
+    override suspend fun insertTree(tree: InsertableBookmarkTreeRoot): Result<String> {
         try {
-            // Helper: get string property by common names
             fun getStringProp(obj: Any?, names: List<String>): String? {
                 if (obj == null) return null
                 val cls = obj::class.java
-                // try methods first (getX / x)
                 for (name in names) {
                     try {
-                        // getter style: getName
                         val getter = cls.methods.firstOrNull { it.parameterCount == 0 && (it.name.equals(name, true) || it.name.equals("get" + name.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }, true)) }
                         if (getter != null) {
                             val v = getter.invoke(obj)
@@ -130,7 +123,6 @@ class CustomBookmarksStorage(context: Context): BookmarksStorage {
 
             fun extractChildren(obj: Any?): List<Any> {
                 if (obj == null) return emptyList()
-                // If it's already a collection/array
                 if (obj is Collection<*>) return obj.filterNotNull() as List<Any>
                 if (obj.javaClass.isArray) return (obj as Array<*>).filterNotNull() as List<Any>
 
@@ -155,7 +147,6 @@ class CustomBookmarksStorage(context: Context): BookmarksStorage {
                     } catch (_: Exception) { }
                 }
 
-                // Some implementations may expose 'root' or be a wrapper; try to unwrap by looking for a single-list property
                 for (m in cls.methods) {
                     try {
                         if (m.parameterCount == 0) {
@@ -169,18 +160,17 @@ class CustomBookmarksStorage(context: Context): BookmarksStorage {
                 return emptyList()
             }
 
-            fun processNode(node: Any, parent: com.prirai.android.lr.browser.bookmark.items.BookmarkFolderItem) {
+            fun processNode(node: Any, parent: BookmarkFolderItem) {
                 val title = getStringProp(node, listOf("title", "name", "label")) ?: ""
                 val url = getStringProp(node, listOf("url", "href", "uri"))
 
                 if (url != null && url.isNotBlank()) {
-                    val id = com.prirai.android.lr.utils.BookmarkUtils.getNewId()
+                    val id = BookmarkUtils.getNewId()
                     val site = BookmarkSiteItem(if (title.isNotBlank()) title else url, url, id)
                     manager.add(parent, site)
                 } else {
-                    // Treat as folder
-                    val id = com.prirai.android.lr.utils.BookmarkUtils.getNewId()
-                    val folder = com.prirai.android.lr.browser.bookmark.items.BookmarkFolderItem(if (title.isNotBlank()) title else "Folder", parent, id)
+                    val id = BookmarkUtils.getNewId()
+                    val folder = BookmarkFolderItem(if (title.isNotBlank()) title else "Folder", parent, id)
                     manager.add(parent, folder)
                     val children = extractChildren(node)
                     for (child in children) {
@@ -189,18 +179,15 @@ class CustomBookmarksStorage(context: Context): BookmarksStorage {
                 }
             }
 
-            // Top-level: the incoming 'tree' may itself be a collection or wrapper
             val topNodes: List<Any> = extractChildren(tree)
 
-            // Create a container folder under root
-            val rootId = com.prirai.android.lr.utils.BookmarkUtils.getNewId()
-            val rootFolder = com.prirai.android.lr.browser.bookmark.items.BookmarkFolderItem("Imported", manager.root, rootId)
+            val rootId = BookmarkUtils.getNewId()
+            val rootFolder = BookmarkFolderItem("Imported", manager.root, rootId)
 
             for (node in topNodes) {
                 processNode(node, rootFolder)
             }
 
-            // Attach imported folder to user's root and persist
             manager.add(manager.root, rootFolder)
             manager.save()
 
@@ -211,7 +198,6 @@ class CustomBookmarksStorage(context: Context): BookmarksStorage {
     }
 
     override suspend fun warmUp() {
-        // Pre-load bookmark data by ensuring manager is initialized
         manager.initialize()
     }
 }

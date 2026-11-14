@@ -1,6 +1,6 @@
 @file:OptIn(
-    androidx.compose.material3.ExperimentalMaterial3Api::class,
-    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class
+    ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3ExpressiveApi::class
 )
 
 package com.prirai.android.lr.search
@@ -43,7 +43,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -74,6 +73,10 @@ import mozilla.components.support.base.feature.UserInteractionHandler
 import mozilla.components.support.ktx.android.content.getColorFromAttr
 import mozilla.components.support.ktx.android.view.hideKeyboard
 import com.prirai.android.lr.components.toolbar.ToolbarPosition as OldToolbarPosition
+import android.util.TypedValue
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import com.google.android.material.color.DynamicColors
 
 typealias SearchDialogFragmentStore = SearchFragmentStore
 
@@ -89,9 +92,6 @@ class SearchDialogFragment : AppCompatDialogFragment(), UserInteractionHandler {
 
     private var dialogHandledAction = false
 
-    // State for the Compose-rendered accessories. The fragment keeps
-    // computing these exactly as it drove the old plain Views; the
-    // composables at the bottom of this file render them.
     private val clipboardUrl = mutableStateOf<String?>(null)
     private val clipboardDividerAbove = mutableStateOf(false)
     private val pillDividerVisible = mutableStateOf(true)
@@ -116,20 +116,15 @@ class SearchDialogFragment : AppCompatDialogFragment(), UserInteractionHandler {
     override fun onResume() {
         super.onResume()
         dialog?.window?.let { win ->
-            // Apply Material 3 dynamic theming
             val userPreferences = UserPreferences(requireContext())
-            val isDarkTheme = com.prirai.android.lr.theme.ThemeManager.isDarkMode(requireContext())
+            val isDarkTheme = ThemeManager.isDarkMode(requireContext())
             
             val bgColor: Int // Declare bgColor here
             
-            // Apply dynamic colors if enabled (Material You on Android 12+)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && userPreferences.dynamicColors) {
-                // Dynamic colors will be applied via theme inheritance
-                // Just ensure we're using the right context
-                val dynamicContext = com.google.android.material.color.DynamicColors.wrapContextIfAvailable(requireContext())
+                val dynamicContext = DynamicColors.wrapContextIfAvailable(requireContext())
                 
-                // Get colors from dynamic context
-                val typedValue = android.util.TypedValue()
+                val typedValue = TypedValue()
                 dynamicContext.theme.resolveAttribute(com.google.android.material.R.attr.colorSurface, typedValue, true)
                 bgColor = if (userPreferences.amoledMode && isDarkTheme) {
                     Color.BLACK
@@ -137,7 +132,6 @@ class SearchDialogFragment : AppCompatDialogFragment(), UserInteractionHandler {
                     typedValue.data
                 }
             } else {
-                // Apply proper background color with AMOLED support
                 bgColor = if (userPreferences.amoledMode && isDarkTheme) {
                     Color.BLACK
                 } else {
@@ -155,10 +149,9 @@ class SearchDialogFragment : AppCompatDialogFragment(), UserInteractionHandler {
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        // Apply dynamic colors to dialog context if enabled
         val userPreferences = UserPreferences(requireContext())
         val dialogContext = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && userPreferences.dynamicColors) {
-            com.google.android.material.color.DynamicColors.wrapContextIfAvailable(requireContext())
+            DynamicColors.wrapContextIfAvailable(requireContext())
         } else {
             requireContext()
         }
@@ -166,9 +159,7 @@ class SearchDialogFragment : AppCompatDialogFragment(), UserInteractionHandler {
         return object : Dialog(dialogContext, this.theme) {
             @Deprecated("Deprecated in Java")
             override fun onBackPressed() {
-                // Call the fragment's UserInteractionHandler.onBackPressed() instead
                 if (!this@SearchDialogFragment.onBackPressed()) {
-                    // If fragment doesn't handle it, use default behavior
                     @Suppress("DEPRECATION")
                     super.onBackPressed()
                 }
@@ -183,10 +174,9 @@ class SearchDialogFragment : AppCompatDialogFragment(), UserInteractionHandler {
     ): View {
         val args = SearchDialogFragmentArgs.fromBundle(arguments)
         
-        // Use dynamic color context if available
         val userPreferences = UserPreferences(requireContext())
         val contextForInflater = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && userPreferences.dynamicColors) {
-            com.google.android.material.color.DynamicColors.wrapContextIfAvailable(requireContext())
+            DynamicColors.wrapContextIfAvailable(requireContext())
         } else {
             requireContext()
         }
@@ -238,7 +228,6 @@ class SearchDialogFragment : AppCompatDialogFragment(), UserInteractionHandler {
         )
 
         val awesomeBar = binding.awesomeBar
-        //awesomeBar.customizeForBottomToolbar = UserPreferences(requireContext()).toolbarPosition == ToolbarPosition.BOTTOM.ordinal
 
         awesomeBarView = AwesomeBarView(
             activity,
@@ -272,7 +261,6 @@ class SearchDialogFragment : AppCompatDialogFragment(), UserInteractionHandler {
         components.engine.speculativeCreateSession(isPrivate)
 
         if (findNavController().previousBackStackEntry?.destination?.id == R.id.homeFragment) {
-            // When displayed above home, dispatches the touch events to scrim area to the HomeFragment
             binding.searchWrapper.background = Color.TRANSPARENT.toDrawable()
             dialog?.window?.decorView?.setOnTouchListener { v, event ->
                 v.performClick()
@@ -299,7 +287,6 @@ class SearchDialogFragment : AppCompatDialogFragment(), UserInteractionHandler {
 
         setupConstraints(view)
 
-        // When displayed above browser, dismisses dialog on clicking scrim area
         if (findNavController().previousBackStackEntry?.destination?.id == R.id.browserFragment) {
             binding.searchWrapper.setOnClickListener {
                 it.hideKeyboard()
@@ -308,16 +295,8 @@ class SearchDialogFragment : AppCompatDialogFragment(), UserInteractionHandler {
         }
 
         consumeFrom(store) {
-            /*
-            * firstUpdate is used to make sure we keep the awesomebar hidden on the first run
-            *  of the searchFragmentDialog. We only turn it false after the user has changed the
-            *  query as consumeFrom may run several times on fragment start due to state updates.
-            * */
             if (it.url != it.query) firstUpdate = false
             binding.awesomeBar.visibility = if (shouldShowAwesomebar(it)) View.VISIBLE else View.INVISIBLE
-            // The clipboard check is a binder call; pass it lazily so it
-            // only runs when the result can matter (empty query, clipboard
-            // suggestions enabled) instead of on every keystroke.
             updateClipboardSuggestion(it) {
                 requireContext().components.clipboardHandler.containsURL()
             }
@@ -328,11 +307,6 @@ class SearchDialogFragment : AppCompatDialogFragment(), UserInteractionHandler {
         }
     }
 
-    /**
-     * Hosts the two Compose accessory sections (clipboard card + search
-     * actions row) in their ComposeViews. The AC toolbar and the awesome
-     * bar are NOT part of this - they keep their own View/Compose hosts.
-     */
     private fun setupAccessoryComposeContent() {
         val context = requireContext()
         val prefs = UserPreferences(context)
@@ -399,24 +373,16 @@ class SearchDialogFragment : AppCompatDialogFragment(), UserInteractionHandler {
     private fun shouldShowAwesomebar(searchFragmentState: SearchFragmentState) =
         !firstUpdate && searchFragmentState.query.isNotBlank() || searchFragmentState.showSearchShortcuts
 
-
     override fun onPause() {
         super.onPause()
         view?.hideKeyboard()
     }
 
     private fun hideClipboardSection() {
-        // The divider, title, url and icon all render inside the
-        // clipboard ComposeView, so hiding the host hides the section.
         binding.fillLinkFromClipboard.isVisible = false
     }
 
-    /*
-     * This way of dismissing the keyboard is needed to smoothly dismiss the keyboard while the dialog
-     * is also dismissing. For example, when clicking a top site on home while this dialog is showing.
-     */
     private fun hideDeviceKeyboard() {
-        // If the interactor/controller has handled a search event itself, it will hide the keyboard.
         if (!dialogHandledAction) {
             val imm =
                 requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
@@ -441,8 +407,6 @@ class SearchDialogFragment : AppCompatDialogFragment(), UserInteractionHandler {
 
     private fun setupConstraints(view: View) {
         if (UserPreferences(view.context).toolbarPosition == OldToolbarPosition.BOTTOM.ordinal) {
-            // Bottom toolbar flips the accessory stack: the clipboard
-            // card's divider renders above the card instead of below.
             clipboardDividerAbove.value = true
             ConstraintSet().apply {
                 clone(binding.searchWrapper)
@@ -465,11 +429,6 @@ class SearchDialogFragment : AppCompatDialogFragment(), UserInteractionHandler {
         searchState: SearchFragmentState,
         containsUrl: () -> Boolean
     ) {
-        // Lazy evaluation order matters: the binder read is skipped unless
-        // the query is empty and clipboard suggestions can show at all.
-        // The card shows when the clipboard HOLDS a URL - containsURL() is
-        // readable even on S+ (it reads the clip description's text
-        // classification, not the content).
         val shouldShowView = searchState.showClipboardSuggestions &&
                 searchState.query.isEmpty() &&
                 containsUrl()
@@ -479,9 +438,6 @@ class SearchDialogFragment : AppCompatDialogFragment(), UserInteractionHandler {
             !(shouldShowView && UserPreferences(requireContext()).toolbarPosition == OldToolbarPosition.BOTTOM.ordinal)
 
         if (shouldShowView) {
-            // On S+ the clipboard URL is not exposed to the app, so the
-            // card shows its title only - matching the old View row,
-            // which never populated the url TextView on S+.
             clipboardUrl.value =
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     null
@@ -511,19 +467,8 @@ class SearchDialogFragment : AppCompatDialogFragment(), UserInteractionHandler {
         shortcutsAvailable.value = searchState.areShortcutsAvailable
         showShortcuts.value = searchState.showSearchShortcuts
     }
-
 }
 
-/**
- * The "fill link from clipboard" accessory: the clipboard URL as a
- * grouped-card [LRCardRow] stack, with the section divider above or
- * below the card depending on where the toolbar mounts (top toolbar:
- * divider below, bottom toolbar: divider above).
- *
- * Pre-S the clipboard URL is readable and renders as a second row of
- * the same card; on S+ the binder never exposes it, so the card stays a
- * single title row - the same split the old plain-View row had.
- */
 @Composable
 private fun SearchClipboardCard(
     url: String?,
@@ -576,11 +521,6 @@ private fun SearchClipboardCard(
     }
 }
 
-/**
- * The search-actions accessory: the divider above the row (hidden while
- * the bottom-mounted clipboard card shows, as before) plus the engine
- * shortcut chip.
- */
 @Composable
 private fun SearchActionsRow(
     showDivider: Boolean,

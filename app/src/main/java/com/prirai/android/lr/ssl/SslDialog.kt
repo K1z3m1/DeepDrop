@@ -1,13 +1,10 @@
 package com.prirai.android.lr.ssl
 
 import android.content.Context
+import androidx.fragment.app.FragmentActivity
 
-/**
- * Shows an informative bottom sheet with connection/security information
- * Similar to Firefox's QuickSettings panel
- */
 fun Context.showSslDialog() {
-    val activity = this as? androidx.fragment.app.FragmentActivity ?: return
+    val activity = this as? FragmentActivity ?: return
     
     val bottomSheet = ConnectionInfoBottomSheet.newInstance()
     bottomSheet.show(activity.supportFragmentManager, ConnectionInfoBottomSheet.TAG)

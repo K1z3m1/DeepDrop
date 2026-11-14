@@ -4,7 +4,6 @@ import androidx.annotation.StringRes
 import com.prirai.android.lr.R
 import mozilla.components.concept.storage.VisitInfo
 
-/** The date bucket a visit falls into, rendered as the section header above its rows. */
 enum class HistorySection(@StringRes val titleRes: Int) {
     TODAY(R.string.history_section_today),
     YESTERDAY(R.string.history_section_yesterday),

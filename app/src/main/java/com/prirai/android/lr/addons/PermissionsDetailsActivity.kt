@@ -46,13 +46,7 @@ import mozilla.components.feature.addons.ui.translateName
 private const val LEARN_MORE_URL =
     "https://smartcookieweb.com/help-biscuit/extensions/#permission-requests"
 
-/**
- * The permission list of an add-on, on the shared Material 3 Expressive Compose stack:
- * one grouped [LRCardRow] card of the translated permissions, and the learn-more row
- * that opens the support page.
- */
 class PermissionsDetailsActivity : AppCompatActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

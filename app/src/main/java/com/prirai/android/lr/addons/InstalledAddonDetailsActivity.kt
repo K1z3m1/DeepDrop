@@ -69,14 +69,7 @@ import mozilla.components.feature.addons.Addon
 import mozilla.components.feature.addons.AddonManagerException
 import mozilla.components.feature.addons.ui.translateName
 
-/**
- * The detail page of an installed add-on, on the shared Material 3 Expressive Compose stack:
- * the enable / private-browsing toggles, the per-profile allowlist (behind a [LRAlertDialog]),
- * the settings, details and permissions rows, and the remove action — with the same
- * addon-manager state plumbing the View screen carried.
- */
 class InstalledAddonDetailsActivity : AppCompatActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -105,7 +98,6 @@ class InstalledAddonDetailsActivity : AppCompatActivity() {
         components.addonManager.uninstallAddon(
             addon,
             onSuccess = {
-                // Clear the cache so the bottom sheet shows updated data
                 ExtensionsBottomSheetFragment.clearCache()
                 Toast.makeText(
                     this,

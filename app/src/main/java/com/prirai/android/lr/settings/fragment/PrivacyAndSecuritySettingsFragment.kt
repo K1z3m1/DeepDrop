@@ -43,10 +43,9 @@ import com.prirai.android.lr.ui.components.LRAlertDialog
 import kotlinx.coroutines.launch
 import mozilla.components.concept.engine.Engine
 import java.util.concurrent.TimeUnit
-
+import com.prirai.android.lr.settings.MaterialSwitchPreference
 
 class PrivacyAndSecuritySettingsFragment : BaseSettingsFragment() {
-
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         addPreferencesFromResource(R.xml.preferences_privacy_and_security)
 
@@ -77,12 +76,6 @@ class PrivacyAndSecuritySettingsFragment : BaseSettingsFragment() {
         setupProtectionToggles()
     }
 
-    /**
-     * The protection master switches that used to live on the General and
-     * Advanced pages - tracking protection, safe browsing and fingerprint
-     * resistance all belong here. Each needs an app restart to take
-     * effect, same as their previous homes.
-     */
     private fun setupProtectionToggles() {
         val prefs = UserPreferences(requireContext())
 
@@ -301,7 +294,6 @@ class PrivacyAndSecuritySettingsFragment : BaseSettingsFragment() {
             true
         }
 
-        // Wire up custom category switches to UserPreferences
         val switchDefs = listOf(
             "etp_tracking_ads" to { v: Boolean -> prefs.etpTrackingAds = v },
             "etp_tracking_content" to { v: Boolean -> prefs.etpTrackingContent = v },
@@ -312,7 +304,7 @@ class PrivacyAndSecuritySettingsFragment : BaseSettingsFragment() {
         )
 
         for ((key, setter) in switchDefs) {
-            findPreference<com.prirai.android.lr.settings.MaterialSwitchPreference>(key)?.let { pref ->
+            findPreference<MaterialSwitchPreference>(key)?.let { pref ->
                 val sp = preferenceManager.sharedPreferences
                 if (sp != null && !sp.contains(key)) {
                     sp.edit()?.putBoolean(key, pref.isChecked)?.apply()
@@ -326,8 +318,6 @@ class PrivacyAndSecuritySettingsFragment : BaseSettingsFragment() {
     }
 
     private fun showEtpLevelPicker(prefs: UserPreferences, customCategories: PreferenceCategory?) {
-        // The same radio-list picker every other mode option uses
-        // (HTTPS-Only, DoH, Sleeping tabs) - no bespoke card layout.
         val labels = arrayOf(
             getString(R.string.etp_none_title),
             getString(R.string.etp_standard_title),
@@ -478,11 +468,6 @@ private fun ChoiceRow(label: String, selected: Boolean, onClick: () -> Unit) {
     }
 }
 
-/**
- * The picker behind Sleeping tabs, HTTPS-Only and DoH mode: a radio list where
- * tapping a row applies the choice and closes the dialog, with a Cancel
- * button to leave without changing anything.
- */
 @Composable
 private fun ChoiceListDialog(
     title: String,

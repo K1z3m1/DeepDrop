@@ -57,8 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import androidx.core.text.HtmlCompat
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
+import com.prirai.android.lr.ui.components.RemoteImage
 import com.prirai.android.lr.R
 import com.prirai.android.lr.ext.components
 import com.prirai.android.lr.ext.enableEdgeToEdgeMode
@@ -84,13 +83,7 @@ import mozilla.components.feature.addons.ui.translateDescription
 import mozilla.components.feature.addons.ui.translateName
 import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
 
-/**
- * The store-listing page of an add-on, on the shared Material 3 Expressive Compose stack:
- * a header with the icon, name, author and rating stars, the translated description, a
- * grouped [LRCardRow] info card and the install call to action with its in-progress state.
- */
 class AddonDetailsActivity : AppCompatActivity() {
-
     private val updateAttemptStorage: DefaultAddonUpdater.UpdateAttemptStorage by lazy {
         DefaultAddonUpdater.UpdateAttemptStorage(this)
     }
@@ -365,8 +358,6 @@ private fun InfoCard(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = if (addon.isInstalled()) {
-                        // LRCardRow has no long-press slot, so the update-attempt dialog
-                        // stays on the value text, exactly where the old screen had it.
                         Modifier.combinedClickable(onClick = {}, onLongClick = onShowUpdaterDialog)
                     } else {
                         Modifier
@@ -407,10 +398,6 @@ private fun InfoCard(
     }
 }
 
-/**
- * The add-on icon on its installed state's drawable, its listing icon URL or the extension
- * glyph as a fallback — the same resolution order the add-ons list uses.
- */
 @Composable
 internal fun AddonIcon(
     addon: Addon,
@@ -427,11 +414,8 @@ internal fun AddonIcon(
     ) {
         when {
             icon != null -> {
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(icon)
-                        .crossfade(true)
-                        .build(),
+                RemoteImage(
+ model = icon,
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxSize()
@@ -439,11 +423,8 @@ internal fun AddonIcon(
                 )
             }
             iconUrl.isNotEmpty() -> {
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(iconUrl)
-                        .crossfade(true)
-                        .build(),
+                RemoteImage(
+ model = iconUrl,
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxSize()

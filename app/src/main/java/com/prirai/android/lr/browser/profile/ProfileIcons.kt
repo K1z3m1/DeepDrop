@@ -20,17 +20,7 @@ import androidx.compose.material.icons.outlined.SportsSoccer
 import androidx.compose.material.icons.outlined.Work
 import androidx.compose.ui.graphics.vector.ImageVector
 
-/**
- * Profile avatars are Material icons, not emoji: the `emoji` field on
- * [BrowserProfile] (persisted as a plain String, unchanged schema) now
- * stores a stable icon KEY from [KEYS]. Profiles created before the icon
- * system carry emoji characters; [iconFor] maps every legacy emoji to its
- * icon so existing profiles upgrade in place, and any unknown value falls
- * back to the default person icon.
- */
 object ProfileIcons {
-
-    /** The stable icon keys a profile can store. Order = picker order. */
     val KEYS = listOf(
         "person",
         "school",
@@ -43,7 +33,6 @@ object ProfileIcons {
         "trophy",
     )
 
-    /** Legacy emoji -> icon key, so pre-icon profiles upgrade in place. */
     private val legacyEmojiMap: Map<String, String> = mapOf(
         "👤" to "person",
         "🎓" to "school",
@@ -73,7 +62,6 @@ object ProfileIcons {
         "trophy" to Icons.Filled.EmojiEvents,
     )
 
-    /** The icon a stored profile value renders; never null. */
     fun iconFor(stored: String?): ImageVector =
         icons[normalize(stored)] ?: Icons.Filled.Person
 

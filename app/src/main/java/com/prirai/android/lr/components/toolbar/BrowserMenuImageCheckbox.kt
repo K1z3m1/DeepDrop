@@ -14,7 +14,6 @@ class BrowserMenuImageCheckbox(
     private val initialState: () -> Boolean = { false },
     private val listener: (Boolean) -> Unit
 ) : BrowserMenuItem {
-
     override var visible: () -> Boolean = { true }
 
     override fun getLayoutResource() = R.layout.browser_menu_item_checkbox

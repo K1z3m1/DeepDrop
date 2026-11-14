@@ -21,21 +21,19 @@ import mozilla.components.lib.state.ext.flowScoped
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import androidx.compose.ui.platform.ViewCompositionStrategy
+import com.prirai.android.lr.browser.tabs.compose.GlobalSnackbarManager
+import com.prirai.android.lr.browser.tabs.compose.TabSheetStateManager
+import com.prirai.android.lr.preferences.UserPreferences
 
-
-/**
- * Compose-based tab bar with profile switcher pill.
- * Replaces the RecyclerView-based TabGroupWithProfileSwitcher.
- */
 class ComposeTabBarWithProfileSwitcher @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
-
     private val composeView = ComposeView(context).apply {
         setViewCompositionStrategy(
-            androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
+            ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
         )
     }
 
@@ -57,7 +55,6 @@ class ComposeTabBarWithProfileSwitcher @JvmOverloads constructor(
         elevation = elevationDp
         translationZ = elevationDp
 
-        // Add compose view
         addView(
             composeView, LayoutParams(
                 LayoutParams.MATCH_PARENT,
@@ -65,12 +62,8 @@ class ComposeTabBarWithProfileSwitcher @JvmOverloads constructor(
             )
         )
 
-        // Initialize managers
         groupManager = UnifiedTabGroupManager.getInstance(context)
         tabOrderManager = TabOrderManager.getInstance(context, groupManager!!)
-        // TabViewModel.closeTab() now performs store removal directly via
-        // TabsUseCases + UndoMiddleware, so no host-side onTabRemove wiring is
-        // required. See TabViewModel.closeTab kdoc for the undo contract.
         tabViewModel = TabViewModel(context, groupManager!!)
     }
 
@@ -90,8 +83,7 @@ class ComposeTabBarWithProfileSwitcher @JvmOverloads constructor(
 
     private fun setupComposeContent() {
         composeView.setContent {
-            // Read AMOLED preference
-            val prefs = com.prirai.android.lr.preferences.UserPreferences(context)
+            val prefs = UserPreferences(context)
             val isAmoledActive = prefs.amoledMode
             
             LRTheme(amoledMode = isAmoledActive) {
@@ -104,11 +96,9 @@ class ComposeTabBarWithProfileSwitcher @JvmOverloads constructor(
     private fun TabBarWithProfileSwitcherContent() {
         val profileManager = remember { ProfileManager.getInstance(context) }
 
-        // State for tabs and selected tab - observe store state changes
         val store = context.components.store
         val lifecycleOwner = context as LifecycleOwner
 
-        // Use produceState to observe store state changes reactively
         val browserState = produceState(initialValue = store.state, store) {
             store.flowScoped(lifecycleOwner, Dispatchers.Main) { flow ->
                 flow.collect { state ->
@@ -117,11 +107,9 @@ class ComposeTabBarWithProfileSwitcher @JvmOverloads constructor(
             }
         }
 
-        // Get current profile and mode - recalculate when browserState changes
         val currentProfile = remember(browserState.value) { profileManager.getActiveProfile() }
         val isPrivateMode = remember(browserState.value) { profileManager.isPrivateMode() }
 
-        // Filter tabs based on current profile - this will update when browserState changes
         val tabs = remember(browserState.value.tabs, currentProfile, isPrivateMode) {
             browserState.value.tabs.filter { tab ->
                 val tabIsPrivate = tab.content.private
@@ -145,11 +133,9 @@ class ComposeTabBarWithProfileSwitcher @JvmOverloads constructor(
         val orderManager = tabOrderManager ?: return
         val viewModel = tabViewModel ?: return
 
-        // Update orderManager and viewModel with current tabs
         LaunchedEffect(tabs, selectedTabId, currentProfile, isPrivateMode) {
             val profileId = if (isPrivateMode) "private" else currentProfile.id
 
-            // Rebuild order to include any new tabs
             orderManager.rebuildOrderForProfile(profileId, tabs)
 
             viewModel.loadTabsForProfile(profileId, tabs, selectedTabId)
@@ -158,28 +144,22 @@ class ComposeTabBarWithProfileSwitcher @JvmOverloads constructor(
         LaunchedEffect(selectedTabId) {
             val currentTabId = selectedTabId
             if (currentTabId != null && currentTabId != lastSelectedTabId) {
-                com.prirai.android.lr.browser.tabs.compose.TabSheetStateManager.notifyTabSheetDismissed()
+                TabSheetStateManager.notifyTabSheetDismissed()
                 lastSelectedTabId = currentTabId
             }
         }
 
-        // Set up global snackbar manager scope
         val scope = androidx.compose.runtime.rememberCoroutineScope()
         androidx.compose.runtime.LaunchedEffect(Unit) {
-            com.prirai.android.lr.browser.tabs.compose.GlobalSnackbarManager.getInstance().coroutineScope = scope
+            GlobalSnackbarManager.getInstance().coroutineScope = scope
         }
 
-        // Create a stable key for the tab bar based on profile
         val profileKey = remember(currentProfile, isPrivateMode) {
             if (isPrivateMode) "private" else "profile_${currentProfile.id}"
         }
 
-        // Observe tab sheet dismissal timestamp; passed directly to TabBarCompose
-        // so it can scroll to the active tab after each dismissal event.
-        val autoScrollTrigger by com.prirai.android.lr.browser.tabs.compose.TabSheetStateManager.dismissedTimestamp.collectAsState()
+        val autoScrollTrigger by TabSheetStateManager.dismissedTimestamp.collectAsState()
 
-        // Tab bar only - profile switching available via menu
-        // Use key() to properly recreate composition on profile switch
         key(profileKey) {
             TabBarCompose(
                 tabs = tabs,
@@ -190,9 +170,7 @@ class ComposeTabBarWithProfileSwitcher @JvmOverloads constructor(
                     onTabSelected?.invoke(tabId)
                 },
                 onTabClose = { tabId: String ->
-                    // Use ViewModel's closeTab with undo support
                     viewModel.closeTab(tabId, showUndo = true)
-                    // Still invoke callback for legacy support
                     onTabClosed?.invoke(tabId)
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -201,14 +179,11 @@ class ComposeTabBarWithProfileSwitcher @JvmOverloads constructor(
         }
     }
 
-
     fun updateTabs(tabs: List<TabSessionState>, selectedId: String?) {
-        // The compose content will automatically update via produceState
         setupComposeContent()
     }
 
     fun updateProfileIcon(profile: BrowserProfile) {
         setupComposeContent()
     }
-
 }

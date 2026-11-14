@@ -9,7 +9,6 @@ class OpenBrowserIntentProcessor(
     private val activity: BrowserActivity,
     private val getIntentSessionId: (SafeIntent) -> String?
 ) : HomeIntentProcessor {
-
     override fun process(intent: Intent, navController: NavController, out: Intent): Boolean {
         return if (intent.extras?.getBoolean(BrowserActivity.OPEN_TO_BROWSER) == true) {
             out.putExtra(BrowserActivity.OPEN_TO_BROWSER, false)

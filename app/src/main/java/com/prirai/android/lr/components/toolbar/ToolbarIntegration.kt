@@ -24,6 +24,8 @@ import mozilla.components.support.base.feature.LifecycleAwareFeature
 import mozilla.components.support.ktx.android.content.getColorFromAttr
 import mozilla.components.lib.state.ext.flowScoped
 import mozilla.components.support.ktx.kotlinx.coroutines.flow.ifAnyChanged
+import com.prirai.android.lr.theme.ColorConstants
+import kotlinx.coroutines.Dispatchers
 
 @ExperimentalCoroutinesApi
 abstract class ToolbarIntegration(
@@ -34,7 +36,6 @@ abstract class ToolbarIntegration(
     isPrivate: Boolean,
     renderStyle: ToolbarFeature.RenderStyle
 ) : LifecycleAwareFeature {
-
     val store = context.components.store
     private val toolbarPresenter: ToolbarPresenter = ToolbarPresenter(
         toolbar,
@@ -58,11 +59,9 @@ abstract class ToolbarIntegration(
     protected val context: Context = context
 
     init {
-        // Always hide menu button from address bar (it's shown in the contextual toolbar instead)
         toolbar.display.menuBuilder = null
         toolbar.private = isPrivate
         
-        // Set security icon click listener
         toolbar.display.setOnSiteInfoClickedListener {
             context.showSslDialog()
         }
@@ -83,7 +82,7 @@ abstract class ToolbarIntegration(
     }
 
     private fun startSecurityBackgroundObserver() {
-        securityBackgroundScope = store.flowScoped(dispatcher = kotlinx.coroutines.Dispatchers.Main) { flow ->
+        securityBackgroundScope = store.flowScoped(dispatcher = Dispatchers.Main) { flow ->
             flow.mapNotNull { state -> state.selectedTab }
                 .ifAnyChanged { tab ->
                     arrayOf(tab.content.securityInfo, tab.content.url)
@@ -96,11 +95,9 @@ abstract class ToolbarIntegration(
     }
 
     private fun updateSecurityBackground(isSecure: Boolean) {
-        // Always use the normal toolbar background, don't change based on security
         val background = AppCompatResources.getDrawable(context, R.drawable.toolbar_background)
         toolbar.display.setUrlBackground(background)
 
-        // Keep consistent text color
         val textColor = context.getColorFromAttr(android.R.attr.textColorPrimary)
 
         toolbar.display.colors = toolbar.display.colors.copy(
@@ -112,18 +109,15 @@ abstract class ToolbarIntegration(
     private fun updateSecurityIconColor(url: String, isSecure: Boolean) {
         val isInternalPage = isInternalUrl(url)
         
-        // Update icon colors based on page type
         val (secureColor, insecureColor) = when {
             isInternalPage -> {
-                // Internal page - use blue color for both states
                 val blueColor = context.getColor(R.color.security_indicator_secure)
                 Pair(blueColor, blueColor)
             }
             else -> {
-                // Regular page - use green/red colors
                 Pair(
-                    com.prirai.android.lr.theme.ColorConstants.getSecureColor(toolbar.context),
-                    com.prirai.android.lr.theme.ColorConstants.getInsecureColor(toolbar.context)
+                    ColorConstants.getSecureColor(toolbar.context),
+                    ColorConstants.getInsecureColor(toolbar.context)
                 )
             }
         }
@@ -139,10 +133,6 @@ abstract class ToolbarIntegration(
                url.startsWith("moz-extension://") ||
                url.startsWith("resource://") ||
                url.startsWith("chrome://")
-    }
-
-    fun invalidateMenu() {
-        menuPresenter.invalidateActions()
     }
 }
 
@@ -165,9 +155,7 @@ class DefaultToolbarIntegration(
     isPrivate = isPrivate,
     renderStyle = ToolbarFeature.RenderStyle.UncoloredUrl
 ) {
-
     init {
-        // Always hide menu button from address bar (it's shown in the contextual toolbar instead)
         toolbar.display.menuBuilder = null
         toolbar.private = isPrivate
 
@@ -177,36 +165,35 @@ class DefaultToolbarIntegration(
                 DisplayToolbar.Indicators.HIGHLIGHT
             )
 
-
         toolbar.display.colors = toolbar.display.colors.copy(
-            siteInfoIconInsecure = com.prirai.android.lr.theme.ColorConstants.getInsecureColor(context),
-            siteInfoIconSecure = com.prirai.android.lr.theme.ColorConstants.getSecureColor(context),
+            siteInfoIconInsecure = ColorConstants.getInsecureColor(context),
+            siteInfoIconSecure = ColorConstants.getSecureColor(context),
             text = context.getColorFromAttr(android.R.attr.textColorPrimary),
             menu = context.getColorFromAttr(android.R.attr.textColorPrimary),
-            separator = com.prirai.android.lr.theme.ColorConstants.getColorFromAttr(
+            separator = ColorConstants.getColorFromAttr(
                 context,
                 com.google.android.material.R.attr.colorOutlineVariant,
                 0x1E15141a
             ),
             trackingProtection = if (isPrivate) {
-                com.prirai.android.lr.theme.ColorConstants.PrivateMode.PURPLE
+                ColorConstants.PrivateMode.PURPLE
             } else {
-                com.prirai.android.lr.theme.ColorConstants.getColorFromAttr(
+                ColorConstants.getColorFromAttr(
                     context,
                     android.R.attr.colorPrimary,
                     0xFF20123a.toInt()
                 )
             },
             emptyIcon = if (isPrivate) {
-                com.prirai.android.lr.theme.ColorConstants.PrivateMode.PURPLE
+                ColorConstants.PrivateMode.PURPLE
             } else {
-                com.prirai.android.lr.theme.ColorConstants.getColorFromAttr(
+                ColorConstants.getColorFromAttr(
                     context,
                     android.R.attr.colorPrimary,
                     0xFF20123a.toInt()
                 )
             },
-            hint = com.prirai.android.lr.theme.ColorConstants.getColorFromAttr(
+            hint = ColorConstants.getColorFromAttr(
                 context,
                 com.google.android.material.R.attr.colorOutlineVariant,
                 0x1E15141a
@@ -219,7 +206,6 @@ class DefaultToolbarIntegration(
             icon = context.getColorFromAttr(android.R.attr.textColorPrimary)
         )
 
-        // Initial background - will be updated by security observer
         if (isPrivate) {
             toolbar.display.setUrlBackground(
                 AppCompatResources.getDrawable(
@@ -235,7 +221,5 @@ class DefaultToolbarIntegration(
                 )
             )
         }
-
-        // Tab counter is not added to the address bar (it's shown in the contextual toolbar instead)
     }
 }

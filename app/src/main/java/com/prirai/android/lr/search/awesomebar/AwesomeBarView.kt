@@ -25,10 +25,6 @@ import mozilla.components.feature.session.SessionUseCases
 import mozilla.components.feature.tabs.TabsUseCases
 import mozilla.components.support.ktx.android.content.getColorFromAttr
 
-/**
- * View that contains and configures the BrowserAwesomeBar
- * TODO: suggestions based on bookmarks
- */
 class AwesomeBarView(
     private val activity: BrowserActivity,
     val interactor: AwesomeBarInteractor,
@@ -135,13 +131,6 @@ class AwesomeBarView(
                 icon = searchBitmap,
                 showDescription = false,
                 engine = engineForSpeculativeConnects,
-                // Suppress the raw typed query from appearing as its own row.
-                // Upstream `SearchSuggestionProvider.createMultipleSuggestions`
-                // otherwise prepends `text` at index 0 of its returned list
-                // with a near-MAX_VALUE score, which renders as a redundant
-                // top-of-section "you typed X" entry. The user's Enter still
-                // submits the exact text via BrowserActivity.load, so hiding
-                // it here loses nothing.
                 filterExactMatch = true,
                 private = when (activity.browsingModeManager.mode) {
                     BrowsingMode.Normal -> false
@@ -246,15 +235,6 @@ class AwesomeBarView(
     }
 
     private fun getSelectedSearchSuggestionProvider(context: Context, state: SearchFragmentState): List<AwesomeBar.SuggestionProvider> {
-        // The dedicated "Search for '<query>'" row (`SearchForQueryProvider`)
-        // has been removed - it re-rendered a top-priority section on every
-        // keystroke, causing typing lag. Search suggestions from the engine
-        // now surface directly under the "Search suggestions" header, and
-        // exact-match filtering is disabled on `defaultSearchSuggestionProvider`
-        // so the typed query still appears when the engine hasn't returned
-        // a matching completion. If search suggestions are disabled entirely,
-        // we return no providers here - the URL bar's own Enter behaviour
-        // still runs the search.
         return when (state.searchEngineSource) {
             is SearchEngineSource.Default -> {
                 if (UserPreferences(context).searchSuggestionsEnabled) {
@@ -297,9 +277,6 @@ class AwesomeBarView(
                 BrowsingMode.Private -> null
             }
 
-            // Shortcut-engine path: only the suggestions provider - the
-            // "Search for '<query>'" row was dropped for the same typing-perf
-            // reason as the default path.
             listOf(
                 HeaderedSuggestionProvider(
                     SearchSuggestionProvider(
@@ -310,8 +287,6 @@ class AwesomeBarView(
                         mode = SearchSuggestionProvider.Mode.MULTIPLE_SUGGESTIONS,
                         icon = searchBitmap,
                         engine = engineForSpeculativeConnects,
-                        // See the default-engine branch above for why this is
-                        // `true` - suppresses the typed-query echo row.
                         filterExactMatch = true,
                         private = when (activity.browsingModeManager.mode) {
                             BrowsingMode.Normal -> false
