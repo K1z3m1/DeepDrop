@@ -1,0 +1,161 @@
+package com.prirai.android.lr.browser.tabs.compose
+
+import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.prirai.android.lr.R
+import com.prirai.android.lr.ui.components.pressScale
+import com.prirai.android.lr.ui.components.thumbnailGradientOverlay
+import kotlinx.coroutines.launch
+import mozilla.components.browser.state.state.TabSessionState
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun TabGridCard(
+    tab: TabSessionState,
+    isSelected: Boolean,
+    groupColor: Int?,
+    onTabClick: () -> Unit,
+    onTabClose: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val scope = rememberCoroutineScope()
+    val scale = remember { Animatable(1f) }
+    val interactionSource = remember { MutableInteractionSource() }
+    val closeSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
+
+    Surface(
+        modifier =
+            modifier
+                .aspectRatio(0.75f)
+                .pressScale(interactionSource)
+                .graphicsLayer {
+                    scaleX = scale.value
+                    scaleY = scale.value
+                },
+        shape = RoundedCornerShape(12.dp),
+        color = when {
+            isSelected -> MaterialTheme.colorScheme.primaryContainer
+            groupColor != null -> Color(groupColor).copy(alpha = 0.05f)
+            else -> MaterialTheme.colorScheme.surfaceContainerHighest
+        },
+        tonalElevation = if (isSelected) 2.dp else 0.dp,
+        border = when {
+            !isSelected && groupColor != null -> BorderStroke(1.dp, Color(groupColor).copy(alpha = 0.3f))
+            else -> null
+        }
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(interactionSource = interactionSource) { onTabClick() }
+        ) {
+            ThumbnailImageView(
+                tab = tab,
+                modifier = Modifier.fillMaxSize()
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .thumbnailGradientOverlay()
+            )
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(6.dp)
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                    tonalElevation = 2.dp,
+                    modifier = Modifier.size(26.dp)
+                ) {
+                    IconButton(
+                        onClick = {
+                            scope.launch {
+                                scale.animateTo(0.8f, animationSpec = closeSpec)
+                                onTabClose()
+                            }
+                        },
+                        modifier = Modifier.size(26.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = stringResource(R.string.menu_close_tab),
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .padding(6.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 6.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        FaviconImage(
+                            tab = tab,
+                            size = 14.dp
+                        )
+                        Text(
+                            text = getTabDisplayTitle(tab, stringResource(R.string.tab_history_new_tab)),
+                            style =
+                                if (isSelected) {
+                                    MaterialTheme.typography.labelSmallEmphasized
+                                } else {
+                                    MaterialTheme.typography.labelSmall
+                                },
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,60 @@
+package com.prirai.android.lr.settings
+
+import android.content.Context
+import android.util.AttributeSet
+import androidx.preference.Preference
+import androidx.preference.PreferenceViewHolder
+import com.prirai.android.lr.R
+import com.prirai.android.lr.settings.fragment.showLRInfoDialog
+
+open class InfoPreference @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = androidx.preference.R.attr.preferenceStyle,
+    defStyleRes: Int = 0
+) : Preference(context, attrs, defStyleAttr, defStyleRes) {
+    private var infoTextRes: Int = 0
+
+    init {
+        context.obtainStyledAttributes(
+            attrs, R.styleable.InfoPreference, defStyleAttr, defStyleRes
+        ).apply {
+            infoTextRes = getResourceId(R.styleable.InfoPreference_infoText, 0)
+            recycle()
+        }
+        widgetLayoutResource = R.layout.preference_widget_info
+    }
+
+    override fun onBindViewHolder(holder: PreferenceViewHolder) {
+        super.onBindViewHolder(holder)
+        holder.findViewById(R.id.pref_info_icon)?.setOnClickListener {
+            showLRInfoDialog(context, title?.toString().orEmpty(), infoTextRes)
+        }
+    }
+}
+
+class InfoSwitchPreference @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = androidx.preference.R.attr.switchPreferenceCompatStyle,
+    defStyleRes: Int = 0
+) : MaterialSwitchPreference(context, attrs, defStyleAttr, defStyleRes) {
+    private var infoTextRes: Int = 0
+
+    init {
+        context.obtainStyledAttributes(
+            attrs, R.styleable.InfoPreference, defStyleAttr, defStyleRes
+        ).apply {
+            infoTextRes = getResourceId(R.styleable.InfoPreference_infoText, 0)
+            recycle()
+        }
+        widgetLayoutResource = R.layout.preference_widget_material_switch_info
+    }
+
+    override fun onBindViewHolder(holder: PreferenceViewHolder) {
+        super.onBindViewHolder(holder)
+        holder.findViewById(R.id.pref_info_icon)?.setOnClickListener {
+            showLRInfoDialog(context, title?.toString().orEmpty(), infoTextRes)
+        }
+    }
+}

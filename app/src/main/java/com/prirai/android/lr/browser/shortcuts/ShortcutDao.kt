@@ -1,0 +1,25 @@
+package com.prirai.android.lr.browser.shortcuts
+
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.Query
+import androidx.room.Update
+
+@Dao
+interface ShortcutDao {
+    @Query("SELECT * FROM shortcutentity")
+    fun getAll(): List<ShortcutEntity>
+
+    @Query("SELECT * FROM shortcutentity WHERE uid IN (:shortcutIds)")
+    fun loadAllByIds(shortcutIds: IntArray): List<ShortcutEntity>
+
+    @Update
+    fun update(item: ShortcutEntity)
+
+    @Insert
+    fun insertAll(vararg item: ShortcutEntity)
+
+    @Delete
+    fun delete(item: ShortcutEntity)
+}

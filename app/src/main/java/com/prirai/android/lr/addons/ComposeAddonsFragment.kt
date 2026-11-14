@@ -1,0 +1,497 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
+package com.prirai.android.lr.addons
+
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import android.content.Intent
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Extension
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
+import androidx.fragment.app.Fragment
+import com.prirai.android.lr.ui.components.RemoteImage
+import com.prirai.android.lr.R
+import com.prirai.android.lr.ext.components
+import com.prirai.android.lr.preferences.UserPreferences
+import com.prirai.android.lr.theme.ThemeManager
+import com.prirai.android.lr.ui.components.LRAlertDialog
+import com.prirai.android.lr.ui.components.LREmptyState
+import com.prirai.android.lr.ui.components.LRLoadingIndicator
+import com.prirai.android.lr.ui.theme.LRTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import mozilla.components.feature.addons.Addon
+import mozilla.components.feature.addons.ui.translateName
+import androidx.core.net.toUri
+import androidx.fragment.app.FragmentActivity
+
+class ComposeAddonsFragment : Fragment() {
+    private var showSortMenuTrigger: (() -> Unit)? = null
+    private var showSearchTrigger: (() -> Unit)? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setHasOptionsMenu(true)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        menu.clear()
+        inflater.inflate(R.menu.addons_menu, menu)
+        super.onCreateOptionsMenu(menu, inflater)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_search -> {
+                showSearchTrigger?.invoke()
+                true
+            }
+            R.id.action_sort -> {
+                showSortMenuTrigger?.invoke()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        return ComposeView(requireContext()).apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                val context = LocalContext.current
+                val prefs = UserPreferences(context)
+                
+                LaunchedEffect(Unit) {
+                    val window = requireActivity().window
+                    WindowCompat.setDecorFitsSystemWindows(window, false)
+                    val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+                    insetsController.isAppearanceLightStatusBars = !ThemeManager.isDarkMode(context)
+                }
+                
+                LRTheme(
+                    darkTheme = ThemeManager.isDarkMode(context),
+                    amoledMode = prefs.amoledMode,
+                    dynamicColor = prefs.dynamicColors
+                ) {
+                    AddonsScreen(
+                        onSearchTriggerReady = { trigger -> showSearchTrigger = trigger },
+                        onSortMenuTriggerReady = { trigger -> showSortMenuTrigger = trigger }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddonsScreen(
+    onSearchTriggerReady: ((()-> Unit) -> Unit)? = null,
+    onSortMenuTriggerReady: ((()-> Unit) -> Unit)? = null
+) {
+    val context = LocalContext.current
+    val allAddonsOriginal = remember { mutableStateOf<List<Addon>>(emptyList()) }
+    val recommendedAddons = remember { mutableStateOf<List<Addon>>(emptyList()) }
+    val enabledAddons = remember { mutableStateOf<List<Addon>>(emptyList()) }
+    val isLoading = remember { mutableStateOf(true) }
+    val selectedSort = remember { mutableStateOf("Name") }
+    val showSortMenu = remember { mutableStateOf(false) }
+    
+    LaunchedEffect(Unit) {
+        onSearchTriggerReady?.invoke {
+            val searchSheet = SearchExtensionsBottomSheet()
+            searchSheet.show((context as FragmentActivity).supportFragmentManager, "search_extensions")
+        }
+        onSortMenuTriggerReady?.invoke {
+            showSortMenu.value = true
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            try {
+                val allAddons = context.components.addonManager.getAddons()
+                allAddonsOriginal.value = allAddons
+                
+                val installed = allAddons.filter { it.isInstalled() && it.isEnabled() }
+                val recommended = allAddons.filter { !it.isInstalled() }
+                
+                enabledAddons.value = installed
+                recommendedAddons.value = recommended
+            } catch (e: Exception) {
+            } finally {
+                isLoading.value = false
+            }
+        }
+    }
+
+    val filteredEnabled = remember(selectedSort.value, enabledAddons.value) {
+        var result = enabledAddons.value
+        
+        result = when (selectedSort.value) {
+            "Name" -> result.sortedBy { it.translateName(context) }
+            "Recently Updated" -> result.sortedByDescending { it.updatedAt }
+            else -> result
+        }
+        
+        result
+    }
+    
+    val filteredRecommended = remember(selectedSort.value, recommendedAddons.value) {
+        var result = recommendedAddons.value
+        
+        result = when (selectedSort.value) {
+            "Name" -> result.sortedBy { it.translateName(context) }
+            "Rating" -> result.sortedByDescending { it.rating?.average ?: 0f }
+            "Recently Updated" -> result.sortedByDescending { it.updatedAt }
+            else -> result
+        }
+        
+        result
+    }
+
+    Box {
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.surface
+        ) { paddingValues ->
+            if (isLoading.value) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                ) {
+                    LRLoadingIndicator()
+                }
+            } else {
+                LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                if (filteredEnabled.isNotEmpty()) {
+                    item {
+                        AddonSection(
+                            title = stringResource(R.string.enabled_section, filteredEnabled.size),
+                            addons = filteredEnabled,
+                            onAddonClick = { addon ->
+                                val intent = Intent(context, InstalledAddonDetailsActivity::class.java)
+                                intent.putExtra("add_on", addon)
+                                context.startActivity(intent)
+                            }
+                        )
+                    }
+                }
+
+                if (filteredRecommended.isNotEmpty()) {
+                    item {
+                        AddonSection(
+                            title = stringResource(R.string.recommended_section, filteredRecommended.size),
+                            addons = filteredRecommended,
+                            onAddonClick = { addon ->
+                                val intent = Intent(context, AddonDetailsActivity::class.java)
+                                intent.putExtra("add_on", addon)
+                                context.startActivity(intent)
+                            }
+                        )
+                    }
+                }
+                
+                item {
+                    TextButton(
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW,
+                                "https://addons.mozilla.org/android/".toUri())
+                            context.startActivity(intent)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = stringResource(R.string.all_extensions),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+                
+                if (filteredEnabled.isEmpty() && filteredRecommended.isEmpty() && !isLoading.value) {
+                    item {
+                        LREmptyState(
+                            title = stringResource(R.string.no_extensions_available),
+                            icon = Icons.Default.Extension,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 24.dp, horizontal = 32.dp),
+                        )
+                    }
+                }
+                }
+            }
+        }
+        
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 56.dp, end = 16.dp) // Position below toolbar
+        ) {
+            DropdownMenu(
+                expanded = showSortMenu.value,
+                onDismissRequest = { showSortMenu.value = false }
+            ) {
+                listOf("Name", "Rating", "Recently Updated").forEach { sort ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                when (sort) {
+                                    "Name" -> stringResource(R.string.sort_name)
+                                    "Rating" -> stringResource(R.string.sort_rating)
+                                    else -> stringResource(R.string.sort_recently_updated)
+                                }
+                            )
+                        },
+                        onClick = {
+                            selectedSort.value = sort
+                            showSortMenu.value = false
+                        },
+                        trailingIcon = {
+                            if (selectedSort.value == sort) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_check_circle),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AddonSection(
+    title: String,
+    addons: List<Addon>,
+    onAddonClick: (Addon) -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMediumEmphasized,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
+        )
+
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = 1.dp
+        ) {
+            Column {
+                addons.forEachIndexed { index, addon ->
+                    AddonListItem(
+                        addon = addon,
+                        onClick = { onAddonClick(addon) }
+                    )
+                    
+                    if (index < addons.lastIndex) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(start = 80.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AddonListItem(
+    addon: Addon,
+    onClick: () -> Unit
+) {
+    val context = LocalContext.current
+    
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        onClick = onClick
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp)),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                val iconToUse = addon.installedState?.icon ?: addon.icon
+                val iconUrlToUse = if (addon.installedState != null) "" else addon.iconUrl
+                
+                when {
+                    iconToUse != null -> {
+                        RemoteImage(
+ model = iconToUse,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(8.dp)
+                        )
+                    }
+                    iconUrlToUse.isNotEmpty() -> {
+                        RemoteImage(
+ model = iconUrlToUse,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(8.dp)
+                        )
+                    }
+                    else -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Extension,
+                                contentDescription = null,
+                                modifier = Modifier.size(28.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = addon.translateName(context),
+                    style = MaterialTheme.typography.bodyLargeEmphasized,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            val summary = addon.translatableSummary.values.firstOrNull().orEmpty()
+
+            if (summary.isNotEmpty()) {
+                var showInfo by remember { mutableStateOf(false) }
+                if (showInfo) {
+                    LRAlertDialog(
+                        onDismissRequest = { showInfo = false },
+                        title = {
+                            Text(
+                                text = addon.translateName(context),
+                                style = MaterialTheme.typography.headlineSmallEmphasized,
+                            )
+                        },
+                        text = {
+                            Text(
+                                text = summary,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.verticalScroll(rememberScrollState()),
+                            )
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = { showInfo = false },
+                                shapes = ButtonDefaults.shapes(),
+                            ) {
+                                Text(stringResource(com.prirai.android.lr.R.string.mozac_feature_prompts_ok))
+                            }
+                        },
+                    )
+                }
+                Icon(
+                    imageVector = Icons.Outlined.Info,
+                    contentDescription = stringResource(
+                        com.prirai.android.lr.R.string.info_icon_description
+                    ),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .clickable { showInfo = true }
+                        .padding(8.dp)
+                        .size(20.dp),
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+            )
+        }
+    }
+}

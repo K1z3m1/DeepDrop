@@ -1,0 +1,20 @@
+version: 2
+updates:
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      # Mozilla components, GeckoView and app-services must move together.
+      mozilla:
+        patterns:
+          - "org.mozilla.*"
+      androidx:
+        patterns:
+          - "androidx.*"
+          - "com.google.android.material*"
+      kotlin-ksp-compose:
+        patterns:
+          - "org.jetbrains.kotlin*"
+          - "com.google.devtools.ksp*"

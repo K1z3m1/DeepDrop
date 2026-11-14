@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+>
+
+  <uses-permission android:name="android.permission.CAMERA" />
+  <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false"
+    />
+  <uses-feature
+        android:name="android.hardware.camera.autofocus"
+        android:required="false"
+    />
+  <uses-permission android:name="android.permission.RECORD_AUDIO" />
+  <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+  <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28"
+        tools:ignore="ScopedStorage"
+    />
+  <uses-permission android:name="android.permission.BLUETOOTH" />
+  <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <uses-permission android:name="android.permission.VIBRATE" />
+  <application
+        android:name=".BrowserApp"
+        android:allowBackup="true"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppThemeNotActionBar"
+    >
+
+    <!-- WebAuthn/FIDO2 asset links metadata -->
+    <meta-data
+            android:name="asset_statements"
+            android:resource="@string/asset_statements"
+        />
+
+    <activity
+            android:name=".BrowserActivity"
+            android:theme="@style/SplashTheme"
+            android:launchMode="singleTask"
+            android:resizeableActivity="true"
+            android:supportsPictureInPicture="true"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="keyboard|keyboardHidden|mcc|mnc|orientation|screenSize|locale|layoutDirection|smallestScreenSize|screenLayout"
+            android:exported="true"
+        >
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity>
+
+    <!-- Custom Tabs Activity for external apps -->
+    <activity
+            android:name=".customtabs.ExternalAppBrowserActivity"
+            android:autoRemoveFromRecents="true"
+            android:configChanges="keyboard|keyboardHidden|mcc|mnc|orientation|screenSize|layoutDirection|smallestScreenSize|screenLayout"
+            android:exported="false"
+            android:persistableMode="persistNever"
+            android:taskAffinity=""
+            android:theme="@style/SplashTheme"
+            android:resizeableActivity="true"
+            android:supportsPictureInPicture="true"
+            android:windowSoftInputMode="adjustResize|stateAlwaysHidden"
+        />
+
+    <activity
+            android:name=".addons.AddonsActivity"
+            android:label="@string/mozac_feature_addons_addons"
+            android:parentActivityName=".BrowserActivity"
+            android:theme="@style/AppThemeAddons"
+        />
+
+    <activity
+            android:name=".settings.activity.SettingsActivity"
+            android:label="@string/settings"
+            android:theme="@style/AppThemeSettings"
+        />
+
+    <activity
+            android:name=".addons.AddonDetailsActivity"
+            android:label="@string/mozac_feature_addons_addons"
+            android:theme="@style/AppThemeAddons"
+        />
+
+    <activity
+            android:name=".addons.InstalledAddonDetailsActivity"
+            android:label="@string/mozac_feature_addons_addons"
+            android:parentActivityName=".addons.AddonsActivity"
+            android:theme="@style/AppThemeAddons"
+        />
+
+    <activity
+            android:name=".addons.PermissionsDetailsActivity"
+            android:label="@string/mozac_feature_addons_addons"
+            android:theme="@style/AppThemeAddons"
+        />
+
+    <activity
+            android:name=".addons.AddonSettingsActivity"
+            android:label="@string/mozac_feature_addons_addons"
+            android:theme="@style/AppThemeAddons"
+        />
+
+    <activity
+            android:name=".addons.NotYetSupportedAddonActivity"
+            android:label="@string/mozac_feature_addons_addons"
+            android:theme="@style/AppThemeAddons"
+        />
+
+    <activity
+            android:name=".history.HistoryActivity"
+            android:label="@string/action_history"
+            android:theme="@style/AppThemeAddons"
+        />
+
+    <activity
+            android:name=".IntentReceiverActivity"
+            android:relinquishTaskIdentity="true"
+            android:taskAffinity=""
+            android:exported="true"
+            android:excludeFromRecents="true"
+        >
+
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.APP_BROWSER" />
+        <category android:name="android.intent.category.DEFAULT" />
+      </intent-filter>
+
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="http" />
+        <data android:scheme="https" />
+      </intent-filter>
+
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+
+        <category android:name="android.intent.category.BROWSABLE" />
+        <category android:name="android.intent.category.DEFAULT" />
+
+        <data android:scheme="http" />
+        <data android:scheme="https" />
+        <data android:mimeType="text/html" />
+        <data android:mimeType="text/plain" />
+        <data android:mimeType="application/xhtml+xml" />
+      </intent-filter>
+
+      <intent-filter>
+        <action android:name="android.intent.action.SEND" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="text/plain" />
+      </intent-filter>
+
+      <intent-filter>
+        <action android:name="android.intent.action.SEARCH" />
+        <category android:name="android.intent.category.DEFAULT" />
+      </intent-filter>
+
+      <intent-filter>
+        <action android:name="android.intent.action.WEB_SEARCH" />
+        <category android:name="android.intent.category.DEFAULT" />
+      </intent-filter>
+
+      <intent-filter>
+        <action android:name="android.intent.action.ASSIST" />
+        <category android:name="android.intent.category.DEFAULT" />
+      </intent-filter>
+
+      <intent-filter>
+        <action android:name="android.nfc.action.NDEF_DISCOVERED" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:scheme="http" />
+        <data android:scheme="https" />
+      </intent-filter>
+
+    </activity>
+
+    <!--
+        Note: `android:stopWithTask` is intentionally omitted. The
+        flag only applies to services started via `startService`; the
+        AC `MediaSessionFeature` only ever `bindService`s this one
+        with `BIND_AUTO_CREATE`, so stopWithTask would be a no-op.
+        Task-removal shutdown is handled explicitly in
+        `BrowserActivity.onDestroy` (stop the feature, stopService,
+        killProcess) - see the kdoc there for why.
+    -->
+    <service
+            android:name=".media.MediaSessionService"
+            android:foregroundServiceType="mediaPlayback"
+            android:exported="false"
+        />
+
+    <service
+            android:name=".downloads.DownloadService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false"
+        />
+
+    <service
+            android:name=".downloads.ParallelDownloadService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false"
+        />
+
+    <!-- Custom Tabs Service -->
+    <service
+            android:name=".customtabs.CustomTabsService"
+            android:exported="true"
+            tools:ignore="ExportedService"
+        >
+      <intent-filter>
+        <action
+                    android:name="android.support.customtabs.action.CustomTabsService"
+                />
+      </intent-filter>
+    </service>
+
+    <!-- FileProvider for sharing exported profile ZIP files -->
+    <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true"
+        >
+      <meta-data
+              android:name="android.support.FILE_PROVIDER_PATHS"
+              android:resource="@xml/file_paths"
+          />
+    </provider>
+
+  </application>
+
+
+</manifest>
