@@ -1,0 +1,101 @@
+// Pre-upscale "SMAA-lite": single-pass morphological AA at the source (render) resolution.
+// NOT the full three-pass SMAA 1x (that needs the area / search lookup textures). It keeps the
+// same idea: luma edge detection, edge-segment search (up to 12 px each way), classification of the
+// segment ends (L / Z / U shapes via the crossing edges) and a blend weight from the area the
+// slanted line covers, then the pixel is mixed with its neighbour across the edge.
+// Compared to FXAA it never touches pixels that are not on a detected edge, so textures stay sharp.
+
+#version 450
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) uniform sampler2D srcTex;
+layout(set = 0, binding = 1) uniform writeonly image2D dstImg;
+
+layout(push_constant) uniform PC {
+    float srcW;
+    float srcH;
+    float dstW;
+    float dstH;
+    float sharp;
+    float p1;
+    float p2;
+    float p3;
+} pc;
+
+const float EDGE_THR = 0.08; // luma step that counts as an edge
+const int MAX_STEPS = 12;
+
+ivec2 dims() { return ivec2(int(pc.dstW), int(pc.dstH)); }
+vec3 fetchRGB(ivec2 p) { return texelFetch(srcTex, clamp(p, ivec2(0), dims() - ivec2(1)), 0).rgb; }
+float lumaOf(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
+float L(ivec2 p) { return lumaOf(fetchRGB(p)); }
+
+// edge between p and p + a
+bool edgeAt(ivec2 p, ivec2 a) { return abs(L(p) - L(p + a)) > EDGE_THR; }
+
+// `q` is the pixel on one side of an edge whose other side is q + a; the edge runs along s.
+// Result c: > 0 -> q should blend with q + a by c;  < 0 -> q + a should blend with q by -c.
+float lineOffset(ivec2 q, ivec2 a, ivec2 s) {
+    int dn = 0;
+    for (int i = 1; i <= MAX_STEPS; i++) {
+        ivec2 c = q - s * (i - 1);
+        if (edgeAt(c, -s) || edgeAt(c + a, -s)) break; // a crossing edge ends the segment here
+        if (!edgeAt(c - s, a)) break;                    // the edge itself ends
+        dn = i;
+    }
+    int dp = 0;
+    for (int i = 1; i <= MAX_STEPS; i++) {
+        ivec2 c = q + s * (i - 1);
+        if (edgeAt(c + s, -s) || edgeAt(c + s + a, -s)) break;
+        if (!edgeAt(c + s, a)) break;
+        dp = i;
+    }
+
+    ivec2 en = q - s * dn; // first / last pixel of the segment
+    ivec2 ep = q + s * dp;
+    bool nA = edgeAt(en + a, -s);       // line continues on the a side at the negative end
+    bool nB = edgeAt(en, -s);           // ... on the q side
+    bool pA = edgeAt(ep + s + a, -s);
+    bool pB = edgeAt(ep + s, -s);
+    float hn = (nA && !nB) ? -0.5 : ((nB && !nA) ? 0.5 : 0.0);
+    float hp = (pA && !pB) ? -0.5 : ((pB && !pA) ? 0.5 : 0.0);
+
+    float n = float(dn + dp + 1);
+    float t = (float(dn) + 0.5) / n;
+    if (hn * hp > 0.0) {
+        // U shape: both ends turn the same way, only the ends get blended
+        return (t < 0.5) ? hn * (1.0 - 2.0 * t) : hp * (2.0 * t - 1.0);
+    }
+    return mix(hn, hp, t); // L / Z shape: a slanted line over the whole segment
+}
+
+void main() {
+    ivec2 ip = ivec2(gl_GlobalInvocationID.xy);
+    if (ip.x >= int(pc.dstW) || ip.y >= int(pc.dstH)) return;
+
+    vec3 c0 = fetchRGB(ip);
+    vec3 acc = vec3(0.0);
+    float wsum = 0.0;
+
+    for (int k = 0; k < 2; k++) {
+        ivec2 a = (k == 0) ? ivec2(0, -1) : ivec2(-1, 0);
+        ivec2 s = (k == 0) ? ivec2(1, 0) : ivec2(0, 1);
+        if (edgeAt(ip, a)) {
+            float c = lineOffset(ip, a, s);
+            if (c > 0.0) { acc += fetchRGB(ip + a) * c; wsum += c; }
+        }
+        ivec2 qn = ip - a;
+        if (edgeAt(qn, a)) {
+            float c = lineOffset(qn, a, s);
+            if (c < 0.0) { acc += fetchRGB(qn) * (-c); wsum += -c; }
+        }
+    }
+
+    vec3 res = c0;
+    if (wsum > 0.0) {
+        float norm = max(wsum, 1.0);
+        res = c0 * (1.0 - wsum / norm) + acc / norm;
+    }
+    imageStore(dstImg, ip, vec4(res, 1.0));
+}

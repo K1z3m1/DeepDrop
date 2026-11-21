@@ -1,0 +1,48 @@
+name: Build native lib
+
+# Builds ONLY the C code (libfluxa.so) so the Android app itself can be built on a phone without NDK/CMake.
+# Download the artifact, copy jniLibs/* into app/src/main/jniLibs/.
+on:
+  workflow_dispatch:
+  push:
+    paths: ["app/src/main/cpp/**", ".github/workflows/native.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install NDK + CMake
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.1.12297006" "cmake;3.22.1"
+
+      - name: Build libfluxa.so for each ABI
+        run: |
+          export ANDROID_NDK="$ANDROID_HOME/ndk/27.1.12297006"
+          CMAKE="$(command -v cmake)"   # runner's newer cmake: 3.22 hardcodes -fuse-ld=gold, which NDK 27 removed
+          "$CMAKE" --version | head -1
+          for ABI in arm64-v8a x86_64; do
+            "$CMAKE" -S app/src/main/cpp -B "out/$ABI" -G Ninja \
+              -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK/build/cmake/android.toolchain.cmake" \
+              -DANDROID_ABI="$ABI" -DANDROID_PLATFORM=android-30 \
+              -DANDROID_STL=none -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON \
+              -DCMAKE_BUILD_TYPE=Release
+            "$CMAKE" --build "out/$ABI" --target fluxa
+            mkdir -p "jniLibs/$ABI"
+            "$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip" --strip-unneeded \
+              -o "jniLibs/$ABI/libfluxa.so" "out/$ABI/libfluxa.so"
+          done
+          ls -la jniLibs/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jniLibs
+          path: jniLibs

@@ -1,0 +1,77 @@
+// Lanczos-3 upscaler (6x6 taps, separable weights) as a single Vulkan compute pass, with the same
+// light anti-ringing clamp as the Lanczos-2 pass. Sharper than Lanczos-2, a little more ringing
+// and 36 fetches per pixel. Needs no extension.
+
+#version 450
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) uniform sampler2D srcTex;
+layout(set = 0, binding = 1) uniform writeonly image2D dstImg;
+
+layout(push_constant) uniform PC {
+    float srcW;
+    float srcH;
+    float dstW;
+    float dstH;
+    float sharp; // unused here
+} pc;
+
+const float ANTI_RINGING = 0.8;
+
+vec3 fetchRGB(ivec2 p) {
+    p = clamp(p, ivec2(0), ivec2(int(pc.srcW) - 1, int(pc.srcH) - 1));
+    return texelFetch(srcTex, p, 0).rgb;
+}
+
+float lanczos3(float d) {
+    d = abs(d);
+    if (d < 1e-4) return 1.0;
+    if (d >= 3.0) return 0.0;
+    float pd = 3.14159265 * d;
+    return 3.0 * sin(pd) * sin(pd / 3.0) / (pd * pd);
+}
+
+void main() {
+    ivec2 ip = ivec2(gl_GlobalInvocationID.xy);
+    if (ip.x >= int(pc.dstW) || ip.y >= int(pc.dstH)) return;
+
+    vec2 scale = vec2(pc.srcW / pc.dstW, pc.srcH / pc.dstH);
+    vec2 pp = (vec2(ip) + 0.5) * scale - 0.5;
+    vec2 fpv = floor(pp);
+    ivec2 fp = ivec2(fpv);
+    vec2 fr = pp - fpv;
+
+    // taps fp-2 .. fp+3; the four around the sample point are indices 2 and 3 (of 0..5)
+    float wx[6];
+    float wy[6];
+    float sx = 0.0;
+    float sy = 0.0;
+    for (int i = 0; i < 6; i++) {
+        wx[i] = lanczos3(float(i - 2) - fr.x);
+        wy[i] = lanczos3(float(i - 2) - fr.y);
+        sx += wx[i];
+        sy += wy[i];
+    }
+    float norm = sx * sy;
+
+    vec3 acc = vec3(0.0);
+    vec3 lo = vec3(1.0e9);
+    vec3 hi = vec3(-1.0e9);
+    for (int j = 0; j < 6; j++) {
+        vec3 row = vec3(0.0);
+        for (int i = 0; i < 6; i++) {
+            vec3 c = fetchRGB(fp + ivec2(i - 2, j - 2));
+            row += c * wx[i];
+            if ((i == 2 || i == 3) && (j == 2 || j == 3)) {
+                lo = min(lo, c);
+                hi = max(hi, c);
+            }
+        }
+        acc += row * wy[j];
+    }
+
+    vec3 res = acc / max(norm, 1.0e-4);
+    res = mix(res, clamp(res, lo, hi), ANTI_RINGING);
+    imageStore(dstImg, ip, vec4(clamp(res, 0.0, 1.0), 1.0));
+}

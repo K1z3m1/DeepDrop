@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <!-- panel-only session (app opened from the launcher): no capture yet, just the panel -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- granted once over adb: adb shell pm grant <package> android.permission.WRITE_SECURE_SETTINGS -->
+    <uses-permission
+        android:name="android.permission.WRITE_SECURE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
+
+    <!-- home monitor: times a TCP handshake to 8.8.8.8 for the ping readout; the network detail page also
+         runs the speed test (speed.cloudflare.com) and looks up the public IP -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- network detail page: connection type, local IP, gateway, DNS, Wi-Fi link speed / band -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+
+    <!-- lets the home launcher list / open / clean the installed apps -->
+    <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
+    <!-- game mode: do not disturb (user grants in Settings) + brightness lock (user grants in Settings) -->
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" tools:ignore="ProtectedPermissions" />
+    <!-- task manager: recently used apps (user grants "Usage access" in Settings) -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
+    </queries>
+
+    <application
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/fluxa_data_extraction_rules"
+        android:fullBackupContent="@xml/fluxa_backup_rules"
+        android:networkSecurityConfig="@xml/fluxa_network_security_config"
+        android:usesCleartextTraffic="false"
+        android:hardwareAccelerated="true"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:label="@string/fluxa_app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Fluxa">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/fluxa_app_name"
+            android:theme="@style/Theme.Fluxa">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".ConsentActivity"
+            android:exported="false"
+            android:label="@string/fluxa_app_name"
+            android:theme="@style/Theme.Fluxa" />
+        <activity
+            android:name=".ProfileActivity"
+            android:exported="false"
+            android:label="@string/fluxa_app_name"
+            android:theme="@style/Theme.Fluxa" />
+        <activity
+            android:name=".AboutActivity"
+            android:exported="false"
+            android:label="@string/fluxa_app_name"
+            android:theme="@style/Theme.Fluxa" />
+        <activity
+            android:name=".SetupActivity"
+            android:exported="false"
+            android:label="@string/fluxa_app_name"
+            android:theme="@style/Theme.Fluxa" />
+        <activity
+            android:name=".PermissionActivity"
+            android:exported="false"
+            android:label="@string/fluxa_app_name"
+            android:theme="@style/Theme.Fluxa" />
+        <activity
+            android:name=".MonitorDetailActivity"
+            android:exported="false"
+            android:label="@string/fluxa_app_name"
+            android:theme="@style/Theme.Fluxa" />
+        <activity
+            android:name=".CompareActivity"
+            android:exported="false"
+            android:label="@string/fluxa_app_name"
+            android:theme="@style/Theme.Fluxa" />
+
+        <!-- asks for the screen-capture permission when the record button in the panel is tapped -->
+        <activity
+            android:name=".RecordConsentActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Fluxa.Transparent" />
+
+        <service
+            android:name=".CaptureService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection|microphone|specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="in-game control panel and screen recording" />
+        </service>
+        <!-- lets the in-game drawer show your notifications (needs notification access, granted in Settings) -->
+        <service
+            android:name=".FluxaNotificationListener"
+            android:exported="true"
+            android:label="@string/fluxa_app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".OverlayAccessibilityService"
+            android:exported="true"
+            android:label="@string/fluxa_a11y_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/fluxa_accessibility_config" />
+        </service>
+    </application>
+</manifest>

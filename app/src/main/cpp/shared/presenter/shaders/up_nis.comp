@@ -1,0 +1,192 @@
+// Edge-directed single-pass upscaler in the style of NVIDIA Image Scaling (NIS):
+//   1. a 4-direction edge map (0 / 90 / 45 / 135 degrees) built from 3x3 luma windows around the
+//      sample point, using NIS's detection ratio / threshold, interpolated between the four windows;
+//   2. flat areas are reconstructed with a Lanczos-2 style separable kernel; detected edges with a
+//      kernel that stays sharp ACROSS the edge and is smoothed ALONG it (removes stair-steps);
+//   3. a small built-in unsharp mask on luma, limited so it cannot cause halos.
+// Written from the published description of the method; this is NOT NVIDIA's shader file and it
+// does not use NVIDIA's coefficient tables (drop the official MIT-licensed NIS scaler in its place
+// if bit-exact output is wanted). Single pass, plain texelFetch, no extension.
+
+#version 450
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) uniform sampler2D srcTex;
+layout(set = 0, binding = 1) uniform writeonly image2D dstImg;
+
+layout(push_constant) uniform PC {
+    float srcW;
+    float srcH;
+    float dstW;
+    float dstH;
+    float sharp; // unused here (the optional RCAS / CAS pass comes after)
+} pc;
+
+// edge detection constants taken from NIS (LDR)
+const float DETECT_RATIO = 2.0 * 1127.0 / 1024.0;
+const float DETECT_THRES = 64.0 / 1024.0;
+
+const float ALONG_R2 = 5.0;      // squared radius of the smoothing bell along an edge (px^2)
+const float EDGE_MIN_W = 0.01;   // skip a directional filter below this weight
+const float ANTI_RINGING = 0.8;  // clamp the scaled colour towards the 2x2 source neighbourhood
+const float USM_GAIN = 0.5;      // built-in unsharp mask strength
+const float USM_LIMIT = 0.04;    // ... and its largest correction (0..1 colour range)
+const float USM_R2 = 4.5;        // squared radius of the blur bell used by the unsharp mask
+
+float gL[16]; // luma of the 4x4 neighbourhood, row-major, index 0 = offset -1
+vec3 gC[16];  // colour of the same pixels
+
+vec3 fetchRGB(ivec2 p) {
+    p = clamp(p, ivec2(0), ivec2(int(pc.srcW) - 1, int(pc.srcH) - 1));
+    return texelFetch(srcTex, p, 0).rgb;
+}
+
+float lumaOf(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
+
+// polynomial Lanczos-2 (the FSR EASU approximation); x = squared distance, any value >= 0
+float l2sq(float x) {
+    x = min(x, 4.0);
+    float a = 0.4 * x - 1.0;
+    float b = 0.25 * x - 1.0;
+    return (1.5625 * a * a - 0.5625) * b * b;
+}
+
+// weights (x: 0 deg, y: 90 deg, z: 45 deg, w: 135 deg) of the 3x3 luma window whose top-left
+// pixel is gL[row i, col j]
+vec4 edgeMap(int i, int j) {
+    float p00 = gL[(i + 0) * 4 + (j + 0)];
+    float p01 = gL[(i + 0) * 4 + (j + 1)];
+    float p02 = gL[(i + 0) * 4 + (j + 2)];
+    float p10 = gL[(i + 1) * 4 + (j + 0)];
+    float p12 = gL[(i + 1) * 4 + (j + 2)];
+    float p20 = gL[(i + 2) * 4 + (j + 0)];
+    float p21 = gL[(i + 2) * 4 + (j + 1)];
+    float p22 = gL[(i + 2) * 4 + (j + 2)];
+
+    float g0 = abs(p00 + p01 + p02 - p20 - p21 - p22);     // top vs bottom  -> edge along x
+    float g45 = abs(p10 + p00 + p01 - p21 - p22 - p12);    // top-left vs bottom-right
+    float g90 = abs(p00 + p10 + p20 - p02 - p12 - p22);    // left vs right  -> edge along y
+    float g135 = abs(p10 + p20 + p21 - p01 - p02 - p12);   // bottom-left vs top-right
+
+    float g09max = max(g0, g90);
+    float g09min = min(g0, g90);
+    float g45max = max(g45, g135);
+    float g45min = min(g45, g135);
+
+    if (g09max + g45max == 0.0) return vec4(0.0);
+
+    float e09 = min(g09max / (g09max + g45max), 1.0);
+    float e45 = 1.0 - e09;
+
+    bool c09 = (g09max > g09min * DETECT_RATIO) && (g09max > DETECT_THRES) && (g09max > g45min);
+    bool c45 = (g45max > g45min * DETECT_RATIO) && (g45max > DETECT_THRES) && (g45max > g09min);
+    bool is0 = g09max == g0;
+    bool is45 = g45max == g45;
+
+    float f09 = (c09 && c45) ? e09 : 1.0;
+    float f45 = (c09 && c45) ? e45 : 1.0;
+
+    return vec4((c09 && is0) ? f09 : 0.0,
+                (c09 && !is0) ? f09 : 0.0,
+                (c45 && is45) ? f45 : 0.0,
+                (c45 && !is45) ? f45 : 0.0);
+}
+
+// flat-area reconstruction: separable Lanczos-2
+vec3 isoFilter(vec2 fr) {
+    float wx[4];
+    float wy[4];
+    for (int k = 0; k < 4; k++) {
+        float dx = float(k - 1) - fr.x;
+        float dy = float(k - 1) - fr.y;
+        wx[k] = l2sq(dx * dx);
+        wy[k] = l2sq(dy * dy);
+    }
+    vec3 acc = vec3(0.0);
+    for (int j = 0; j < 4; j++) {
+        vec3 row = vec3(0.0);
+        for (int i = 0; i < 4; i++) row += gC[j * 4 + i] * wx[i];
+        acc += row * wy[j];
+    }
+    float norm = (wx[0] + wx[1] + wx[2] + wx[3]) * (wy[0] + wy[1] + wy[2] + wy[3]);
+    return acc / max(norm, 1.0e-4);
+}
+
+// edge reconstruction: Lanczos-2 across the edge (nrm), smooth bell along it (tng)
+vec3 dirFilter(vec2 nrm, vec2 tng, vec2 fr) {
+    vec3 acc = vec3(0.0);
+    float ws = 0.0;
+    for (int j = 0; j < 4; j++) {
+        for (int i = 0; i < 4; i++) {
+            vec2 d = vec2(float(i - 1), float(j - 1)) - fr;
+            float across = dot(d, nrm);
+            float along = dot(d, tng);
+            float t = max(1.0 - along * along * (1.0 / ALONG_R2), 0.0);
+            float w = l2sq(across * across) * t * t;
+            acc += gC[j * 4 + i] * w;
+            ws += w;
+        }
+    }
+    return acc / max(ws, 1.0e-3);
+}
+
+void main() {
+    ivec2 ip = ivec2(gl_GlobalInvocationID.xy);
+    if (ip.x >= int(pc.dstW) || ip.y >= int(pc.dstH)) return;
+
+    vec2 scale = vec2(pc.srcW / pc.dstW, pc.srcH / pc.dstH);
+    vec2 pp = (vec2(ip) + 0.5) * scale - 0.5;
+    vec2 fpv = floor(pp);
+    ivec2 fp = ivec2(fpv);
+    vec2 fr = pp - fpv;
+
+    for (int j = 0; j < 4; j++) {
+        for (int i = 0; i < 4; i++) {
+            vec3 c = fetchRGB(fp + ivec2(i - 1, j - 1));
+            gC[j * 4 + i] = c;
+            gL[j * 4 + i] = lumaOf(c);
+        }
+    }
+
+    // edge map, interpolated between the four 3x3 windows around the sample point
+    vec4 e00 = edgeMap(0, 0);
+    vec4 e01 = edgeMap(0, 1);
+    vec4 e10 = edgeMap(1, 0);
+    vec4 e11 = edgeMap(1, 1);
+    vec4 e = mix(mix(e00, e01, fr.x), mix(e10, e11, fr.x), fr.y);
+    float edgeSum = min(e.x + e.y + e.z + e.w, 1.0);
+    float rest = 1.0 - edgeSum;
+
+    const float R = 0.70710678;
+    vec3 acc = vec3(0.0);
+    float used = 0.0;
+    if (rest > EDGE_MIN_W) { acc += rest * isoFilter(fr); used += rest; }
+    if (e.x > EDGE_MIN_W) { acc += e.x * dirFilter(vec2(0.0, 1.0), vec2(1.0, 0.0), fr); used += e.x; }
+    if (e.y > EDGE_MIN_W) { acc += e.y * dirFilter(vec2(1.0, 0.0), vec2(0.0, 1.0), fr); used += e.y; }
+    if (e.z > EDGE_MIN_W) { acc += e.z * dirFilter(vec2(R, R), vec2(R, -R), fr); used += e.z; }
+    if (e.w > EDGE_MIN_W) { acc += e.w * dirFilter(vec2(R, -R), vec2(R, R), fr); used += e.w; }
+    vec3 res = acc / max(used, 1.0e-3);
+
+    // anti-ringing against the four pixels around the sample point
+    vec3 lo = min(min(gC[5], gC[6]), min(gC[9], gC[10]));
+    vec3 hi = max(max(gC[5], gC[6]), max(gC[9], gC[10]));
+    res = mix(res, clamp(res, lo, hi), ANTI_RINGING);
+
+    // built-in unsharp mask: detail = scaled luma - blurred luma, added to all channels
+    float bsum = 0.0;
+    float bw = 0.0;
+    for (int j = 0; j < 4; j++) {
+        for (int i = 0; i < 4; i++) {
+            vec2 d = vec2(float(i - 1), float(j - 1)) - fr;
+            float t = max(1.0 - dot(d, d) * (1.0 / USM_R2), 0.0);
+            t *= t;
+            bsum += gL[j * 4 + i] * t;
+            bw += t;
+        }
+    }
+    float usm = lumaOf(res) - bsum / max(bw, 1.0e-3);
+    res += clamp(usm * USM_GAIN, -USM_LIMIT, USM_LIMIT);
+
+    imageStore(dstImg, ip, vec4(clamp(res, 0.0, 1.0), 1.0));
+}

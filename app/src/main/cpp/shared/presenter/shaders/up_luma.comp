@@ -1,0 +1,49 @@
+// Luma sharpen as a Vulkan compute pass over an image that is already at output size
+// (LumaSharpen-style). Only the luma channel is sharpened and the same delta is added to R, G and
+// B, so there are no colour fringes; the high-pass is soft-clipped, so strong edges do not grow
+// bright / dark halos. pc.sharp + pc.p1 = strength 0 .. 2 (above 1 = overdrive).
+
+#version 450
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) uniform sampler2D srcTex;
+layout(set = 0, binding = 1) uniform writeonly image2D dstImg;
+
+layout(push_constant) uniform PC {
+    float srcW;
+    float srcH;
+    float dstW;
+    float dstH;
+    float sharp; // 0 .. 1
+    float p1;    // overdrive 0 .. 1 (strength 1 .. 2)
+} pc;
+
+vec3 fetchRGB(ivec2 p) {
+    p = clamp(p, ivec2(0), ivec2(int(pc.dstW) - 1, int(pc.dstH) - 1));
+    return texelFetch(srcTex, p, 0).rgb;
+}
+
+float lumaOf(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
+
+void main() {
+    ivec2 ip = ivec2(gl_GlobalInvocationID.xy);
+    if (ip.x >= int(pc.dstW) || ip.y >= int(pc.dstH)) return;
+
+    vec3 e = fetchRGB(ip);
+    float l = lumaOf(e);
+    // 3x3 gaussian-ish blur of the luma
+    float lb = (lumaOf(fetchRGB(ip + ivec2(0, -1))) + lumaOf(fetchRGB(ip + ivec2(-1, 0)))
+              + lumaOf(fetchRGB(ip + ivec2(1, 0))) + lumaOf(fetchRGB(ip + ivec2(0, 1)))) * 0.125
+              + (lumaOf(fetchRGB(ip + ivec2(-1, -1))) + lumaOf(fetchRGB(ip + ivec2(1, -1)))
+              + lumaOf(fetchRGB(ip + ivec2(-1, 1))) + lumaOf(fetchRGB(ip + ivec2(1, 1)))) * 0.0625
+              + l * 0.25;
+    float hp = l - lb;
+
+    float amount = clamp(pc.sharp + pc.p1, 0.0, 2.0);
+    float gain = 0.5 + 1.75 * amount;                 // 0.5 .. 4.0
+    float clipv = 0.05 + 0.05 * amount;               // soft-clip level of the high-pass
+    float delta = clipv * tanh(hp * gain / clipv);    // linear for small detail, saturates on edges
+    vec3 res = e + vec3(delta);
+    imageStore(dstImg, ip, vec4(clamp(res, 0.0, 1.0), 1.0));
+}

@@ -1,0 +1,63 @@
+// Edge-adaptive sharpening as a Vulkan compute pass over an image that is already at output size
+// (alternative to RCAS / CAS). A 3x3 high-pass is added back, scaled so that
+//   - flat areas / noise are left alone (gate on local contrast),
+//   - strong edges that are already contrasty get less boost (less halo),
+//   - the result may overshoot the local min / max only by a small fraction of the local contrast.
+
+#version 450
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) uniform sampler2D srcTex;
+layout(set = 0, binding = 1) uniform writeonly image2D dstImg;
+
+layout(push_constant) uniform PC {
+    float srcW;
+    float srcH;
+    float dstW;
+    float dstH;
+    float sharp; // 0 (gentle) .. 1 (strongest)
+    float p1;    // overdrive 0 .. 1: strength 100% .. 200%
+} pc;
+
+vec3 fetchRGB(ivec2 p) {
+    p = clamp(p, ivec2(0), ivec2(int(pc.dstW) - 1, int(pc.dstH) - 1));
+    return texelFetch(srcTex, p, 0).rgb;
+}
+
+float lumaOf(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
+
+void main() {
+    ivec2 ip = ivec2(gl_GlobalInvocationID.xy);
+    if (ip.x >= int(pc.dstW) || ip.y >= int(pc.dstH)) return;
+
+    vec3 a = fetchRGB(ip + ivec2(-1, -1));
+    vec3 b = fetchRGB(ip + ivec2(0, -1));
+    vec3 c = fetchRGB(ip + ivec2(1, -1));
+    vec3 d = fetchRGB(ip + ivec2(-1, 0));
+    vec3 e = fetchRGB(ip);
+    vec3 f = fetchRGB(ip + ivec2(1, 0));
+    vec3 g = fetchRGB(ip + ivec2(-1, 1));
+    vec3 h = fetchRGB(ip + ivec2(0, 1));
+    vec3 i = fetchRGB(ip + ivec2(1, 1));
+
+    vec3 mn = min(min(min(a, b), min(c, d)), min(min(e, f), min(min(g, h), i)));
+    vec3 mx = max(max(max(a, b), max(c, d)), max(max(e, f), max(max(g, h), i)));
+
+    float contrast = lumaOf(mx) - lumaOf(mn);
+
+    // weighted blur: cross + diagonals
+    vec3 blur = (e * 4.0 + (b + d + f + h) * 2.0 + (a + c + g + i)) / 16.0;
+    vec3 hp = e - blur;
+
+    float amount = clamp(pc.sharp, 0.0, 1.0);
+    float over = clamp(pc.p1, 0.0, 1.0);
+    float gain = mix(0.8, 3.0, amount) * (1.0 + 1.5 * over);
+    float gate = smoothstep(0.015, 0.09, contrast);              // ignore flat / noisy areas
+    float soft = 1.0 - 0.65 * smoothstep(0.25, 0.7, contrast);   // already contrasty: boost less
+    vec3 res = e + hp * gain * gate * soft;
+
+    float allow = 0.12 * (1.0 + 1.5 * over) * (mx.r + mx.g + mx.b - mn.r - mn.g - mn.b) / 3.0; // small allowed overshoot
+    res = clamp(res, mn - allow, mx + allow);
+    imageStore(dstImg, ip, vec4(clamp(res, 0.0, 1.0), 1.0));
+}

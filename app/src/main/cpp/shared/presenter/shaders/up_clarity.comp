@@ -1,0 +1,55 @@
+// Clarity (local contrast) as a Vulkan compute pass over an image that is already at output
+// size. Unlike the other sharpen passes it works on a *wide* neighbourhood (a 13-tap blur of
+// radius ~4 px), so it lifts mid-scale texture and depth instead of fine edge crispness. The
+// boost is weighted towards the midtones (shadows and highlights are protected) and added to
+// luma only. pc.sharp + pc.p1 = strength 0 .. 2 (above 1 = overdrive).
+
+#version 450
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) uniform sampler2D srcTex;
+layout(set = 0, binding = 1) uniform writeonly image2D dstImg;
+
+layout(push_constant) uniform PC {
+    float srcW;
+    float srcH;
+    float dstW;
+    float dstH;
+    float sharp; // 0 .. 1
+    float p1;    // overdrive 0 .. 1 (strength 1 .. 2)
+} pc;
+
+vec3 fetchRGB(ivec2 p) {
+    p = clamp(p, ivec2(0), ivec2(int(pc.dstW) - 1, int(pc.dstH) - 1));
+    return texelFetch(srcTex, p, 0).rgb;
+}
+
+float lumaOf(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
+
+float lumaAt(ivec2 p) { return lumaOf(fetchRGB(p)); }
+
+void main() {
+    ivec2 ip = ivec2(gl_GlobalInvocationID.xy);
+    if (ip.x >= int(pc.dstW) || ip.y >= int(pc.dstH)) return;
+
+    vec3 e = fetchRGB(ip);
+    float l = lumaOf(e);
+
+    // centre + ring at 2 px (8 taps) + ring at 4 px along the axes (4 taps)
+    float acc = l * 0.20;
+    acc += (lumaAt(ip + ivec2(2, 0)) + lumaAt(ip + ivec2(-2, 0)) + lumaAt(ip + ivec2(0, 2))
+          + lumaAt(ip + ivec2(0, -2))) * 0.095;
+    acc += (lumaAt(ip + ivec2(2, 2)) + lumaAt(ip + ivec2(-2, 2)) + lumaAt(ip + ivec2(2, -2))
+          + lumaAt(ip + ivec2(-2, -2))) * 0.055;
+    acc += (lumaAt(ip + ivec2(4, 0)) + lumaAt(ip + ivec2(-4, 0)) + lumaAt(ip + ivec2(0, 4))
+          + lumaAt(ip + ivec2(0, -4))) * 0.0500;
+    // weights sum: 0.20 + 0.38 + 0.22 + 0.20 = 1.0
+    float local = l - acc;
+
+    float amount = clamp(pc.sharp + pc.p1, 0.0, 2.0);
+    float mid = 1.0 - pow(abs(2.0 * l - 1.0), 2.0);  // 1 at mid-grey, 0 at black / white
+    float delta = local * (0.9 * amount) * mid;
+    delta = clamp(delta, -0.18, 0.18);
+    imageStore(dstImg, ip, vec4(clamp(e + vec3(delta), 0.0, 1.0), 1.0));
+}

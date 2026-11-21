@@ -1,0 +1,86 @@
+// EWA Lanczos ("jinc") upscaler as a single Vulkan compute pass: an elliptical-weighted-average
+// resampler whose weight depends only on the *radial* distance to the sample point, so there is
+// no axis-aligned bias (diagonal lines and curves stay clean, unlike the separable Lanczos
+// passes). Kernel = jinc(r / blur) * jinc(r / (blur * R)) with the "sharp" blur factor and R the
+// third zero of jinc; it is fitted once with a degree-12 Chebyshev series in r^2 (max error
+// below 1e-8), so a tap costs a short Clenshaw loop instead of Bessel functions. 6x6 taps cover
+// every distance < 3. Same light anti-ringing clamp as the Lanczos passes. Needs no extension.
+
+#version 450
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) uniform sampler2D srcTex;
+layout(set = 0, binding = 1) uniform writeonly image2D dstImg;
+
+layout(push_constant) uniform PC {
+    float srcW;
+    float srcH;
+    float dstW;
+    float dstH;
+    float sharp; // unused here
+} pc;
+
+const float ANTI_RINGING = 0.75;
+const float RADIUS2 = 9.0; // support radius 3 (squared); the series covers r^2 in [0, 9]
+
+const float C[13] = float[13](
+    0.134828162, -0.250443847, 0.247241596, -0.204571102, 0.111222506, -0.0397424675,
+    0.00987269828, -0.00179739761, 0.000250099056, -2.7484504e-05, 2.4481407e-06,
+    -1.80477723e-07, 1.12015638e-08);
+
+vec3 fetchRGB(ivec2 p) {
+    p = clamp(p, ivec2(0), ivec2(int(pc.srcW) - 1, int(pc.srcH) - 1));
+    return texelFetch(srcTex, p, 0).rgb;
+}
+
+// Clenshaw evaluation of the Chebyshev series on t = r2 / 4.5 - 1
+float ewaWeight(float r2) {
+    if (r2 >= RADIUS2) return 0.0;
+    float t = r2 * (1.0 / 4.5) - 1.0;
+    float b1 = 0.0;
+    float b2 = 0.0;
+    for (int k = 12; k >= 1; k--) {
+        float b0 = 2.0 * t * b1 - b2 + C[k];
+        b2 = b1;
+        b1 = b0;
+    }
+    return t * b1 - b2 + C[0];
+}
+
+void main() {
+    ivec2 ip = ivec2(gl_GlobalInvocationID.xy);
+    if (ip.x >= int(pc.dstW) || ip.y >= int(pc.dstH)) return;
+
+    vec2 scale = vec2(pc.srcW / pc.dstW, pc.srcH / pc.dstH);
+    vec2 pp = (vec2(ip) + 0.5) * scale - 0.5;
+    vec2 fpv = floor(pp);
+    ivec2 fp = ivec2(fpv);
+    vec2 fr = pp - fpv;
+
+    // when shrinking-ish (scale > 1) widen the kernel a little so it does not alias
+    float stretch = max(max(scale.x, scale.y), 1.0);
+    float inv2 = 1.0 / (stretch * stretch);
+
+    vec3 acc = vec3(0.0);
+    float wsum = 0.0;
+    vec3 lo = vec3(1.0e9);
+    vec3 hi = vec3(-1.0e9);
+    for (int j = 0; j < 6; j++) {
+        for (int i = 0; i < 6; i++) {
+            vec2 d = vec2(float(i - 2), float(j - 2)) - fr;
+            float w = ewaWeight(dot(d, d) * inv2);
+            vec3 c = fetchRGB(fp + ivec2(i - 2, j - 2));
+            acc += c * w;
+            wsum += w;
+            if ((i == 2 || i == 3) && (j == 2 || j == 3)) {
+                lo = min(lo, c);
+                hi = max(hi, c);
+            }
+        }
+    }
+
+    vec3 res = acc / max(wsum, 1.0e-4);
+    res = mix(res, clamp(res, lo, hi), ANTI_RINGING);
+    imageStore(dstImg, ip, vec4(clamp(res, 0.0, 1.0), 1.0));
+}
