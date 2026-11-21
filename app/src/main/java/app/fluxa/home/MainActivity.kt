@@ -776,9 +776,9 @@ class MainActivity : Activity() {
         heroDot.background = kit.rounded(if (ready) Palette.OK else Palette.WARN, 5)
         heroTitle.text = if (ready) "พร้อมเจนเฟรม" else "ต้องตั้งค่าก่อนเริ่ม"
         heroSub.text = when {
-            ready -> "กด เริ่ม ด้านล่าง แล้วเลือก \"แอพเดียว\" เป็นเกมที่ต้องการ"
-            !acc -> "แตะการ์ดนี้เพื่อไปหน้าตั้งค่าเริ่มต้น แล้วเปิดบริการ Accessibility"
-            else -> "ต้องใช้ Android 14 ขึ้นไปสำหรับจับภาพแอพเดียว"
+            ready && Build.VERSION.SDK_INT >= 34 -> "กด เริ่ม ด้านล่าง แล้วเลือก \"แอพเดียว\" เป็นเกมที่ต้องการ"
+            ready -> "กด เริ่ม ด้านล่าง แล้วอนุญาตการแชร์หน้าจอ (Android ต่ำกว่า 14 จะจับทั้งหน้าจอ)"
+            else -> "แตะการ์ดนี้เพื่อไปหน้าตั้งค่าเริ่มต้น แล้วเปิดบริการ Accessibility"
         }
         val target = outModeSeg.selected == FluxaOptions.OUT_MODE_TARGET
         val chips = listOf(
@@ -803,8 +803,8 @@ class MainActivity : Activity() {
     private fun refreshStatus() {
         if (!::headerAvatar.isInitialized) return
         val acc = OverlayAccessibilityService.instance != null
-        val sdk = Build.VERSION.SDK_INT >= 34
-        val ready = acc && sdk
+        // Android 14+ can share a single app; older versions (11-13) mirror the whole screen instead
+        val ready = acc
         headerDot.background = GradientDrawable().apply {
             shape = GradientDrawable.OVAL
             setColor(if (ready) Palette.OK else Palette.WARN)
@@ -1045,14 +1045,6 @@ class MainActivity : Activity() {
     }
 
     private fun requestStart() {
-        if (Build.VERSION.SDK_INT < 34) {
-            I18n.toastMake(
-                this,
-                I18n.f("ต้องใช้ Android 14 ขึ้นไป (เครื่องนี้ Android {0}) จึงยังเริ่มไม่ได้", Build.VERSION.RELEASE),
-                Toast.LENGTH_LONG,
-            ).show()
-            return
-        }
         if (OverlayAccessibilityService.instance == null) {
             I18n.toastMake(this, I18n.f("เปิด {0} overlay ในการช่วยเหลือพิเศษ (Accessibility) ก่อน", getString(R.string.fluxa_app_name)), Toast.LENGTH_LONG).show()
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
@@ -1065,6 +1057,14 @@ class MainActivity : Activity() {
             prefs.edit().putBoolean(RecordConsentActivity.KEY_AUDIO_ASKED, true).apply()
             requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), REQ_AUDIO)
             return
+        }
+        if (Build.VERSION.SDK_INT < 34) {
+            // no single-app sharing before Android 14: the whole screen is captured
+            I18n.toastMake(
+                this,
+                I18n.f("Android {0} จับได้ทั้งหน้าจอเท่านั้น (ไม่มีโหมดแอพเดียว) ภาพอาจซ้อนกันได้", Build.VERSION.RELEASE),
+                Toast.LENGTH_LONG,
+            ).show()
         }
         openCaptureDialog()
     }
@@ -1383,8 +1383,8 @@ class MainActivity : Activity() {
             "เปิดแล้ว", { "ยังไม่เปิด" }, { OverlayAccessibilityService.instance != null }) {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
-        row(must, "acc_sdk", "Android 14 ขึ้นไป", "จำเป็น · สำหรับจับภาพแอปเดียว", true,
-            "รองรับ", { "ไม่รองรับ" }, { Build.VERSION.SDK_INT >= 34 }, null)
+        row(must, "acc_sdk", "จับภาพแอปเดียว", "ไม่บังคับ · ต้องใช้ Android 14 ขึ้นไป (รุ่นต่ำกว่าจะจับทั้งหน้าจอ)", false,
+            "รองรับ", { "ทั้งหน้าจอ" }, { Build.VERSION.SDK_INT >= 34 }, null)
 
         val opt = kit.card("ไม่บังคับ", Palette.TERTIARY)
         row(opt, "acc_mic", "ไมโครโฟน / เสียงแอพ", "ไม่บังคับ · ใช้เมื่อเลือกโหมดอัดจอ", false,
