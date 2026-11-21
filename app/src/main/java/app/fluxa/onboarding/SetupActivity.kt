@@ -127,12 +127,12 @@ class SetupActivity : Activity() {
             card.addView(r, LinearLayout.LayoutParams(-1, -2).apply { if (rows.isEmpty()) topMargin = kit.dp(4) })
             rows.add(Row(dot, state, ok, required, good, bad))
         }
-        val sdk34 = Build.VERSION.SDK_INT >= 34
+        val sdk34 = Build.VERSION.SDK_INT >= 34 // single-app capture; older versions capture the whole screen
         row("บริการ Accessibility", "จำเป็น · ใช้แสดงภาพและแผงควบคุมเหนือเกม (overlay)", true, "เปิดแล้ว", "ยังไม่เปิด",
             { OverlayAccessibilityService.instance != null }) {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
-        row("Android 14 ขึ้นไป", "จำเป็น · สำหรับจับภาพแอปเดียว", true, "รองรับ", "ไม่รองรับ", { sdk34 }, null)
+        row("จับภาพแอปเดียว", "ไม่บังคับ · ต้องใช้ Android 14 ขึ้นไป (รุ่นต่ำกว่าจะจับทั้งหน้าจอ)", false, "รองรับ", "ทั้งหน้าจอ", { sdk34 }, null)
         row("ไมโครโฟน / เสียงแอพ", "ไม่บังคับ · ใช้เมื่อเลือกโหมดอัดจอ", false, "ให้แล้ว", "ยังไม่ให้",
             { checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED }) {
             if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
@@ -169,7 +169,8 @@ class SetupActivity : Activity() {
         val help = kit.card("วิธีใช้", Palette.TERTIARY)
         listOf(
             I18n.f("เปิดบริการ Accessibility ของ {0} (ครั้งแรกครั้งเดียว)", getString(R.string.fluxa_app_name)),
-            "กด เริ่ม แล้วในหน้าต่างแชร์หน้าจอเลือก \"แอพเดียว\" {ic:arrow} เลือกเกม",
+            if (Build.VERSION.SDK_INT >= 34) "กด เริ่ม แล้วในหน้าต่างแชร์หน้าจอเลือก \"แอพเดียว\" {ic:arrow} เลือกเกม"
+            else "กด เริ่ม แล้วอนุญาตการแชร์หน้าจอ (Android ต่ำกว่า 14 จะจับทั้งหน้าจอ)",
             "สลับไปเล่นเกม · ปัดจากขอบขวาเพื่อเปิดแผงควบคุม",
         ).forEachIndexed { i, step ->
             val row = LinearLayout(kit.ctx).apply { gravity = Gravity.CENTER_VERTICAL }
@@ -184,7 +185,11 @@ class SetupActivity : Activity() {
             help.addView(row, LinearLayout.LayoutParams(-1, -2).apply { topMargin = kit.dp(if (i == 0) 14 else 12) })
         }
         help.addView(
-            kit.text("ห้ามเลือกทั้งหน้าจอ ไม่งั้น overlay จะถูกจับซ้ำ ต้องใช้ Android 14 ขึ้นไป", 12f, Palette.MUTED)
+            kit.text(
+                if (Build.VERSION.SDK_INT >= 34) "ห้ามเลือกทั้งหน้าจอ ไม่งั้น overlay จะถูกจับซ้ำ ต้องใช้ Android 14 ขึ้นไป"
+                else "Android ต่ำกว่า 14 ไม่มีโหมดแอพเดียว จึงจับทั้งหน้าจอ overlay อาจถูกจับซ้ำทำให้ภาพซ้อนกัน",
+                12f, Palette.MUTED,
+            )
                 .apply { setPadding(0, kit.dp(14), 0, 0) },
         )
         return help
